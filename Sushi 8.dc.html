@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<template id="__bundler_thumbnail" data-bg-color="#0a5e3e">
+  <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="60" cy="60" r="50" fill="#fff"/>
+    <path d="M 40 55 Q 60 40 80 55 Q 60 70 40 55" fill="#e8305c"/>
+    <circle cx="50" cy="50" r="4" fill="#2d2d2d"/>
+    <circle cx="70" cy="50" r="4" fill="#2d2d2d"/>
+    <path d="M 55 65 Q 60 68 65 65" stroke="#2d2d2d" stroke-width="1.5" fill="none"/>
+  </svg>
+</template>
+
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800;900&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{font-family:Manrope,system-ui,sans-serif;background:#F6EEE1;color:#2A1C12;-webkit-font-smoothing:antialiased;}
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-thumb{background:#D8C7AC;border-radius:10px;}
+  input,textarea,button{font-family:inherit;}
+  input:focus,textarea:focus{outline:none;}
+  @keyframes s8float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+  @keyframes s8pop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
+  @keyframes s8slide{from{transform:translateX(100%)}to{transform:translateX(0)}}
+  @keyframes s8down{from{transform:translateY(-100%);opacity:.4}to{transform:translateY(0);opacity:1}}
+  @keyframes s8fade{from{opacity:0}to{opacity:1}}
+  @keyframes s8up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes s8smooth{0%{opacity:1}100%{opacity:1}}
+  @keyframes s8bounce{0%,100%{transform:translateY(0);opacity:.9}50%{transform:translateY(8px);opacity:1}}
+  a{color:inherit;text-decoration:none;}
+  @media(max-width:640px){
+    .s8menu-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:11px!important;}
+    .s8menu-grid .s8card{padding:9px!important;border-radius:15px!important;}
+    .s8menu-grid .s8card-name{font-size:14px!important;}
+    .s8menu-grid .s8card-desc{font-size:11px!important;margin-bottom:9px!important;}
+    .s8menu-grid .s8card-price{font-size:17px!important;}
+  }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#F6EEE1;color:#2A1C12;overflow-x:hidden;">
+
+  <!-- ===== HEADER ===== -->
+  <header style="position:fixed;top:14px;left:14px;right:14px;z-index:60;padding:0;">
+    <div style="max-width:calc(100% - 28px);margin:0 auto;padding:12px 18px;display:flex;align-items:center;gap:18px;background:rgba(255,255,255,0.08);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.16);border-radius:18px;box-shadow:0 8px 32px rgba(0,0,0,0.1);">
+      <div onClick="{{ goHome }}" style="display:flex;align-items:center;gap:11px;cursor:pointer;flex:none;">
+        <div style="width:44px;height:44px;border-radius:13px;background:#C9856A;display:flex;align-items:center;justify-content:center;font-family:Playfair Display;font-weight:800;color:#fff;font-size:24px;box-shadow:0 6px 18px rgba(201,133,106,0.3);">8</div>
+        <div style="line-height:1;">
+          <div style="font-family: Playfair Display; font-weight: 800; font-size: 21px; letter-spacing: .5px; color: #d1d1cf">SUSHI<span style="color:{{ headerAccentColor }};"> 8</span></div>
+          <div style="font-size:10px;color:{{ headerSubColor }};font-weight:700;letter-spacing:2px;margin-top:4px;">ДОСТАВКА · ГУДЕРМЕС</div>
+        </div>
+      </div>
+
+      <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+        <nav style="display:flex;gap:4px;margin-left:14px;flex:1;">
+          <span onClick="{{ goHome }}" style="padding:9px 16px;border-radius:999px;font-weight:700;font-size:15px;cursor:pointer;color:{{ navHomeColor }};background:{{ navHomeBg }};">Главная</span>
+          <span onClick="{{ goMenu }}" style="padding:9px 16px;border-radius:999px;font-weight:700;font-size:15px;cursor:pointer;color:{{ navMenuColor }};background:{{ navMenuBg }};">Меню</span>
+          <a href="#about" style="padding:9px 16px;border-radius:999px;font-weight:700;font-size:15px;cursor:pointer;color:#D2C3AE;">О нас</a>
+          <a href="#contacts" style="padding:9px 16px;border-radius:999px;font-weight:700;font-size:15px;cursor:pointer;color:#D2C3AE;">Контакты</a>
+        </nav>
+        <a href="tel:+79280211655" style="font-weight:800;font-size:15px;color:#F6EEE1;white-space:nowrap;">+7 928 021-16-55</a>
+        <button onClick="{{ openCart }}" style="position:relative;background:transparent;border:1.5px solid rgba(201,133,106,0.4);color:#F6EEE1;border-radius:999px;padding:11px 16px;font-weight:800;font-size:15px;cursor:pointer;display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+          <sc-if value="{{ hasCart }}"><span style="background:#C9856A;color:#fff;border-radius:999px;font-size:12px;padding:1px 7px;">{{ cartCount }}</span></sc-if>
+        </button>
+        <button onClick="{{ goMenu }}" style="background:#C9856A;color:#fff;border:none;border-radius:999px;padding:12px 24px;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 6px 18px rgba(201,133,106,0.3);">Заказать</button>
+      </sc-if>
+
+      <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;"></div>
+        <button onClick="{{ openCart }}" style="position:relative;background:transparent;border:1.5px solid rgba(201,133,106,0.4);color:#F6EEE1;border-radius:12px;width:46px;height:46px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="stroke: #d1d1cf"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+          <sc-if value="{{ hasCart }}"><span style="position:absolute;top:-6px;right:-6px;background:#C9856A;color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 6px;">{{ cartCount }}</span></sc-if>
+        </button>
+        <button onClick="{{ toggleMobileMenu }}" style="background:#C9856A;border:none;color:#fff;border-radius:12px;width:46px;height:46px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;">☰</button>
+      </sc-if>
+    </div>
+  </header>
+
+  <sc-if value="{{ mobileMenuOpen }}">
+    <div onClick="{{ toggleMobileMenu }}" style="position:fixed;inset:0;z-index:95;background:rgba(28,16,9,0.55);backdrop-filter:blur(3px);animation:s8fade .2s ease;"></div>
+    <div onClick="{{ stop }}" style="position:fixed;top:0;left:0;right:0;z-index:96;background:#1F120A;padding:18px 22px 24px;border-radius:0 0 22px 22px;box-shadow:0 16px 40px rgba(0,0,0,0.35);animation:s8down .25s ease;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="font-family:Playfair Display;font-weight:800;font-size:23px;color:#F6EEE1;">SUSHI<span style="color:#D8B968;"> 8</span></div>
+        <button onClick="{{ toggleMobileMenu }}" style="background:#C9856A;border:none;color:#fff;width:44px;height:44px;border-radius:50%;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">✕</button>
+      </div>
+      <span onClick="{{ goHomeM }}" style="display:block;font-family:Playfair Display;font-weight:700;font-size:22px;color:#F6EEE1;padding:13px 0;border-top:1px solid rgba(255,255,255,0.1);cursor:pointer;">Главная</span>
+      <span onClick="{{ goMenuM }}" style="display:block;font-family:Playfair Display;font-weight:700;font-size:22px;color:#F6EEE1;padding:13px 0;border-top:1px solid rgba(255,255,255,0.1);cursor:pointer;">Меню</span>
+      <span onClick="{{ goAboutM }}" style="display:block;font-family:Playfair Display;font-weight:700;font-size:22px;color:#F6EEE1;padding:13px 0;border-top:1px solid rgba(255,255,255,0.1);cursor:pointer;">О нас</span>
+      <span onClick="{{ goContactsM }}" style="display:block;font-family:Playfair Display;font-weight:700;font-size:22px;color:#F6EEE1;padding:13px 0;border-top:1px solid rgba(255,255,255,0.1);cursor:pointer;">Контакты</span>
+    </div>
+  </sc-if>
+
+  <!-- ===== HOME ===== -->
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+  <main data-screen-label="Главная" style="margin-top:0;">
+
+    <!-- HERO -->
+    <section style="position:relative;height:calc(100svh - 60px);display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;">
+      <video autoplay="" muted="" loop="" playsinline="" preload="auto" poster="assets/hero-poster.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">
+        <source src="assets/hero.mp4" type="video/mp4">
+      </video>
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(28,16,9,0.3) 0%,rgba(28,16,9,0.25) 40%,rgba(28,16,9,0.78) 100%);"></div>
+      <div style="position:relative;z-index:2;padding:clamp(18px,4vw,48px) clamp(18px,5vw,48px) clamp(28px,5vh,52px);animation:s8up .7s ease both;">
+        <div style="color:#D4B896;font-weight:700;font-size:clamp(10px,1.4vw,13px);letter-spacing:3px;margin-bottom:clamp(10px,2vh,18px);text-transform:uppercase;">СУШИ · ПИЦЦА · ФАСТФУД · РОЛЛЫ · ХАЛЯЛЬ</div>
+        <h1 style="font-family:Playfair Display;font-weight:800;font-size:clamp(34px,7vw,76px);line-height:1.06;color:#FBF6EC;margin:0 0 clamp(18px,3vh,30px);text-shadow:0 4px 24px rgba(0,0,0,0.5);max-width:700px;">Доставка того самого<br><em style="font-style:italic;color:#D4B896;">вкуса</em></h1>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:clamp(16px,3vh,26px);max-width:560px;">
+          <button onClick="{{ orderWA }}" style="background:#B89968;color:#fff;border:none;border-radius:14px;padding:clamp(14px,2.5vh,18px) 24px;font-weight:700;font-size:clamp(15px,2vw,17px);cursor:pointer;text-align:center;letter-spacing:.3px;">Заказать доставку</button>
+          <button onClick="{{ goMenu }}" style="background:rgba(255,255,255,0.1);color:#fff;border:1.5px solid rgba(255,255,255,0.32);border-radius:14px;padding:clamp(14px,2.5vh,18px) 24px;font-weight:700;font-size:clamp(15px,2vw,17px);cursor:pointer;text-align:center;backdrop-filter:blur(6px);">Смотреть меню</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;max-width:560px;">
+          <!-- Халяль -->
+          <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(28,16,9,0.5);backdrop-filter:blur(8px);border:1px solid rgba(201,133,106,0.35);border-radius:999px;padding:9px 16px;color:#F1E6D2;font-size:clamp(12px,1.7vw,14px);font-weight:600;width:fit-content;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A87A" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>Халяль
+          </div>
+          <!-- Адрес -->
+          <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(28,16,9,0.5);backdrop-filter:blur(8px);border:1px solid rgba(201,133,106,0.35);border-radius:999px;padding:9px 16px;color:#F1E6D2;font-size:clamp(12px,1.7vw,14px);font-weight:600;width:fit-content;max-width:100%;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A87A" stroke-width="2" style="flex:none;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            <span>ул. Кирова, 56, Гудермес</span>
+            <a href="https://maps.google.com/?q=ул.+Кирова+56+Гудермес" target="_blank" style="color:#C9A87A;font-weight:700;white-space:nowrap;margin-left:4px;">Как добраться →</a>
+          </div>
+          <!-- Часы + доставка в строку -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(28,16,9,0.5);backdrop-filter:blur(8px);border:1px solid rgba(201,133,106,0.35);border-radius:999px;padding:9px 16px;color:#F1E6D2;font-size:clamp(12px,1.7vw,14px);font-weight:600;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A87A" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>Ежедневно 10:00–23:00
+            </div>
+            <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(28,16,9,0.5);backdrop-filter:blur(8px);border:1px solid rgba(201,133,106,0.35);border-radius:999px;padding:9px 16px;color:#F1E6D2;font-size:clamp(12px,1.7vw,14px);font-weight:600;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A87A" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="2"></rect><path d="M16 8h4l3 5v3h-7V8z"></path><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>Доставка от 1000 ₽
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- INTRO — yasminafood style -->
+    <section style="background:#F0E8DC;padding:clamp(48px,8vh,80px) clamp(18px,5vw,48px);">
+
+      <!-- Top label + arrow -->
+      <div style="text-align:center;margin-bottom:clamp(28px,5vh,48px);">
+        <div style="color:#A07850;font-weight:700;font-size:11px;letter-spacing:4px;text-transform:uppercase;margin-bottom:10px;">М Е Н Ю</div>
+        <div style="display:inline-block;animation:s8bounce 2s ease-in-out infinite;">
+          <svg width="14" height="9" viewBox="0 0 24 14" fill="none" stroke="#A07850" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 2 12 12 22 2"></polyline></svg>
+        </div>
+      </div>
+
+      <!-- Decorative spacing -->
+      <div style="position:relative;text-align:center;">
+
+        <!-- Main card -->
+        <div style="background:#FAF5EE;border-radius:24px;padding:clamp(32px,6vw,56px) clamp(22px,6vw,60px);max-width:680px;margin:0 auto;box-shadow:0 8px 40px rgba(100,60,20,0.08);">
+          <!-- ornament -->
+          <div style="display:flex;align-items:center;gap:16px;justify-content:center;margin-bottom:28px;">
+            <div style="flex:1;height:1px;background:linear-gradient(to right,transparent,#C9A87A);"></div>
+            <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#C9A87A,#A07850);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(160,120,80,0.25);flex:none;">
+              <span style="font-family:Playfair Display,serif;font-weight:800;font-size:24px;color:#FAF5EE;line-height:1;">8</span>
+            </div>
+            <div style="flex:1;height:1px;background:linear-gradient(to left,transparent,#C9A87A);"></div>
+          </div>
+
+          <h2 style="font-family:Playfair Display;font-weight:800;font-size:clamp(28px,5vw,48px);line-height:1.12;color:#3A2410;margin:0 0 8px;text-align:center;">Тот самый вкус<br>который греет</h2>
+
+          <p style="color:#6B5040;font-size:clamp(15px,2vw,18px);line-height:1.7;text-align:center;max-width:480px;margin:0 auto 28px;font-weight:500;">Мы готовим каждый заказ как для близкого человека — свежие роллы, хрустящие бургеры и ароматная пицца к вашему порогу.</p>
+
+          <div style="height:1px;background:linear-gradient(to right,transparent,#C9A87A 30%,#C9A87A 70%,transparent);margin-bottom:24px;"></div>
+
+          <p style="font-family:Playfair Display;font-style:italic;font-size:clamp(15px,2vw,19px);color:#9A6030;text-align:center;margin:0 0 8px;">«Накормить — значит согреть»</p>
+          <div style="color:#B89968;font-weight:700;font-size:11px;letter-spacing:3px;text-align:center;text-transform:uppercase;">ВОСТОЧНАЯ МУДРОСТЬ</div>
+        </div>
+      </div>
+
+      <!-- Feature chips -->
+      <div style="display:flex;flex-direction:column;gap:12px;max-width:680px;margin:28px auto 0;">
+        <div style="background:#FAF5EE;border-radius:18px;padding:18px 22px;display:flex;align-items:center;gap:16px;box-shadow:0 4px 16px rgba(100,60,20,0.06);">
+          <div style="width:36px;height:36px;border-radius:50%;border:1.5px solid #C9A87A;display:flex;align-items:center;justify-content:center;flex:none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B89060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <div>
+            <div style="font-weight:800;font-size:16px;color:#3A2410;">Халяль</div>
+            <div style="font-size:13px;color:#8A7060;font-weight:500;margin-top:2px;">честные продукты</div>
+          </div>
+        </div>
+        <div style="background:#FAF5EE;border-radius:18px;padding:18px 22px;display:flex;align-items:center;gap:16px;box-shadow:0 4px 16px rgba(100,60,20,0.06);">
+          <div style="width:36px;height:36px;border-radius:50%;border:1.5px solid #C9A87A;display:flex;align-items:center;justify-content:center;flex:none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B89060" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          </div>
+          <div>
+            <div style="font-weight:800;font-size:16px;color:#3A2410;">Свежие продукты</div>
+            <div style="font-size:13px;color:#8A7060;font-weight:500;margin-top:2px;">каждый день, никакой заморозки</div>
+          </div>
+        </div>
+        <div style="background:#FAF5EE;border-radius:18px;padding:18px 22px;display:flex;align-items:center;gap:16px;box-shadow:0 4px 16px rgba(100,60,20,0.06);">
+          <div style="width:36px;height:36px;border-radius:50%;border:1.5px solid #C9A87A;display:flex;align-items:center;justify-content:center;flex:none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B89060" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="2"></rect><path d="M16 8h4l3 5v3h-7V8z"></path><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+          </div>
+          <div>
+            <div style="font-weight:800;font-size:16px;color:#3A2410;">Быстрая доставка</div>
+            <div style="font-size:13px;color:#8A7060;font-weight:500;margin-top:2px;">~60 минут, горячим к порогу</div>
+          </div>
+        </div>
+        <div style="background:#FAF5EE;border-radius:18px;padding:18px 22px;display:flex;align-items:center;gap:16px;box-shadow:0 4px 16px rgba(100,60,20,0.06);">
+          <div style="width:36px;height:36px;border-radius:50%;border:1.5px solid #C9A87A;display:flex;align-items:center;justify-content:center;flex:none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B89060" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          </div>
+          <div>
+            <div style="font-weight:800;font-size:16px;color:#3A2410;">Удобная оплата</div>
+            <div style="font-size:13px;color:#8A7060;font-weight:500;margin-top:2px;">наличные или перевод</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="background:#241510;margin-top:40px;position:relative;overflow:hidden;">
+      <div style="position:absolute;right:-60px;top:-40px;font-size:280px;opacity:.06;">﹕</div>
+      <div style="max-width:1240px;margin:0 auto;padding:70px 22px;display:flex;align-items:center;justify-content:space-between;gap:36px;flex-wrap:wrap;position:relative;">
+        <div style="flex:1;min-width:280px;">
+          <div style="color:#B89968;font-weight:700;font-size:13px;letter-spacing:3px;text-transform:uppercase;margin-bottom:14px;">Проголодались?</div>
+          <h2 style="font-family:Playfair Display;font-weight:800;font-size:clamp(28px,4.5vw,48px);color:#FBF6EC;line-height:1.08;margin:0 0 16px;">Закажите, и мы <span style="color:#D4B896;">готовим</span></h2>
+          <p style="color:rgba(246,238,225,0.72);font-size:17px;line-height:1.6;max-width:500px;margin:0;">Закажите сейчас — и пока вы ждёте, повар заворачивает свежий ролл, а курьер уже выезжает к вам.</p>
+        </div>
+        <button onClick="{{ goMenu }}" style="background:#C9856A;color:#fff;border:none;border-radius:999px;padding:18px 38px;font-weight:800;font-size:18px;cursor:pointer;box-shadow:0 12px 30px rgba(201,133,106,0.4);flex:none;">Заказать сейчас</button>
+      </div>
+    </section>
+
+    <section style="max-width:1240px;margin:0 auto;padding:70px 22px 30px;">
+      <div style="text-align:center;margin-bottom:38px;">
+        <div style="color:#B89968;font-weight:700;font-size:13px;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">Хиты заказов</div>
+        <h2 style="font-family:Playfair Display;font-weight:700;font-size:clamp(28px,4.5vw,44px);margin:0;">Что заказывают чаще всего</h2>
+      </div>
+      <div style="{{ popularGridStyle }}">
+        <sc-for list="{{ popular }}" as="item" hint-placeholder-count="4">
+          <div style="{{ popularCardStyle }}">
+            <div style="position:relative;aspect-ratio:1/1;border-radius:14px;overflow:hidden;background:#EFE5D2;margin-bottom:13px;">
+              <sc-if value="{{ item.img }}" hint-placeholder-val="{{ false }}"><img src="{{ item.img }}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></sc-if>
+              <sc-if value="{{ item.badge }}"><div style="position:absolute;top:10px;left:10px;background:#C9856A;color:#fff;font-size:11px;font-weight:800;padding:4px 9px;border-radius:8px;">{{ item.badge }}</div></sc-if>
+            </div>
+            <div style="font-weight:800;font-size:16px;margin-bottom:3px;">{{ item.name }}</div>
+            <div style="font-size:13px;color:#8A7A66;font-weight:600;line-height:1.4;margin-bottom:13px;flex:1;">{{ item.desc }}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div style="font-family:Playfair Display;font-weight:800;font-size:20px;color:#2A1C12;white-space:nowrap;">{{ item.priceLabel }}</div>
+              <sc-if value="{{ item.inCart }}">
+                <div style="display:flex;align-items:center;gap:8px;background:#F7E4DE;border-radius:12px;padding:4px;">
+                  <button onClick="{{ item.decThis }}" style="width:30px;height:30px;border:none;border-radius:9px;background:#fff;color:#C9856A;font-weight:800;font-size:18px;line-height:1;cursor:pointer;">−</button>
+                  <span style="min-width:18px;text-align:center;font-family:Playfair Display;font-weight:800;font-size:16px;color:#2A1C12;">{{ item.qty }}</span>
+                  <button onClick="{{ item.incThis }}" style="width:30px;height:30px;border:none;border-radius:9px;background:#C9856A;color:#fff;font-weight:800;font-size:18px;line-height:1;cursor:pointer;">+</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ item.notInCart }}">
+                <button onClick="{{ item.add }}" style="background:#F7E4DE;color:#C9856A;border:none;border-radius:12px;padding:10px 16px;font-weight:800;font-size:14px;cursor:pointer;">+ В корзину</button>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="text-align:center;margin-top:34px;">
+        <button onClick="{{ goMenu }}" style="background:transparent;border:1.5px solid #B89968;color:#8A5A1E;border-radius:999px;padding:15px 34px;font-weight:800;font-size:16px;cursor:pointer;">Открыть всё меню →</button>
+      </div>
+    </section>
+
+    <section id="about" style="max-width:1240px;margin:0 auto;padding:60px 22px;">
+      <div style="text-align:center;margin-bottom:38px;">
+        <div style="color:#B89968;font-weight:700;font-size:13px;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">Преимущества</div>
+        <h2 style="font-family:Playfair Display;font-weight:700;font-size:clamp(28px,4.5vw,44px);margin:0;">Готовим с любовью</h2>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;">
+        <sc-for list="{{ whyUs }}" as="w" hint-placeholder-count="4">
+          <div style="background:#FFFBF4;border:1px solid #EBDFC9;border-radius:20px;padding:30px 24px;text-align:center;">
+            <div style="width:48px;height:48px;margin:0 auto 16px;border-radius:12px;background:rgba(201,133,106,0.12);display:flex;align-items:center;justify-content:center;color:#C9856A;font-size:22px;">{{ w.icon }}</div>
+            <div style="font-family:Playfair Display;font-weight:700;font-size:20px;margin-bottom:9px;">{{ w.title }}</div>
+            <div style="font-size:14px;color:#8A7A66;line-height:1.55;font-weight:500;">{{ w.text }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="max-width:1100px;margin:0 auto;padding:30px 22px 80px;">
+      <h2 style="font-family:Playfair Display;font-weight:700;font-size:clamp(26px,4vw,40px);margin:0 0 40px;text-align:center;">Заказать проще простого</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px;">
+        <sc-for list="{{ steps }}" as="st" hint-placeholder-count="3">
+          <div style="text-align:center;padding:10px;">
+            <div style="width:66px;height:66px;border-radius:50%;background:#241510;color:#D4B896;font-family:Playfair Display;font-weight:800;font-size:26px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">{{ st.n }}</div>
+            <div style="font-weight:800;font-size:18px;margin-bottom:7px;">{{ st.title }}</div>
+            <div style="font-size:14px;color:#8A7A66;line-height:1.55;font-weight:500;max-width:260px;margin:0 auto;">{{ st.text }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+  </main>
+  </sc-if>
+
+  <!-- ===== MENU PAGE ===== -->
+  <sc-if value="{{ isMenu }}" hint-placeholder-val="{{ false }}">
+  <main data-screen-label="Меню" style="margin-top:70px;">
+    <section style="max-width:1240px;margin:0 auto;padding:46px 22px 14px;text-align:center;">
+      <div style="color:#B89968;font-weight:700;font-size:13px;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">Наше меню</div>
+      <h1 style="font-family:Playfair Display;font-weight:800;font-size:clamp(32px,5vw,54px);margin:0 0 8px;">Выбирайте и заказывайте</h1>
+      <p style="color:#8A7A66;font-size:16px;font-weight:600;margin:0;">Добавьте блюда в корзину и оформите доставку в WhatsApp</p>
+    </section>
+    <div style="position:sticky;top:70px;z-index:40;background:rgba(246,238,225,0.95);backdrop-filter:blur(10px);border-bottom:1px solid #E6D8C0;">
+      <div style="max-width:1240px;margin:0 auto;padding:13px 22px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+        <sc-for list="{{ cats }}" as="cat" hint-placeholder-count="4">
+          <button onClick="{{ cat.select }}" style="border:1.5px solid {{ cat.border }};cursor:pointer;border-radius:999px;padding:11px 20px;font-weight:800;font-size:15px;background:{{ cat.bg }};color:{{ cat.color }};display:flex;align-items:center;gap:8px;">{{ cat.iconEl }}{{ cat.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <section style="max-width:1240px;margin:0 auto;padding:26px 22px 130px;">
+      <div class="s8menu-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;">
+        <sc-for list="{{ visibleItems }}" as="item" hint-placeholder-count="8">
+          <div class="s8card" style="background:#FFFBF4;border:1px solid #EBDFC9;border-radius:20px;padding:14px;display:flex;flex-direction:column;box-shadow:0 8px 22px rgba(40,24,14,0.06);">
+            <div style="position:relative;aspect-ratio:4/3;border-radius:14px;overflow:hidden;background:#EFE5D2;margin-bottom:13px;">
+              <sc-if value="{{ item.img }}" hint-placeholder-val="{{ false }}"><img src="{{ item.img }}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></sc-if>
+              <sc-if value="{{ item.badge }}"><div style="position:absolute;top:10px;left:10px;background:#C9856A;color:#fff;font-size:11px;font-weight:800;padding:4px 9px;border-radius:8px;">{{ item.badge }}</div></sc-if>
+            </div>
+            <div class="s8card-name" style="font-weight:800;font-size:16px;margin-bottom:3px;">{{ item.name }}</div>
+            <div class="s8card-desc" style="font-size:13px;color:#8A7A66;font-weight:600;line-height:1.4;margin-bottom:12px;flex:1;">{{ item.desc }}</div>
+            <sc-if value="{{ item.hasSizes }}">
+              <div style="display:flex;gap:7px;margin-bottom:12px;">
+                <sc-for list="{{ item.sizeOptions }}" as="opt" hint-placeholder-count="2">
+                  <button onClick="{{ opt.select }}" style="flex:1;border:1.5px solid {{ opt.border }};background:{{ opt.bg }};color:{{ opt.color }};border-radius:10px;padding:7px 4px;font-weight:700;font-size:12px;cursor:pointer;line-height:1.2;">{{ opt.label }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div class="s8card-price" style="font-family:Playfair Display;font-weight:800;font-size:21px;color:#2A1C12;white-space:nowrap;">{{ item.priceLabel }}</div>
+              <sc-if value="{{ item.inCart }}">
+                <div style="display:flex;align-items:center;gap:10px;background:#F7E4DE;border-radius:12px;padding:4px;">
+                  <button onClick="{{ item.decThis }}" style="width:34px;height:34px;border:none;border-radius:9px;background:#fff;color:#C9856A;font-weight:800;font-size:20px;line-height:1;cursor:pointer;">−</button>
+                  <span style="min-width:20px;text-align:center;font-family:Playfair Display;font-weight:800;font-size:18px;color:#2A1C12;">{{ item.qty }}</span>
+                  <button onClick="{{ item.incThis }}" style="width:34px;height:34px;border:none;border-radius:9px;background:#C9856A;color:#fff;font-weight:800;font-size:20px;line-height:1;cursor:pointer;">+</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ item.notInCart }}">
+                <button onClick="{{ item.add }}" style="background:#C9856A;color:#fff;border:none;border-radius:12px;padding:11px 18px;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 5px 14px rgba(201,133,106,0.3);">+ В корзину</button>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </main>
+  </sc-if>
+
+  <!-- ===== FOOTER ===== -->
+  <footer id="contacts" style="background:#1F120A;color:#F6EEE1;">
+    <div style="max-width:1240px;margin:0 auto;padding:60px 22px 36px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:34px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:16px;">
+          <div style="width:44px;height:44px;border-radius:13px;background:#C9856A;display:flex;align-items:center;justify-content:center;font-family:Playfair Display;font-weight:800;color:#fff;font-size:24px;">8</div>
+          <div style="font-family:Playfair Display;font-weight:800;font-size:22px;">SUSHI<span style="color:#D8B968;"> 8</span></div>
+        </div>
+        <p style="color:rgba(246,238,225,0.6);font-size:14px;line-height:1.65;max-width:260px;font-weight:500;">Доставка суши, пиццы и фастфуда в Гудермесе. Свежие продукты каждый день.</p>
+      </div>
+      <div>
+        <div style="font-weight:800;font-size:14px;margin-bottom:15px;color:#D4B896;letter-spacing:1px;">КОНТАКТЫ</div>
+        <a href="tel:+79280211655" style="display:block;font-size:21px;font-weight:800;margin-bottom:6px;">+7 928 021-16-55</a>
+        <div style="color:rgba(246,238,225,0.6);font-size:14px;margin-bottom:14px;font-weight:500;display:flex;align-items:center;gap:7px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C9A87A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>г. Гудермес, ул. Кирова, 56</div>
+        <a href="https://wa.me/79280211655" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#25D366;color:#fff;border-radius:999px;padding:10px 20px;font-weight:700;font-size:14px;">WhatsApp</a>
+      </div>
+      <div>
+        <div style="font-weight:800;font-size:14px;margin-bottom:15px;color:#D4B896;letter-spacing:1px;">РЕЖИМ РАБОТЫ</div>
+        <div style="color:rgba(246,238,225,0.72);font-size:15px;line-height:1.9;font-weight:600;">Ежедневно<br>10:00 — 23:00</div>
+      </div>
+      <div>
+        <div style="font-weight:800;font-size:14px;margin-bottom:15px;color:#D4B896;letter-spacing:1px;">ДОСТАВКА</div>
+        <div style="color:rgba(246,238,225,0.72);font-size:14px;line-height:1.8;font-weight:500;">Бесплатно от 1000 ₽<br>Среднее время — 60 мин<br>Оплата: наличные / перевод</div>
+      </div>
+    </div>
+    <div style="border-top:1px solid rgba(255,255,255,0.1);padding:18px 22px;text-align:center;color:rgba(246,238,225,0.4);font-size:13px;font-weight:500;">© 2026 SUSHI 8 · г. Гудермес · Все права защищены</div>
+  </footer>
+
+  <sc-if value="{{ showCartBtn }}">
+    <button onClick="{{ openCart }}" style="position:fixed;right:20px;bottom:20px;z-index:70;background:#C9856A;color:#fff;border:none;border-radius:999px;padding:15px 22px;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 14px 34px rgba(201,133,106,0.5);display:flex;align-items:center;gap:11px;animation:s8pop .3s ease;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+      <span style="background:#fff;color:#C9856A;border-radius:999px;padding:2px 10px;font-size:14px;">{{ cartCount }}</span>
+      <span style="font-family:Playfair Display;">{{ cartTotal }} ₽</span>
+    </button>
+  </sc-if>
+
+  <sc-if value="{{ cartOpen }}">
+    <div onClick="{{ closeCart }}" style="position:fixed;inset:0;z-index:80;background:rgba(28,16,9,0.55);backdrop-filter:blur(3px);animation:s8fade .25s ease;"></div>
+    <div style="position:fixed;top:0;right:0;bottom:0;z-index:90;width:min(440px,100vw);background:#F6EEE1;box-shadow:-20px 0 50px rgba(0,0,0,.25);display:flex;flex-direction:column;animation:s8slide .3s ease;">
+      <div style="padding:22px 24px;border-bottom:1px solid #E6D8C0;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-family:Playfair Display;font-weight:700;font-size:24px;">Корзина</div>
+        <button onClick="{{ closeCart }}" style="background:#EADBC2;border:none;width:38px;height:38px;border-radius:50%;font-size:20px;cursor:pointer;color:#6E5C46;">✕</button>
+      </div>
+
+      <sc-if value="{{ cartEmpty }}">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;">
+          <svg width="68" height="68" viewBox="0 0 24 24" fill="none" stroke="#CDB79A" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:18px;"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+          <div style="font-weight:800;font-size:18px;margin-bottom:8px;">Корзина пуста</div>
+          <div style="color:#8A7A66;font-size:15px;margin-bottom:24px;font-weight:600;">Самое время выбрать что-нибудь вкусное</div>
+          <button onClick="{{ goMenuFromCart }}" style="background:#C9856A;color:#fff;border:none;border-radius:999px;padding:14px 28px;font-weight:800;font-size:16px;cursor:pointer;">Перейти в меню</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ cartHasItems }}">
+        <div style="flex:1;overflow-y:auto;padding:16px 24px;">
+          <sc-for list="{{ cartItems }}" as="ci" hint-placeholder-count="0">
+            <div style="display:flex;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid #E6D8C0;">
+              <div style="width:62px;height:62px;border-radius:12px;overflow:hidden;flex:none;position:relative;background:#EFE5D2;">{{ ci.imgEl }}</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:800;font-size:15px;line-height:1.25;">{{ ci.name }}</div>
+                <sc-if value="{{ ci.sizeLabel }}"><div style="font-size:12px;color:#8A7A66;font-weight:600;">{{ ci.sizeLabel }}</div></sc-if>
+                <div style="font-weight:800;color:#C9856A;font-size:15px;margin-top:3px;">{{ ci.lineTotal }} ₽</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;flex:none;">
+                <button onClick="{{ ci.dec }}" style="width:30px;height:30px;border-radius:8px;border:1px solid #D8C7AC;background:#fff;font-size:18px;cursor:pointer;color:#6E5C46;">−</button>
+                <span style="font-weight:800;min-width:18px;text-align:center;">{{ ci.qty }}</span>
+                <button onClick="{{ ci.inc }}" style="width:30px;height:30px;border-radius:8px;border:1px solid #D8C7AC;background:#fff;font-size:18px;cursor:pointer;color:#6E5C46;">+</button>
+              </div>
+            </div>
+          </sc-for>
+          <div style="margin-top:16px;padding:14px 16px;border-radius:14px;background:{{ freeBg }};font-size:13px;font-weight:700;color:{{ freeColor }};">{{ freeText }}</div>
+        </div>
+        <div style="padding:20px 24px;border-top:1px solid #E6D8C0;background:#FFFBF4;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;">
+            <span style="font-weight:700;font-size:16px;color:#6E5C46;">Итого</span>
+            <span style="font-family:Playfair Display;font-weight:800;font-size:27px;">{{ cartTotal }} ₽</span>
+          </div>
+          <button onClick="{{ openCheckout }}" style="width:100%;background:#C9856A;color:#fff;border:none;border-radius:14px;padding:16px;font-weight:800;font-size:17px;cursor:pointer;box-shadow:0 10px 24px rgba(201,133,106,0.3);">Оформить заказ</button>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ checkoutOpen }}">
+    <div onClick="{{ closeCheckout }}" style="position:fixed;inset:0;z-index:100;background:rgba(28,16,9,0.6);backdrop-filter:blur(4px);animation:s8fade .25s ease;display:flex;align-items:center;justify-content:center;padding:20px;">
+      <div onClick="{{ stop }}" style="background:#F6EEE1;border-radius:24px;width:min(520px,100%);max-height:92vh;overflow-y:auto;box-shadow:0 40px 80px rgba(0,0,0,.35);animation:s8pop .3s ease;">
+
+        <sc-if value="{{ notSent }}">
+        <div style="padding:28px 28px 8px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-family:Playfair Display;font-weight:700;font-size:26px;">Оформление</div>
+          <button onClick="{{ closeCheckout }}" style="background:#EADBC2;border:none;width:38px;height:38px;border-radius:50%;font-size:20px;cursor:pointer;color:#6E5C46;">✕</button>
+        </div>
+        <div style="padding:8px 28px 28px;">
+          <div style="background:#FFFBF4;border:1px solid #EBDFC9;border-radius:16px;padding:16px 18px;margin-bottom:22px;">
+            <sc-for list="{{ cartItems }}" as="ci" hint-placeholder-count="0">
+              <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600;padding:4px 0;color:#6E5C46;">
+                <span>{{ ci.name }} <span style="color:#B3A78F;">×{{ ci.qty }}</span></span>
+                <span style="font-weight:800;color:#2A1C12;">{{ ci.lineTotal }} ₽</span>
+              </div>
+            </sc-for>
+            <div style="display:flex;justify-content:space-between;border-top:1px dashed #D8C7AC;margin-top:8px;padding-top:10px;font-weight:800;font-size:17px;">
+              <span>Итого</span><span style="font-family:Playfair Display;color:#C9856A;">{{ cartTotal }} ₽</span>
+            </div>
+          </div>
+
+          <label style="display:block;font-weight:700;font-size:14px;margin-bottom:6px;">Имя <span style="color:#C9856A;">*</span></label>
+          <input value="{{ name }}" onInput="{{ setName }}" placeholder="Как к вам обращаться" style="width:100%;padding:14px 16px;border:1.5px solid {{ nameBorder }};border-radius:12px;font-size:15px;font-weight:600;background:#fff;margin-bottom:16px;">
+
+          <label style="display:block;font-weight:700;font-size:14px;margin-bottom:6px;">Адрес доставки <span style="color:#C9856A;">*</span></label>
+          <input value="{{ address }}" onInput="{{ setAddress }}" placeholder="Улица, дом, квартира" style="width:100%;padding:14px 16px;border:1.5px solid {{ addrBorder }};border-radius:12px;font-size:15px;font-weight:600;background:#fff;margin-bottom:16px;">
+
+          <label style="display:block;font-weight:700;font-size:14px;margin-bottom:6px;">Телефон</label>
+          <input value="{{ phone }}" onInput="{{ setPhone }}" placeholder="+7 ___ ___-__-__" style="width:100%;padding:14px 16px;border:1.5px solid #D8C7AC;border-radius:12px;font-size:15px;font-weight:600;background:#fff;margin-bottom:16px;">
+
+          <label style="display:block;font-weight:700;font-size:14px;margin-bottom:8px;">Способ оплаты</label>
+          <div style="display:flex;gap:10px;margin-bottom:16px;">
+            <button onClick="{{ payCash }}" style="flex:1;border:1.5px solid {{ cashBorder }};background:{{ cashBg }};color:{{ cashColor }};border-radius:12px;padding:14px;font-weight:800;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2.5"></circle><path d="M6 12h.01M18 12h.01"></path></svg>Наличные</button>
+            <button onClick="{{ payTransfer }}" style="flex:1;border:1.5px solid {{ transferBorder }};background:{{ transferBg }};color:{{ transferColor }};border-radius:12px;padding:14px;font-weight:800;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M2 10h20"></path></svg>Перевод</button>
+          </div>
+
+          <label style="display:block;font-weight:700;font-size:14px;margin-bottom:6px;">Комментарий</label>
+          <textarea value="{{ comment }}" onInput="{{ setComment }}" placeholder="Без лука, позвонить за 10 минут..." style="width:100%;padding:14px 16px;border:1.5px solid #D8C7AC;border-radius:12px;font-size:15px;font-weight:600;background:#fff;margin-bottom:20px;min-height:70px;resize:vertical;"></textarea>
+
+          <sc-if value="{{ error }}"><div style="color:#C9856A;font-weight:700;font-size:14px;margin-bottom:12px;">Заполните имя и адрес доставки</div></sc-if>
+
+          <button onClick="{{ submit }}" style="width:100%;background:#25D366;color:#fff;border:none;border-radius:14px;padding:17px;font-weight:800;font-size:17px;cursor:pointer;box-shadow:0 10px 24px rgba(37,211,102,0.32);display:flex;align-items:center;justify-content:center;gap:10px;">Отправить заказ в WhatsApp →</button>
+          <div style="text-align:center;color:#8A7A66;font-size:13px;font-weight:600;margin-top:12px;">Заказ придёт нам в WhatsApp, мы перезвоним для подтверждения</div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ sent }}">
+        <div style="padding:48px 32px;text-align:center;">
+          <div style="width:80px;height:80px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;font-size:42px;margin:0 auto 22px;animation:s8pop .4s ease;color:#fff;">✓</div>
+          <div style="font-family:Playfair Display;font-weight:700;font-size:27px;margin-bottom:10px;">Заказ отправлен!</div>
+          <p style="color:#6E5C46;font-size:16px;line-height:1.55;font-weight:600;max-width:360px;margin:0 auto 26px;">Мы открыли WhatsApp с вашим заказом. Отправьте сообщение — и мы перезвоним для подтверждения.</p>
+          <button onClick="{{ finishOrder }}" style="background:#C9856A;color:#fff;border:none;border-radius:999px;padding:14px 30px;font-weight:800;font-size:16px;cursor:pointer;">Готово</button>
+        </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { page:'home', activeCat:'sushi', cart:{}, sizes:{}, cartOpen:false, checkoutOpen:false, mobileMenuOpen:false, isMobile:false, name:'', address:'', phone:'', comment:'', payment:'cash', error:false, sent:false };
+
+  componentDidMount(){
+    try {
+      const c = JSON.parse(localStorage.getItem('sushi8_cart')||'null');
+      if(c && typeof c==='object'){
+        const fallback = this.IMG('1579871494447-9811cf80d66c');
+        const fixed = {};
+        Object.keys(c).forEach(k=>{
+          const item = c[k];
+          const img = (item.img && typeof item.img==='string' && item.img.startsWith('https://images.unsplash.com')) ? item.img : fallback;
+          fixed[k] = {...item, img};
+        });
+        this.setState({cart:fixed});
+      }
+    } catch(e){}
+    this._mq = window.matchMedia('(max-width:860px)');
+    this._onMq = ()=>this.setState({isMobile:this._mq.matches});
+    this._onMq();
+    if(this._mq.addEventListener) this._mq.addEventListener('change',this._onMq); else this._mq.addListener(this._onMq);
+    setTimeout(()=>{ try{ const v=document.querySelector('video'); if(v){ v.muted=true; const p=v.play(); if(p&&p.catch) p.catch(()=>{}); } }catch(e){} }, 120);
+  }
+  componentWillUnmount(){ if(this._mq){ if(this._mq.removeEventListener) this._mq.removeEventListener('change',this._onMq); else this._mq.removeListener(this._onMq);} }
+  saveCart(cart){ try{ localStorage.setItem('sushi8_cart', JSON.stringify(cart)); }catch(e){} }
+  IMG(id){ return 'https://images.unsplash.com/photo-'+id+'?auto=format&fit=crop&w=600&q=70'; }
+
+  get MENU(){
+    const I=this.IMG.bind(this);
+    const su=['1579871494447-9811cf80d66c','1617196034796-73dfa7b1fd56','1611143669185-af224c5e3252','1607301406259-dfb186e15de8'];
+    const pz=['1513104890138-7c749659a591','1565299624946-b28f40a0ae38','1574071318508-1cdbab80d002','1604382354936-07c5d9983bd3'];
+    const bg=['1568901346375-23c9450c58cd','1550547660-d9450f859349','1571091718767-18b5b1457add'];
+    return [
+      {id:'s1',cat:'sushi',name:'Филадельфия',desc:'Лосось, сливочный сыр, огурец',price:280,badge:'ХИТ',img:I(su[0])},
+      {id:'s2',cat:'sushi',name:'Калифорния',desc:'Краб, авокадо, икра тобико',price:280,img:I(su[1])},
+      {id:'s3',cat:'sushi',name:'Бешеный лосось',desc:'Запечённый лосось, спайси-соус',price:280,badge:'ХИТ',img:I(su[2])},
+      {id:'s4',cat:'sushi',name:'Фила Унаги',desc:'Угорь, сыр, соус унаги, кунжут',price:280,img:I(su[3])},
+      {id:'s5',cat:'sushi',name:'Горячий шик',desc:'Жареный ролл с лососем в темпуре',price:280,img:I(su[0])},
+      {id:'s6',cat:'sushi',name:'Темпура фурай',desc:'Хрустящий ролл, тёплая подача',price:280,img:I(su[1])},
+      {id:'s7',cat:'sushi',name:'Креветки темпура',desc:'Ролл с тигровой креветкой',price:300,img:I(su[2])},
+      {id:'s8',cat:'sushi',name:'Сэндвич ролл',desc:'Двойная начинка, кунжут',price:350,img:I(su[3])},
+      {id:'s9',cat:'sushi',name:'Запечённый лосось',desc:'Под нежной сырной шапкой',price:280,img:I(su[0])},
+      {id:'s10',cat:'sushi',name:'Цунами',desc:'Острый ролл с тунцом и спайси',price:280,img:I(su[1])},
+      {id:'f1',cat:'fastfood',name:'Чизбургер',desc:'Котлета, чеддер, овощи, соус',img:I(bg[0]),sizes:[{label:'Обычный',price:120},{label:'Большой',price:130}]},
+      {id:'f2',cat:'fastfood',name:'Гамбургер',desc:'Сочная котлета, свежие овощи',img:I(bg[1]),sizes:[{label:'Обычный',price:110},{label:'Большой',price:120}]},
+      {id:'f3',cat:'fastfood',name:'Чикенбургер',desc:'Куриная котлета в панировке',price:180,img:I(bg[2])},
+      {id:'f4',cat:'fastfood',name:'Шеф бургер',desc:'Фирменный, на чёрной булочке',price:200,badge:'NEW',img:I(bg[0])},
+      {id:'f5',cat:'fastfood',name:'Шаурма',desc:'Курица, овощи, фирменный соус',price:190,img:I('1530469912745-a215c6b256ea')},
+      {id:'f6',cat:'fastfood',name:'Шаурма в кляре',desc:'Хрустящая, с двойным соусом',price:220,img:I('1530469912745-a215c6b256ea')},
+      {id:'f7',cat:'fastfood',name:'Картошка фри',desc:'Хрустящая, с морской солью',price:120,img:I('1573080496219-bb080dd4f877')},
+      {id:'f8',cat:'fastfood',name:'Чиз-фрайз',desc:'Фри с сырным соусом',price:200,badge:'NEW',img:I('1573080496219-bb080dd4f877')},
+      {id:'f9',cat:'fastfood',name:'Хот-дог',desc:'Сосиска, соусы, свежая булочка',price:100,img:I('1619740455993-9e612b1af08a')},
+      {id:'f10',cat:'fastfood',name:'Люкс хот-дог',desc:'Двойная сосиска, начинка',price:130,img:I('1619740455993-9e612b1af08a')},
+      {id:'f11',cat:'fastfood',name:'Нагетсы 6 шт',desc:'Куриные, с соусом на выбор',price:120,img:I('1562967914-608f82629710')},
+      {id:'f12',cat:'fastfood',name:'Крылышки острые',desc:'В остром маринаде, 6 шт',price:250,img:I('1608039755401-742074f0548d')},
+      {id:'f13',cat:'fastfood',name:'Крылышки гриль',desc:'На гриле, медово-чесночные',price:230,img:I('1608039755401-742074f0548d')},
+      {id:'f14',cat:'fastfood',name:'Стрипсы',desc:'Куриные полоски в панировке',price:250,img:I('1562967914-608f82629710')},
+      {id:'f15',cat:'fastfood',name:'Куриный попкорн',desc:'Кусочки курицы в панировке',price:250,img:I('1562967914-608f82629710')},
+      {id:'p1',cat:'pizza',name:'Пепперони',desc:'Острая пепперони, моцарелла',img:I(pz[0]),badge:'ХИТ',sizes:[{label:'30 см',price:350},{label:'40 см',price:450}]},
+      {id:'p2',cat:'pizza',name:'Маргарита',desc:'Томаты, моцарелла, базилик',img:I(pz[1]),sizes:[{label:'30 см',price:350},{label:'40 см',price:450}]},
+      {id:'p3',cat:'pizza',name:'Ассорти',desc:'Колбаски, овощи, грибы',img:I(pz[2]),sizes:[{label:'30 см',price:350},{label:'40 см',price:450}]},
+      {id:'p4',cat:'pizza',name:'Сырная',desc:'Четыре вида сыра',img:I(pz[3]),sizes:[{label:'30 см',price:350},{label:'40 см',price:450}]},
+      {id:'p5',cat:'pizza',name:'Мясная',desc:'Ассорти из мяса, соус барбекю',img:I(pz[0]),sizes:[{label:'30 см',price:350},{label:'40 см',price:450}]},
+      {id:'p6',cat:'pizza',name:'Куриная',desc:'Курица, грибы, моцарелла',img:I(pz[1]),sizes:[{label:'30 см',price:350},{label:'40 см',price:450}]},
+      {id:'p7',cat:'pizza',name:'Грибная',desc:'Шампиньоны, сыр, зелень',img:I(pz[2]),sizes:[{label:'30 см',price:350},{label:'40 см',price:450}]},
+      {id:'p8',cat:'pizza',name:'Колбасная',desc:'Колбаски, томатный соус',img:I(pz[3]),sizes:[{label:'30 см',price:350},{label:'40 см',price:450}]},
+      {id:'p9',cat:'pizza',name:'Цезарь',desc:'Курица, салат, пармезан',img:I(pz[0]),sizes:[{label:'30 см',price:350},{label:'40 см',price:450}]},
+      {id:'d1',cat:'drinks',name:'Coca-Cola 0.5',desc:'Классическая, охлаждённая',price:90,img:I('1554866585-cd94860890b7')},
+      {id:'d2',cat:'drinks',name:'Fanta 0.5',desc:'Апельсиновая газировка',price:90,img:I('1624552184280-9e9631bbeee9')},
+      {id:'d3',cat:'drinks',name:'Sprite 0.5',desc:'Лимон-лайм, освежающий',price:90,img:I('1625772299848-391b6a87d7b3')},
+      {id:'d4',cat:'drinks',name:'Лимонад домашний',desc:'Мята-лайм, 0.4 л',price:150,img:I('1513558161293-cdaf765ed2fd')},
+      {id:'d5',cat:'drinks',name:'Морс ягодный',desc:'Из свежих ягод, 0.4 л',price:120,img:I('1622597467836-f3285f2131b8')},
+      {id:'d6',cat:'drinks',name:'Чай в чайнике',desc:'Чёрный / зелёный, 0.6 л',price:180,img:I('1556679343-c7306c1976bc')},
+      {id:'d7',cat:'drinks',name:'Кофе американо',desc:'Свежесваренный, 0.3 л',price:120,img:I('1509042239860-f550ce710b93')},
+      {id:'d8',cat:'drinks',name:'Вода 0.5',desc:'Питьевая, без газа',price:60,img:I('1559839734-2b71ea197ec2')}
+    ];
+  }
+
+  go(page){ this.setState({page,cartOpen:false,mobileMenuOpen:false}); try{window.scrollTo(0,0);}catch(e){} }
+  decorateItem(it){
+    const i=this.state.sizes[it.id]||0;
+    const hasSizes=!!it.sizes;
+    const priceLabel = hasSizes ? (it.sizes[0].price+' / '+it.sizes[1].price+' ₽') : (it.price+' ₽');
+    const sizeOptions = hasSizes ? it.sizes.map((s,idx)=>({
+      label:s.label+' · '+s.price+'₽',
+      bg: idx===i?'#C9856A':'#fff', color: idx===i?'#fff':'#6E5C46', border: idx===i?'#C9856A':'#E2D3BC',
+      select:()=>this.setState(st=>({sizes:{...st.sizes,[it.id]:idx}}))
+    })) : [];
+    const label = hasSizes ? it.sizes[i].label : '';
+    const key = it.id + (label?('|'+label):'');
+    const qty = (this.state.cart[key]||{}).qty || 0;
+    return {...it, hasSizes, priceLabel, sizeOptions, qty, inCart:qty>0, notInCart:qty===0,
+      add:()=>this.add(it), incThis:()=>this.add(it), decThis:()=>this.dec(key)};
+  }
+  add(it){
+    const i=this.state.sizes[it.id]||0;
+    const size = it.sizes ? it.sizes[i] : null;
+    const price = size ? size.price : it.price;
+    const label = size ? size.label : '';
+    const key = it.id + (label?('|'+label):'');
+    this.setState(s=>{ const cart={...s.cart}; const ex=cart[key];
+      cart[key]= ex?{...ex,qty:ex.qty+1}:{name:it.name,price,qty:1,sizeLabel:label,img:it.img};
+      this.saveCart(cart); return {cart}; });
+  }
+  inc(k){ this.setState(s=>{const c={...s.cart}; if(c[k])c[k]={...c[k],qty:c[k].qty+1}; this.saveCart(c); return{cart:c};}); }
+  dec(k){ this.setState(s=>{const c={...s.cart}; if(c[k]){const q=c[k].qty-1; if(q<=0)delete c[k]; else c[k]={...c[k],qty:q};} this.saveCart(c); return{cart:c};}); }
+
+  submit(){
+    const {name,address,phone,payment,comment,cart}=this.state;
+    if(!name.trim()||!address.trim()){ this.setState({error:true}); return; }
+    const items=Object.values(cart); if(!items.length) return;
+    const total=items.reduce((a,i)=>a+i.price*i.qty,0);
+    const lines=items.map(i=>'• '+i.name+(i.sizeLabel?(' ('+i.sizeLabel+')'):'')+' ×'+i.qty+' — '+(i.price*i.qty)+'₽');
+    const msg='🍱 Новый заказ SUSHI 8\n\n'+lines.join('\n')+'\n\nИтого: '+total+'₽\n\nИмя: '+name+'\nАдрес: '+address+(phone?('\nТелефон: '+phone):'')+'\nОплата: '+(payment==='cash'?'Наличные':'Перевод')+(comment?('\nКомментарий: '+comment):'');
+    try{ window.open('https://wa.me/79280211655?text='+encodeURIComponent(msg),'_blank'); }catch(e){}
+    this.setState({sent:true,error:false});
+  }
+
+  getHeaderColors(){
+    const isDark = typeof window!=='undefined' && document.body.style.background !== '#F6EEE1';
+    return isDark ? {text:'#F6EEE1', accent:'#D8B968', sub:'#B89968'} : {text:'#2A1C12', accent:'#9A6030', sub:'#8A7060'};
+  }
+
+  renderVals(){
+    const s=this.state;
+    const hc = this.getHeaderColors();
+    const menu=this.MENU;
+    const cart=s.cart;
+    const cartItems=Object.keys(cart).map(k=>{const c=cart[k];const imgUrl=(c.img&&typeof c.img==='string'&&c.img.includes('unsplash'))?c.img:this.IMG('1579871494447-9811cf80d66c');const imgEl=React.createElement('img',{src:imgUrl,style:{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}});return {key:k,name:c.name,sizeLabel:c.sizeLabel,qty:c.qty,img:imgUrl,imgEl,lineTotal:c.price*c.qty,inc:()=>this.inc(k),dec:()=>this.dec(k)};});
+    const cartTotal=cartItems.reduce((a,i)=>a+i.lineTotal,0);
+    const cartCount=cartItems.reduce((a,i)=>a+i.qty,0);
+    const isHome=s.page==='home', isMenu=s.page==='menu';
+    const freeLeft=Math.max(0,1000-cartTotal);
+
+    const sv=(...ch)=>React.createElement('svg',{width:17,height:17,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor','stroke-width':1.8,'stroke-linecap':'round','stroke-linejoin':'round',style:{flex:'none'}},...ch);
+    const P=d=>React.createElement('path',{d});
+    const catMeta=[
+      {key:'sushi',label:'Суши',desc:'Свежие роллы каждый день',img:this.IMG('1579871494447-9811cf80d66c'),
+        iconEl:sv(P('M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.47-3.44 6-7 6s-7.56-2.53-8.5-6Z'),P('M18 12v.5'),P('M7 10.67C7 8 5.58 5.97 2.73 5.5c-1 1.5-1 5 .23 6.5-1.24 1.5-1.24 5-.23 6.5C5.58 18.03 7 16 7 13.33'))},
+      {key:'fastfood',label:'Фастфуд',desc:'Бургеры, шаурма, хот-доги',img:this.IMG('1568901346375-23c9450c58cd'),
+        iconEl:sv(P('M3 11h18a8 9 0 0 0-18 0Z'),P('M3 15h18'),P('M4 18h16a1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1Z'))},
+      {key:'pizza',label:'Пицца',desc:'На тонком тесте, 30 и 40 см',img:this.IMG('1513104890138-7c749659a591'),
+        iconEl:sv(P('M3 7c2-2 5-3 9-3s7 1 9 3l-9 14L3 7Z'),React.createElement('circle',{cx:'10',cy:'9',r:'1'}),React.createElement('circle',{cx:'13.5',cy:'12.5',r:'1'}))},
+      {key:'drinks',label:'Напитки',desc:'Газировка, лимонады, кофе',img:this.IMG('1554866585-cd94860890b7'),
+        iconEl:sv(P('m6 8 1.75 12.28a2 2 0 0 0 2 1.72h4.54a2 2 0 0 0 2-1.72L18 8'),P('M5 8h14'),P('M7 15a6.47 6.47 0 0 1 5 0 6.47 6.47 0 0 0 5 0'),P('m12 8 1-6 3 1'))}
+    ];
+
+    return {
+      headerTextColor:hc.text, headerAccentColor:hc.accent, headerSubColor:hc.sub,
+      isHome, isMenu,
+      isMobile:s.isMobile, isDesktop:!s.isMobile,
+      mobileMenuOpen:s.mobileMenuOpen,
+      toggleMobileMenu:()=>this.setState(st=>({mobileMenuOpen:!st.mobileMenuOpen})),
+      orderWA:()=>{ try{window.open('https://wa.me/79280211655','_blank');}catch(e){} },
+      goHome:()=>this.go('home'), goMenu:()=>this.go('menu'),
+      goHomeM:()=>this.go('home'), goMenuM:()=>this.go('menu'),
+      goAboutM:()=>{ this.setState({mobileMenuOpen:false,page:'home'}); setTimeout(()=>{const e=document.getElementById('about'); if(e)window.scrollTo({top:e.getBoundingClientRect().top+window.pageYOffset-70,behavior:'smooth'});},80); },
+      goContactsM:()=>{ this.setState({mobileMenuOpen:false}); setTimeout(()=>{const e=document.getElementById('contacts'); if(e)window.scrollTo({top:e.getBoundingClientRect().top+window.pageYOffset-70,behavior:'smooth'});},80); },
+      goMenuFromCart:()=>{this.setState({cartOpen:false});this.go('menu');},
+      navHomeBg:isHome?'#C9856A':'transparent', navHomeColor:isHome?'#fff':'#D2C3AE',
+      navMenuBg:isMenu?'#C9856A':'transparent', navMenuColor:isMenu?'#fff':'#D2C3AE',
+      hasCart:cartCount>0,
+      popularGridStyle: s.isMobile
+        ? 'display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:4px 0 10px;margin:0 -22px;padding-left:22px;padding-right:22px;'
+        : 'display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px;',
+      popularCardStyle: s.isMobile
+        ? 'flex:none;width:76vw;max-width:280px;scroll-snap-align:start;background:#FFFBF4;border:1px solid #EBDFC9;border-radius:20px;padding:14px;display:flex;flex-direction:column;box-shadow:0 8px 22px rgba(40,24,14,0.06);'
+        : 'background:#FFFBF4;border:1px solid #EBDFC9;border-radius:20px;padding:14px;display:flex;flex-direction:column;box-shadow:0 8px 22px rgba(40,24,14,0.06);',
+
+      categoryCards:catMeta.map(c=>({...c,go:()=>this.setState({page:'menu',activeCat:c.key,cartOpen:false,mobileMenuOpen:false},()=>{try{window.scrollTo(0,0);}catch(e){}})})),
+      cats:catMeta.map(c=>({...c, select:()=>this.setState({activeCat:c.key}), bg:s.activeCat===c.key?'#C9856A':'#FFFBF4', color:s.activeCat===c.key?'#fff':'#6E5C46', border:s.activeCat===c.key?'#C9856A':'#E2D3BC'})),
+      visibleItems:menu.filter(m=>m.cat===s.activeCat).map(m=>this.decorateItem(m)),
+      popular:[menu[0],menu[2],menu.find(m=>m.id==='f4'),menu.find(m=>m.id==='p1')].map(m=>{const d=this.decorateItem(m);return {...d,priceLabel:d.hasSizes?('от '+m.sizes[0].price+' ₽'):(m.price+' ₽')};}),
+
+      whyUs:[
+        {icon:React.createElement('svg',{width:30,height:30,viewBox:'0 0 24 24',fill:'none',stroke:'#B89060','stroke-width':'1.6','stroke-linecap':'round','stroke-linejoin':'round'},React.createElement('path',{d:'M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z'}),React.createElement('path',{d:'M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 11 13 12 12'})),title:'Свежие продукты',text:'Рыбу и овощи привозим каждое утро — никакой заморозки.'},
+        {icon:React.createElement('svg',{width:30,height:30,viewBox:'0 0 24 24',fill:'none',stroke:'#B89060','stroke-width':'1.6','stroke-linecap':'round','stroke-linejoin':'round'},React.createElement('path',{d:'M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2'}),React.createElement('path',{d:'M15 18H9'}),React.createElement('path',{d:'M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14'}),React.createElement('circle',{cx:'17',cy:'18',r:'2'}),React.createElement('circle',{cx:'7',cy:'18',r:'2'})),title:'Быстрая доставка',text:'Привезём горячим в среднем за 60 минут по Гудермесу.'},
+        {icon:React.createElement('svg',{width:30,height:30,viewBox:'0 0 24 24',fill:'none',stroke:'#B89060','stroke-width':'1.6','stroke-linecap':'round','stroke-linejoin':'round'},React.createElement('path',{d:'M16 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z'}),React.createElement('path',{d:'M2 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z'}),React.createElement('path',{d:'M7 21h10'}),React.createElement('path',{d:'M12 3v18'}),React.createElement('path',{d:'M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2'})),title:'Честные порции',text:'Большие роллы и сытные боксы — наедаешься надолго.'},
+        {icon:React.createElement('svg',{width:30,height:30,viewBox:'0 0 24 24',fill:'none',stroke:'#B89060','stroke-width':'1.6','stroke-linecap':'round','stroke-linejoin':'round'},React.createElement('rect',{x:'5',y:'2',width:'14',height:'20',rx:'2.5'}),React.createElement('path',{d:'M9.5 6.5h5'}),React.createElement('path',{d:'M9 13l2 2 4-4'})),title:'Удобный заказ',text:'Оформи за минуту, оплата наличными или переводом.'}
+      ],
+      steps:[
+        {n:'1',title:'Выбери блюда',text:'Добавь любимые роллы, бургеры и пиццу в корзину.'},
+        {n:'2',title:'Оставь данные',text:'Имя, адрес и способ оплаты — займёт минуту.'},
+        {n:'3',title:'Получи заказ',text:'Мы напишем в WhatsApp, подтвердим и привезём горячим.'}
+      ],
+
+      showCartBtn: cartCount>0 && !s.cartOpen && !s.checkoutOpen && !s.mobileMenuOpen,
+      cartCount, cartTotal,
+      openCart:()=>this.setState({cartOpen:true,mobileMenuOpen:false}),
+      closeCart:()=>this.setState({cartOpen:false}),
+      cartOpen:s.cartOpen,
+      cartEmpty:cartItems.length===0, cartHasItems:cartItems.length>0,
+      cartItems,
+      freeText: freeLeft>0 ? ('Добавьте ещё на '+freeLeft+' ₽ — и доставка бесплатно') : 'Отлично! Доставка бесплатно',
+      freeBg: freeLeft>0 ? '#FBEFD8' : '#E8F7EE', freeColor: freeLeft>0 ? '#9A6B12' : '#1B9E54',
+
+      checkoutOpen:s.checkoutOpen,
+      openCheckout:()=>this.setState({checkoutOpen:true,cartOpen:false,error:false,sent:false}),
+      closeCheckout:()=>this.setState({checkoutOpen:false}),
+      stop:(e)=>e.stopPropagation(),
+      notSent:!s.sent, sent:s.sent,
+      finishOrder:()=>this.setState({checkoutOpen:false,sent:false,cart:{},cartOpen:false},()=>this.saveCart({})),
+      name:s.name, address:s.address, phone:s.phone, comment:s.comment,
+      setName:(e)=>this.setState({name:e.target.value}),
+      setAddress:(e)=>this.setState({address:e.target.value}),
+      setPhone:(e)=>this.setState({phone:e.target.value}),
+      setComment:(e)=>this.setState({comment:e.target.value}),
+      nameBorder: s.error&&!s.name.trim()?'#C0584A':'#D8C7AC',
+      addrBorder: s.error&&!s.address.trim()?'#C0584A':'#D8C7AC',
+      payCash:()=>this.setState({payment:'cash'}), payTransfer:()=>this.setState({payment:'transfer'}),
+      cashBg:s.payment==='cash'?'#F3E6D8':'#fff', cashColor:s.payment==='cash'?'#9A5A2E':'#6E5C46', cashBorder:s.payment==='cash'?'#C9856A':'#D8C7AC',
+      transferBg:s.payment==='transfer'?'#F3E6D8':'#fff', transferColor:s.payment==='transfer'?'#9A5A2E':'#6E5C46', transferBorder:s.payment==='transfer'?'#C9856A':'#D8C7AC',
+      error:s.error,
+      submit:()=>this.submit()
+    };
+  }
+}
+</script>
+</body>
+</html>
