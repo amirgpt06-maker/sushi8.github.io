@@ -12,13 +12,15 @@
 html, body { height: 100%; background: var(--bg); overflow: hidden; font-family: "Inter", "Noto Color Emoji", sans-serif; color: var(--ink); }
 #stage { width: 1920px; height: 1080px; position: absolute; left: 50%; top: 50%; transform-origin: 0 0; overflow: hidden; background: var(--bg); }
 .aurora { position: absolute; width: 900px; height: 900px; border-radius: 50%; filter: blur(140px); opacity: .22; }
-.scene { position: absolute; inset: 0; display: none; }
+.scene { position: absolute; inset: 0; display: none; transform-origin: 50% 50%; }
+h1 .w { display: inline-block; }
+h1, .defn, .eyebrow { font-variation-settings: "opsz" 32; }
 .scene > * { position: absolute; }
 .emo { font-family: "Noto Color Emoji"; line-height: 1; font-weight: 400; }
 
 .eyebrow { font-size: 24px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--gray); white-space: nowrap; }
 h1 { font-size: 92px; line-height: 1; font-weight: 800; letter-spacing: -.045em; white-space: nowrap; }
-h1 span { display: block; } h1 span + span { color: var(--gray); }
+h1 > span { display: block; } h1 > span + span { color: var(--gray); }
 .center { left: 0 !important; width: 1920px; text-align: center; }
 h1.big { font-size: 128px; }
 .dot { display: inline-block; width: 16px; height: 16px; border-radius: 50%; flex: none; }
@@ -154,9 +156,18 @@ h1.big { font-size: 128px; }
 const stage = document.getElementById("stage");
 stage.insertAdjacentHTML("beforeend", SCENES.map((s, i) => `<section class="scene" id="sc${i}">${s.html}</section>`).join(""));
 const scenesEl = [...document.querySelectorAll(".scene")];
+// Заголовки в стиле Apple: каждое слово проявляется из размытия с небольшим сдвигом во времени
+document.querySelectorAll("h1 > span[data-b]").forEach((sp) => {
+  const b = sp.dataset.b, d0 = +(sp.dataset.d || 0);
+  const words = sp.innerHTML.split(/(\s+)/);
+  let k = 0;
+  sp.innerHTML = words.map((w) => /^\s+$/.test(w) || !w ? w : `<span class="w" data-b="${b}" data-d="${(d0 + 0.09 * k++).toFixed(2)}" data-fx="word" data-dur="1.1">${w}</span>`).join("");
+  if (sp.dataset.sfx) sp.insertAdjacentHTML("beforeend", `<i data-b="${b}" data-d="${d0}" data-sfx="${sp.dataset.sfx}"></i>`);
+  ["b", "d", "fx", "sfx"].forEach((k) => delete sp.dataset[k]);
+});
 const clamp = (x) => Math.max(0, Math.min(1, x));
-const ease = (p) => 1 - Math.pow(1 - p, 3);
-const back = (p) => { const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2); };
+const ease = (p) => 1 - Math.pow(1 - p, 4);          // мягкое торможение, как в роликах Apple
+const back = (p) => { const c1 = 0.9, c3 = c1 + 1; return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2); };
 
 // Подготовка элементов
 const items = scenesEl.map((sc) => [...sc.querySelectorAll("[data-b],[data-o],[data-float],[data-spin],[data-pulse],[data-move]")].map((el) => {
@@ -182,37 +193,45 @@ const sceneOf = (t) => { let i = TL.scenes.findIndex((s) => t < s.start + s.dur)
 function durOf(it, S) {
   const st = S.beats[it.b] + it.d;
   if (it.dur === "beat") { const nb = it.b + 1 < S.beats.length ? S.beats[it.b + 1] : S.dur - 0.8; return Math.max(0.5, nb - st - 0.3); }
-  return it.dur ? +it.dur : it.fx === "type" ? 1.2 : it.fx === "pop" ? 0.75 : 0.8;
+  return it.dur ? +it.dur : it.fx === "type" ? 1.2 : 1.0;
 }
 
 let shown = -1;
 function render(t) {
   const i = sceneOf(t), S = TL.scenes[i], lt = t - S.start;
   if (i !== shown) { scenesEl.forEach((el, j) => el.style.display = j === i ? "block" : "none"); shown = i; }
-  scenesEl[i].style.opacity = Math.min(1, lt / 0.3, (S.dur - lt) / 0.45);
+  // Камера: медленный наезд + переходы через размытие
+  const tin = ease(clamp(lt / 0.8)), tout = clamp((lt - (S.dur - 0.6)) / 0.6) ** 2;
+  const scEl = scenesEl[i];
+  scEl.style.opacity = Math.min(tin, 1 - tout);
+  scEl.style.transform = `scale(${(0.97 + 0.03 * tin + 0.03 * (lt / S.dur) + 0.05 * tout).toFixed(4)})`;
+  const sb = (1 - tin) * 22 + tout * 22;
+  scEl.style.filter = sb > 0.1 ? `blur(${sb.toFixed(1)}px)` : "";
   // фон
   [[0.05, 0, 300, 200], [0.04, 2, 1300, 600], [0.03, 4, 700, 900]].forEach(([w, ph, x, y], k) =>
     document.getElementById("a" + (k + 1)).style.transform = `translate(${x - 450 + Math.sin(t * w * 6 + ph) * 160}px, ${y - 450 + Math.cos(t * w * 5 + ph) * 120}px)`);
 
   for (const it of items[i]) {
-    let op = 1, tx = 0, ty = 0, sc = 1, rot = 0, extra = "";
+    let op = 1, tx = 0, ty = 0, sc = 1, rot = 0, extra = "", bl = 0;
     if (it.b !== null && it.fx !== "none") {
       const st = S.beats[it.b] + it.d, p = clamp((lt - st) / durOf(it, S)), e = ease(p), on = lt >= st ? 1 : 0;
       switch (it.fx) {
-        case "up": op = e; ty = (1 - e) * 46; break;
-        case "down": op = e; ty = -(1 - e) * 46; break;
-        case "left": op = e; tx = (1 - e) * 90; break;
-        case "right": op = e; tx = -(1 - e) * 90; break;
-        case "pop": op = clamp(p * 4); sc = p > 0 ? 0.3 + 0.7 * back(p) : 0.3; break;
-        case "fade": op = e; break;
-        case "zoom": op = e; sc = 1.4 - 0.4 * e; break;
+        case "word": op = clamp(p * 1.6); ty = (1 - e) * 34; bl = (1 - e) * 16; break;
+        case "up": op = e; ty = (1 - e) * 36; sc = 0.98 + 0.02 * e; bl = (1 - e) * 14; break;
+        case "down": op = e; ty = -(1 - e) * 36; bl = (1 - e) * 14; break;
+        case "left": op = e; tx = (1 - e) * 60; bl = (1 - e) * 14; break;
+        case "right": op = e; tx = -(1 - e) * 60; bl = (1 - e) * 14; break;
+        case "pop": op = clamp(p * 2.5); sc = p > 0 ? 0.82 + 0.18 * back(p) : 0.82; bl = (1 - e) * 12; break;
+        case "fade": op = e; bl = (1 - e) * 10; break;
+        case "zoom": op = e; sc = 1.15 - 0.15 * e; bl = (1 - e) * 16; break;
         case "grow": op = on; extra = ` scaleX(${e})`; break;
         case "draw": op = on; it.el.style.strokeDashoffset = it.len * (1 - e); break;
         case "type": op = on; it.el.textContent = it.full.slice(0, Math.round(it.full.length * p)).join(""); break;
         case "count": op = on; it.el.textContent = Math.round(it.count[0] + (it.count[1] - it.count[0]) * e) + (it.el.dataset.suf || ""); break;
       }
     }
-    if (it.o !== null) { const q = ease(clamp((lt - S.beats[it.o]) / 0.45)); op *= 1 - q; ty -= q * 24; }
+    if (it.o !== null) { const q = ease(clamp((lt - S.beats[it.o]) / 0.6)); op *= 1 - q; ty -= q * 16; bl += q * 14; }
+    if (it.b !== null && it.fx !== "none" && it.fx !== "draw") it.el.style.filter = bl > 0.1 ? `blur(${bl.toFixed(1)}px)` : "";
     for (const pb of it.pulse) { const q = (lt - S.beats[pb]) / 0.7; if (q > 0 && q < 1) sc *= 1 + 0.07 * Math.sin(Math.PI * q); }
     if (!it.pulse.length && it.el.hasAttribute("data-pulse")) sc *= 1 + 0.06 * Math.sin(lt * Math.PI / 1.5);
     if (it.float) ty += it.float[0] * Math.sin(2 * Math.PI * (lt / it.float[1] + it.float[2]));

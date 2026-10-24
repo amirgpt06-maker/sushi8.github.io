@@ -64,7 +64,7 @@ def type_(d):
     t = 0.0
     while t < d:
         s = int(t * SR)
-        k = tick(0.12 + 0.08 * rng.random())
+        k = tick(0.05 + 0.03 * rng.random())
         out[s:s + len(k)] += k[: len(out) - s]
         t += 0.06 + 0.07 * rng.random()
     return out
@@ -112,9 +112,20 @@ def riser():
     return whoosh(1.0, up=True, amp=0.3) + sparkle(0.08)
 
 
-SFX = {"whoosh": lambda d: whoosh(), "pop": lambda d: pop(700 + 300 * rng.random()), "type": type_, "sparkle": lambda d: sparkle(),
-       "chime": lambda d: chime(), "ding": lambda d: ding(), "buzz": lambda d: buzz(), "boop": lambda d: boop(),
-       "swish": lambda d: swish(), "riser": lambda d: riser()}
+def tap():
+    # мягкий «стеклянный» щелчок в духе интерфейсов Apple
+    return pop(1500 + 300 * rng.random(), 1100, 0.09, 0.16) + bell([2400], 0.25, 0.05, 0.05)
+
+
+def thud():
+    # мягкий низкий «тук» вместо резкого «бзз»
+    t = t_(0.35)
+    return np.sin(2 * np.pi * (90 + 60 * np.exp(-t / 0.03)) * t) * env(len(t), 0.003, 0.09) * 0.4
+
+
+SFX = {"whoosh": lambda d: whoosh(0.7, amp=0.16), "pop": lambda d: tap(), "type": type_, "sparkle": lambda d: sparkle(0.07),
+       "chime": lambda d: chime(), "ding": lambda d: ding(), "buzz": lambda d: thud(), "boop": lambda d: tap(),
+       "swish": lambda d: whoosh(0.8, up=False, amp=0.12), "riser": lambda d: whoosh(1.4, amp=0.18) + chime() * 0.5}
 
 
 def place(buf, x, t, gain=1.0):
@@ -137,7 +148,7 @@ def main():
     for e in tl["sfx"]:
         place(fx, SFX[e["name"]](e.get("dur", 1.0)), e["t"])
     # эффекты — тише голоса, чуть шире по стерео
-    fx = np.stack([fx, np.roll(fx, int(SR * 0.004))], axis=1) * 0.55
+    fx = np.stack([fx, np.roll(fx, int(SR * 0.004))], axis=1) * 0.5
     out = voice + fx
     out /= max(1.0, np.abs(out).max() / 0.98)
     sf.write(sys.argv[2], out[: int(SR * tl["total"])], SR, subtype="PCM_24")

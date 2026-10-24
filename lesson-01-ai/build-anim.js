@@ -10,7 +10,7 @@ const DIR = __dirname;
 const WORK = path.resolve(process.argv[2] || path.join(DIR, "build"));
 const VOICE = process.env.VOICE || "aleksandr-hq";
 const PY = process.env.PY || path.join(process.env.HOME, "venv-video/bin/python");
-const FPS = 30, WORKERS = 4, GAP = 0.35, LEAD = 0.6, TAIL = 1.6;
+const FPS = 30, WORKERS = 4, GAP = 0.45, LEAD = 0.9, TAIL = 1.8;
 
 const run = (cmd, args, input) => execFileSync(cmd, args, { input, stdio: [input ? "pipe" : "ignore", "pipe", "pipe"], maxBuffer: 1 << 26 }).toString();
 const dur = (f) => parseFloat(run("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", f]));
