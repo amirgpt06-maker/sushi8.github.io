@@ -26,4 +26,13 @@ from faster_whisper import WhisperModel
 for m in ('small', 'medium'):
     WhisperModel(m, device='cpu', compute_type='int8'); print('whisper', m, 'ok')
 " || echo "!! Whisper-модели не скачались (нет доступа к huggingface.co). Субтитры будут недоступны."
+# Живые русские мужские нейроголоса Piper (с релизов k2-fsa/sherpa-onnx на GitHub) + офлайн-синтезатор RHVoice как запасной
+"$VENV/bin/pip" install -q piper-tts
+for v in ruslan dmitri denis; do
+  [ -f "$MODELS/tts/$v/ru_RU-$v-medium.onnx" ] && continue
+  mkdir -p "$MODELS/tts/$v"
+  curl -sSfL "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-ru_RU-$v-medium.tar.bz2" \
+    | tar -xj -C "$MODELS/tts/$v" --strip-components=1
+done
+command -v RHVoice-test >/dev/null || { apt-get update -q && apt-get install -y -q rhvoice rhvoice-russian; } || true
 echo "Готово."

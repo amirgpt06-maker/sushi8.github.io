@@ -8,7 +8,7 @@ const SCENES = require("./scenes.js");
 
 const DIR = __dirname;
 const WORK = path.resolve(process.argv[2] || path.join(DIR, "build"));
-const VOICE = process.env.VOICE || "aleksandr-hq";
+const VOICE = process.env.VOICE || "ruslan";
 const PY = process.env.PY || path.join(process.env.HOME, "venv-video/bin/python");
 const FPS = 30, WORKERS = 4, GAP = 0.45, LEAD = 0.9, TAIL = 1.8;
 
@@ -19,12 +19,17 @@ const VOICE_FX = "silenceremove=start_periods=1:start_threshold=-50dB,areverse,s
   "deesser=i=0.35,acompressor=threshold=-22dB:ratio=2.5:attack=8:release=120:makeup=2,loudnorm=I=-16:TP=-1.5:LRA=7";
 
 (async () => {
+  fs.rmSync(path.join(WORK, "frames"), { recursive: true, force: true });
   fs.mkdirSync(path.join(WORK, "frames"), { recursive: true });
 
-  // 1. Озвучка по фразам
-  const voice = SCENES.map((s, i) => s.beats.map((text, b) => {
+  // 1. Озвучка по фразам: нейроголос Piper (tts.py), запасной вариант — RHVoice (VOICE=aleksandr-hq)
+  const jobs = SCENES.flatMap((s, i) => s.beats.map((text, b) => ({ text, out: path.join(WORK, `r${i}_${b}.wav`) })));
+  if (["ruslan", "dmitri", "denis"].includes(VOICE)) {
+    fs.writeFileSync(path.join(WORK, "tts.json"), JSON.stringify(jobs));
+    run(PY, ["-I", path.join(DIR, "tts.py"), VOICE, path.join(WORK, "tts.json")]);
+  } else jobs.forEach((j) => run("RHVoice-test", ["-p", VOICE, "-q", "max", "-o", j.out], j.text));
+  const voice = SCENES.map((s, i) => s.beats.map((_, b) => {
     const raw = path.join(WORK, `r${i}_${b}.wav`), out = path.join(WORK, `v${i}_${b}.wav`);
-    run("RHVoice-test", ["-p", VOICE, "-q", "max", "-o", raw], text);
     run("ffmpeg", ["-y", "-i", raw, "-af", VOICE_FX, "-ar", "48000", "-ac", "2", out]);
     return { file: out, d: dur(out) };
   }));
