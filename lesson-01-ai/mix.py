@@ -79,8 +79,15 @@ def sparkle(amp=0.16):
     return out
 
 
+def add(*parts):
+    out = np.zeros(max(len(p) for p in parts))
+    for p in parts:
+        out[: len(p)] += p
+    return out
+
+
 def chime():
-    return bell([659, 988, 1319, 1976], 2.2, 0.8, 0.22) + np.pad(bell([1319, 1976], 1.8, 0.6, 0.12), (int(SR * 0.09), 0))[: int(SR * 2.2)]
+    return add(bell([659, 988, 1319, 1976], 2.2, 0.8, 0.22), np.pad(bell([1319, 1976], 1.8, 0.6, 0.12), (int(SR * 0.09), 0)))
 
 
 def ding():
@@ -114,7 +121,7 @@ def riser():
 
 def tap():
     # мягкий «стеклянный» щелчок в духе интерфейсов Apple
-    return pop(1500 + 300 * rng.random(), 1100, 0.09, 0.16) + bell([2400], 0.25, 0.05, 0.05)
+    return add(pop(1500 + 300 * rng.random(), 1100, 0.09, 0.16), bell([2400], 0.25, 0.05, 0.05))
 
 
 def thud():
@@ -125,7 +132,7 @@ def thud():
 
 SFX = {"whoosh": lambda d: whoosh(0.7, amp=0.16), "pop": lambda d: tap(), "type": type_, "sparkle": lambda d: sparkle(0.07),
        "chime": lambda d: chime(), "ding": lambda d: ding(), "buzz": lambda d: thud(), "boop": lambda d: tap(),
-       "swish": lambda d: whoosh(0.8, up=False, amp=0.12), "riser": lambda d: whoosh(1.4, amp=0.18) + chime() * 0.5}
+       "swish": lambda d: whoosh(0.8, up=False, amp=0.12), "riser": lambda d: add(whoosh(1.4, amp=0.18), chime() * 0.5)}
 
 
 def place(buf, x, t, gain=1.0):
