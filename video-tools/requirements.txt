@@ -1,0 +1,10 @@
+faster-whisper
+auto-editor
+scenedetect
+opencv-python-headless
+moviepy
+pydub
+noisereduce
+soundfile
+librosa
+pyloudnorm
