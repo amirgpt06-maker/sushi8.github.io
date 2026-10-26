@@ -9,3 +9,4 @@ knight-vfx/*.png
 knight-vfx/*.wav
 knight-vfx/*.exr
 knight-vfx/*.hdr
+__pycache__/
