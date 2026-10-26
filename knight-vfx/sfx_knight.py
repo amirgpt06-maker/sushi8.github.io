@@ -13,6 +13,7 @@ SR = 48000
 FPS = 30
 rng = np.random.default_rng(11)
 W = sys.argv[1]
+ARMOR = len(sys.argv) > 4 and sys.argv[4] == "armor"
 S = json.load(open(f"{W}/solve.json"))
 N = len(S["joints"])
 DUR = N / FPS + 1.5
@@ -216,13 +217,14 @@ peaks, props = find_peaks(spd, height=18, distance=8)
 for p in peaks:
     v = min(1.0, spd[p] / 60)
     place(whoosh(0.32, 250, 2200 + 1500 * v), f2t(p - 4), 0.22 + 0.4 * v, pan=-0.1)
-    place(clank(), f2t(p + 1), 0.10 + 0.12 * v, pan=-0.2)
-    place(chain_rustle(0.3), f2t(p - 2), 0.10 * v, pan=-0.2)
+    if ARMOR:
+        place(clank(), f2t(p + 1), 0.10 + 0.12 * v, pan=-0.2)
+        place(chain_rustle(0.3), f2t(p - 2), 0.10 * v, pan=-0.2)
 print("взмахов:", len(peaks), list(peaks))
 
 # --- удары ---
 place(body_hit(), f2t(204), 0.8, pan=0.3)
-place(clank(380), f2t(204), 0.35, pan=0.2)
+place(clank(380) if ARMOR else snap(), f2t(204), 0.35, pan=0.2)
 place(boom(), f2t(261), 0.55)
 place(stab(), f2t(261), 1.0, pan=0.3)
 place(splatter(), f2t(263), 0.35, pan=0.3)

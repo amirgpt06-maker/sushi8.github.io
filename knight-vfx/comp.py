@@ -77,19 +77,21 @@ for i in sel:
     cl = cv2.resize(cv2.imread(f"{W}/masks/clothes_{i:04d}.png", 0), (w, h)).astype(np.float32) / 255
     sk = cv2.resize(cv2.imread(f"{W}/masks/skin_{i:04d}.png", 0), (w, h)).astype(np.float32) / 255
 
-    # человек: футболка -> тёмный поддоспешник/кольчуга (оттенок стали), руки -> кожаные перчатки
+    Lr = read_layers(i)
+    ARMOR = "spear_full.Combined" not in Lr
+    # человек: с латами — футболка -> тёмный поддоспешник, руки -> кожаные перчатки; без лат — как есть
     person = lin.copy()
     lum = (lin @ np.array([0.2126, 0.7152, 0.0722], np.float32))[..., None]
     hsv = cv2.cvtColor(plate, cv2.COLOR_RGB2HSV)
     greenish = ((hsv[..., 0] > 35) & (hsv[..., 0] < 110) & (hsv[..., 1] > 0.12)).astype(np.float32)
     shirt = cv2.GaussianBlur(np.clip(cl, 0, 1) * greenish, (9, 9), 0)[..., None]
     mail = lum * np.array([0.78, 0.80, 0.86], np.float32) * 0.85
-    person = person * (1 - shirt) + mail * shirt
+    if ARMOR:
+        person = person * (1 - shirt) + mail * shirt
     hm = cv2.GaussianBlur(hand_mask(i).astype(np.float32) / 255 * np.clip(sk * 1.4, 0, 1), (7, 7), 0)[..., None]
-    glove = lum * np.array([0.55, 0.36, 0.24], np.float32) * 0.7
+    glove = lum * np.array([0.55, 0.36, 0.24], np.float32) * 0.7 if ARMOR else lin
     person = person * (1 - hm) + glove * hm
 
-    Lr = read_layers(i)
     tre, shd, fro = Lr["trex.Combined"], Lr["trex.Shadow Catcher"], Lr["front.Combined"]
     # CG мягче, как оптика телефона
     tre = cv2.GaussianBlur(tre, (0, 0), 0.9)
@@ -103,6 +105,10 @@ for i in sel:
     base = tre[..., :3] + base * (1 - ta)
     base = base * (1 - pa * (ta > 0)) + person * pa * (ta > 0)
     # латы и копьё
+    if not ARMOR:
+        # копьё за телом прячется только внутри силуэта человека
+        full = cv2.GaussianBlur(Lr["spear_full.Combined"], (0, 0), 0.7)
+        fro = fro + (full - fro) * (1 - pa)
     fa = np.clip(fro[..., 3:4], 0, 1)
     frgb = fro[..., :3]
     frgb = frgb / (1 + frgb * 0.25)                      # мягкое сжатие бликов стали

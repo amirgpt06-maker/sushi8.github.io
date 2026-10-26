@@ -15,7 +15,7 @@ import numpy as np  # noqa: E402
 from mathutils import Matrix, Quaternion, Vector  # noqa: E402
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
-from armor import build_armor, build_spear  # noqa: E402
+from armor import build_armor, build_spear, tube  # noqa: E402
 from materials import mat_blood  # noqa: E402
 from trex import build_trex  # noqa: E402
 
@@ -259,10 +259,36 @@ for i in range(N):
     pb.rotation_quaternion = Quaternion(Vector((1, 0, 0)), -math.radians(max(0, jaw)))
     pb.keyframe_insert("rotation_quaternion", frame=i)
 
-# ================= латы и копьё =================
+# ================= латы (по желанию) и копьё =================
 s = UNIT
-P = build_armor(G["shoulder_w"] / s, G["torso_ref"] / s, G["head_w"] / s,
-                G["uarm_ref"] / s, G["farm_ref"] / s, G["thigh_ref"] / s, G["shin_ref"] / s)
+ARMOR = os.environ.get("ARMOR", "0") == "1"
+C_BODY = coll("BODY")
+if ARMOR:
+    P = build_armor(G["shoulder_w"] / s, G["torso_ref"] / s, G["head_w"] / s,
+                    G["uarm_ref"] / s, G["farm_ref"] / s, G["thigh_ref"] / s, G["shin_ref"] / s)
+else:
+    # без лат: невидимые «тела-маски» по скелету — прячут части копья, проходящие за человеком
+    hold = bpy.data.materials.new("body_holdout")
+    hold.use_nodes = True
+    hold.node_tree.nodes.clear()
+    _o = hold.node_tree.nodes.new("ShaderNodeOutputMaterial")
+    _h = hold.node_tree.nodes.new("ShaderNodeHoldout")
+    hold.node_tree.links.new(_h.outputs[0], _o.inputs["Surface"])
+    tl_r, ua, fa, th = G["torso_ref"] / s, G["uarm_ref"] / s, G["farm_ref"] / s, G["thigh_ref"] / s
+    P = {"torso": [tube("proxy_torso", [(0.03, 0.15, 0.09, 0, 0, 0), (-0.25 * tl_r, 0.17, 0.11, 0, 0.01, 0),
+                                        (-tl_r * 1.05, 0.16, 0.10, 0, 0, 0)], hold, closed_top=True, closed_bot=True, thick=0, sub=1)]}
+    for sd_ in ("L", "R"):
+        P[f"uarm_{sd_}"] = [tube(f"proxy_uarm_{sd_}", [(0.0, 0.045, 0.045, 0, 0, 0), (ua, 0.04, 0.04, 0, 0, 0)], hold, True, True, 0, 1)]
+        P[f"farm_{sd_}"] = [tube(f"proxy_farm_{sd_}", [(0.0, 0.038, 0.038, 0, 0, 0), (fa * 0.95, 0.03, 0.03, 0, 0, 0)], hold, True, True, 0, 1)]
+        P[f"thigh_{sd_}"] = [tube(f"proxy_thigh_{sd_}", [(0.0, 0.07, 0.07, 0, 0, 0), (th, 0.055, 0.055, 0, 0, 0)], hold, True, True, 0, 1)]
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=12, radius=1.0)
+    hp_ = bpy.context.active_object
+    hp_.name = "proxy_head"
+    hp_.scale = (0.075, 0.105, 0.095)
+    hp_.location = (0, 0.03, 0)
+    bpy.ops.object.transform_apply(location=True, scale=True)
+    hp_.data.materials.append(hold)
+    P["head"] = [hp_]
 spear, blade = build_spear(2.3 / s)
 bl = blade.copy()
 bl.data = blade.data.copy()
@@ -281,7 +307,7 @@ for ob in spear:
     pieces.append(("spear", ob))
 for bone, ob in pieces:
     ob.rotation_mode = "QUATERNION"
-    move_to(ob, C_FRONT)
+    move_to(ob, C_FRONT if (ARMOR or bone == "spear") else C_BODY)
     for i in range(N):
         M = Matrix(G[bone][i]) @ Matrix.Diagonal((s, s, s, 1))
         key_matrix(ob, i, C @ M)
@@ -361,12 +387,20 @@ for i in range(N):
 vl_t = sc.view_layers[0]
 vl_t.name = "trex"
 vl_f = sc.view_layers.new("front")
-for vl in (vl_t, vl_f):
+vl_s = sc.view_layers.new("spear_full")
+for vl in (vl_t, vl_f, vl_s):
     vl.cycles.use_pass_shadow_catcher = True
 lc = {c.name: c for c in vl_t.layer_collection.children}
 lc["FRONT"].exclude = True
+lc["BODY"].exclude = True
 lc = {c.name: c for c in vl_f.layer_collection.children}
 lc["TREX"].holdout = True
+lc["BODY"].holdout = True
+lc["SHADOW"].exclude = True
+# копьё целиком (без масок тела): в композитинге части «за телом» вне силуэта человека берутся отсюда
+lc = {c.name: c for c in vl_s.layer_collection.children}
+lc["TREX"].holdout = True
+lc["BODY"].exclude = True
 lc["SHADOW"].exclude = True
 
 bpy.ops.wm.save_as_mainfile(filepath=f"{OUT}/scene.blend")
