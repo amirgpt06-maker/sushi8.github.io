@@ -6,3 +6,6 @@
 lesson-01-ai/build/
 knight-vfx/*.jpg
 knight-vfx/*.png
+knight-vfx/*.wav
+knight-vfx/*.exr
+knight-vfx/*.hdr
