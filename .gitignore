@@ -4,3 +4,5 @@
 *.wav
 *.mp3
 lesson-01-ai/build/
+knight-vfx/*.jpg
+knight-vfx/*.png
