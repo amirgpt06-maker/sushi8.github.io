@@ -81,7 +81,11 @@ for tr in tracks:
     bw = np.median([b[2] for _, b in tr["boxes"]])
     bcy = np.median([b[1] + b[3] / 2 for _, b in tr["boxes"]])
     # случайные срабатывания: короткие, неуверенные, слишком большие/маленькие, или ниже уровня плеч (стол, руки)
-    if len(tr["boxes"]) < 6 or np.mean(tr["scores"]) < 0.62 or not (22 < bw < 300) or bcy > 0.55 * H:
+    sc = float(np.mean(tr["scores"]))
+    ok = len(tr["boxes"]) >= 6 and sc >= 0.62 and 22 < bw < 235 and bcy < 0.55 * H
+    if len(tr["boxes"]) >= 6:
+        print(f"трек кадры {tr['boxes'][0][0]}-{tr['boxes'][-1][0]} n={len(tr['boxes'])} w={bw:.0f} y={bcy:.0f} score={sc:.2f} {'OK' if ok else 'отброшен'}")
+    if not ok:
         continue
     fr = np.array([f for f, _ in tr["boxes"]])
     bx = np.array([b for _, b in tr["boxes"]], float)
