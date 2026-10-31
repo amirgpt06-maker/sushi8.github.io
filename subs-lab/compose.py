@@ -154,13 +154,15 @@ def put(sig, t, g):
     fxb[s:s + len(sig)] += sig * g
 
 
-# звук только на переходах (появление слов — без звука). TRANS=page.wav | mouse_studio.mp3 | mouse_soft.mp3
+# звук эффектов: TRANS=page.wav | mouse_studio.mp3 | mouse_soft.mp3 — на переходах; по умолчанию без эффектов
 import librosa  # noqa: E402
 SFX_DIR = Path(__file__).resolve().parent / "sfx"
-trans, _ = librosa.load(str(SFX_DIR / os.environ.get("TRANS", "page.wav")), sr=SR)
-trans /= np.abs(trans).max()
-for c in CUTS:
-    put(trans, c - 0.12, 0.3)
+TRANS = os.environ.get("TRANS", "none")          # по умолчанию звуков нет: только живая речь
+if TRANS != "none":
+    trans, _ = librosa.load(str(SFX_DIR / TRANS), sr=SR)
+    trans /= np.abs(trans).max()
+    for c in CUTS:
+        put(trans, c - 0.12, 0.3)
 mixb += fxb[:, None]
 mixb = mixb[: int(NT / FPS * SR)]
 sf.write(str(work / "mix.wav"), mixb / max(1.0, np.abs(mixb).max() / 0.95), SR)
