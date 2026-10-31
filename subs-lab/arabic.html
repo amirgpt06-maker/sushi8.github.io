@@ -21,10 +21,6 @@ html, body { width: 1080px; height: 1920px; background: transparent; overflow: h
 #label { left: 160px; top: 230px; font-size: 22px; font-weight: 500; letter-spacing: .14em; color: rgba(11,11,15,.55); }
 
 /* ученик */
-.who { left: 50%; top: 286px; height: 112px; border-radius: 999px; display: flex; align-items: center; gap: 20px; padding: 0 48px 0 16px; transform-origin: center; }
-.who .av { width: 80px; height: 80px; border-radius: 50%; background: #0b0b0f; color: #fff; font-weight: 800; font-size: 34px; display: flex; align-items: center; justify-content: center; }
-.who small { display: block; font-size: 21px; letter-spacing: .14em; color: rgba(11,11,15,.5); font-weight: 600; text-transform: uppercase; }
-.who b { font-size: 44px; letter-spacing: -.02em; }
 
 /* карточка буквы */
 .card { left: 0; top: 0; width: 1080px; height: 1920px; }
@@ -92,7 +88,6 @@ function build(data) {
     <div id="shade" class="abs"></div>
     <div id="strip" class="abs glass">${ORDER.map((l) => `<span>${l}</span>`).join("")}</div>
     <div id="label" class="abs">АРАБСКИЙ АЛФАВИТ</div><div id="count" class="abs"></div>
-    ${D.names.map((n, i) => `<div class="abs who glass" id="who${i}"><div class="av">${n.name[0]}</div><div><small>ученик</small><b>${n.name}</b></div></div>`).join("")}
     ${D.subs.map((s, i) => `<div class="abs sub" id="sub${i}">${s.lines.map((l) => `<div class="l">${l.split(" ").map((w) => `<span class="w">${w}</span>`).join(" ")}</div>`).join("")}</div>`).join("")}
     ${D.cards.map((c, i) => `<div class="abs card" id="card${i}">
         ${c.word ? `<div class="abs badge glass">${c.letter}</div>
@@ -112,7 +107,6 @@ function build(data) {
     return { el, c, badge: q(".badge"), icon: q(".icon"), emo: q(".icon span"),
              word: q(".word"), trans: q(".trans") };
   });
-  R.who = D.names.map((n, i) => document.getElementById("who" + i));
   R.subs = D.subs.map((s, i) => ({ el: document.getElementById("sub" + i), ws: [...document.querySelectorAll(`#sub${i} .w`)], s }));
 }
 
@@ -137,13 +131,6 @@ function render(t) {
   });
   R.count.textContent = `${String(Math.max(cur + 1, 0)).padStart(2, "0")} / 28`;
 
-  // ученики
-  D.names.forEach((n, i) => {
-    const [op, y, bl] = io(t, n.t, n.t + 2.2, 0.5, 0.35, 30);
-    const sc = 0.85 + 0.15 * back(clamp((t - n.t) / 0.6));
-    R.who[i].style.marginLeft = -R.who[i].offsetWidth / 2 + "px";
-    set(R.who[i], op, y, t >= n.t ? sc : 0.85, bl);
-  });
 
   // субтитры преподавателя: слово за словом
   R.subs.forEach(({ el, ws, s }) => {

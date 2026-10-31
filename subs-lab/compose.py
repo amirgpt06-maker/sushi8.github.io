@@ -162,8 +162,6 @@ for c in CUTS:
 for c in D["cards"]:
     if c["tw"]:
         put(appear, c["tw"] - 0.015, 0.5)
-for n in D["names"]:
-    put(click, n["t"], 0.22)
 mixb += fxb[:, None]
 mixb = mixb[: int(NT / FPS * SR)]
 sf.write(str(work / "mix.wav"), mixb / max(1.0, np.abs(mixb).max() / 0.95), SR)
