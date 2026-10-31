@@ -1,0 +1,143 @@
+"""Сборка ролика «Арабский алфавит» в стиле Apple: исходник + оверлей (arabic.html) + переходы + звук.
+
+Использование: python compose.py source.mp4 arabic_cues.json overlay_dir out.mp4 [хвост_с=3.0]
+Переходы на склейках — размытие + «проход сквозь» кадр (наезд/отъезд) + лёгкая засветка;
+внутри планов — медленный наезд; в конце — стоп-кадр, уходящий в размытие под итоговую карточку.
+"""
+import json
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+import cv2
+import numpy as np
+import soundfile as sf
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lesson-01-ai"))
+import mix as sfx  # noqa: E402  синтез эффектов (SR=48000)
+
+src, cues_f, ov_dir, out = sys.argv[1:5]
+TAIL = float(sys.argv[5]) if len(sys.argv) > 5 else 3.0
+D = json.load(open(cues_f))
+CUTS, END = D["cuts"], D["end"]
+cap = cv2.VideoCapture(src)
+FPS = cap.get(cv2.CAP_PROP_FPS)
+W, H = int(cap.get(3)), int(cap.get(4))
+N = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+NT = N + int(TAIL * FPS)
+shots = [0.0] + CUTS + [N / FPS]
+work = Path(tempfile.mkdtemp(prefix="arab_"))
+
+yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+vig = (1 - 0.14 * np.clip(((xx - W / 2) / (W / 2)) ** 2 + ((yy - H / 2) / (H / 2)) ** 2, 0, 1.6) ** 1.3)[..., None]
+
+
+def grade(x):
+    # мягкий «эппловский» вид: чуть больше контраста, прохладные тени, тёплые света, без пересвета
+    l = x.mean(2, keepdims=True)
+    s = x * x * (3 - 2 * x)
+    x = x + (s - x) * 0.22
+    x = x * (np.array([1.025, 1.0, 0.975]) * (1 - l) + np.array([0.985, 1.0, 1.02]) * l)   # BGR
+    l = x.mean(2, keepdims=True)
+    x = l + (x - l) * 1.06
+    return np.clip(x * vig, 0, 1)
+
+
+def xform(img, sc, cy=0.42):
+    if abs(sc - 1) < 1e-4:
+        return img
+    M = cv2.getRotationMatrix2D((W / 2, H * cy), 0, sc)
+    return cv2.warpAffine(img, M, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+
+
+def shot_scale(t):
+    for a, b in zip(shots, shots[1:]):
+        if a <= t < b:
+            return 1.0 + 0.04 * (t - a) / max(b - a, 1e-3)
+    return 1.04
+
+
+enc = subprocess.Popen(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{W}x{H}",
+                        "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "medium", "-crf", "17", "-pix_fmt", "yuv420p",
+                        str(work / "v.mp4")], stdin=subprocess.PIPE)
+last = None
+rng = np.random.default_rng(3)
+for i in range(NT):
+    t = i / FPS
+    if i < N:
+        ok, fr = cap.read()
+        if ok:
+            last = fr
+    fr = last
+    x = fr.astype(np.float32) / 255
+    sc, blur, lift = shot_scale(t), 0.0, 0.0
+    # переход: за 0.3 с до склейки кадр «уходит» вперёд и размывается, после — новый приходит из размытия
+    for c in CUTS:
+        d = t - c
+        if -0.30 <= d < 0:
+            e = (1 + d / 0.30) ** 2
+            sc *= 1 + 0.07 * e
+            blur += 28 * e
+            lift += 0.10 * e
+        elif 0 <= d <= 0.36:
+            e = (1 - d / 0.36) ** 2
+            sc *= 1 + 0.07 * e
+            blur += 28 * e
+            lift += 0.10 * e
+    if t < 0.5:                                     # начало из размытия
+        e = (1 - t / 0.5) ** 2
+        blur += 24 * e
+        lift -= 0.5 * e
+    if t > END:                                     # финал: стоп-кадр уходит в размытие
+        e = min(1, (t - END) / 0.6)
+        blur += 30 * e
+        sc *= 1 + 0.05 * e
+    x = xform(x, sc)
+    if blur > 0.3:
+        x = cv2.GaussianBlur(x, (0, 0), blur)
+    x = grade(x)
+    x = np.clip(x + lift, 0, 1) if lift > 0 else x * (1 + lift)
+    ovf = Path(ov_dir) / f"{i:05d}.png"
+    if ovf.exists():
+        ov = cv2.imread(str(ovf), cv2.IMREAD_UNCHANGED).astype(np.float32) / 255
+        a = ov[..., 3:4]
+        x = x * (1 - a) + ov[..., :3] * a
+    x = x + rng.normal(0, 0.008, (H // 2, W // 2, 1)).astype(np.float32).repeat(2, 0).repeat(2, 1)
+    enc.stdin.write((np.clip(x, 0, 1) * 255 + 0.5).astype(np.uint8).tobytes())
+enc.stdin.close()
+enc.wait()
+
+# --- звук: оригинал + мягкие эффекты (без музыки) ---
+SR = sfx.SR
+subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", src, "-vn", "-ac", "2", "-ar", str(SR), str(work / "a.wav")], check=True)
+voice, _ = sf.read(str(work / "a.wav"))
+total = int(NT / FPS * SR) + SR
+mixb = np.zeros((total, 2))
+mixb[: len(voice)] = voice[:total]
+fxb = np.zeros(total)
+
+
+def put(sig, t, g):
+    s = max(0, int(t * SR))
+    sig = sig[: total - s]
+    fxb[s:s + len(sig)] += sig * g
+
+
+for c in CUTS:
+    put(sfx.whoosh(0.7, up=True, amp=0.5), c - 0.4, 0.9)
+for c in D["cards"]:
+    if c["tw"]:
+        put(sfx.tap(), c["tw"] + 0.02, 0.45)
+for n in D["names"]:
+    put(sfx.pop(900, 600, 0.12, 0.3), n["t"], 0.5)
+put(sfx.whoosh(1.0, up=True, amp=0.4), END - 0.6, 0.8)
+put(sfx.chime(), END + 0.35, 0.6)
+put(sfx.sparkle(0.12), END + 0.6, 0.8)
+mixb += (fxb * 0.55)[:, None]
+mixb = mixb[: int(NT / FPS * SR)]
+sf.write(str(work / "mix.wav"), mixb / max(1.0, np.abs(mixb).max() / 0.95), SR)
+subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(work / "v.mp4"), "-i", str(work / "mix.wav"),
+                "-af", "loudnorm=I=-14:TP=-1.5:LRA=9", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest",
+                "-map_metadata", "-1", "-movflags", "+faststart", out], check=True)
+print("готово:", out, f"{NT / FPS:.1f} с")

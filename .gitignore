@@ -12,3 +12,5 @@ knight-vfx/*.hdr
 __pycache__/
 style-lab/*.mp4
 style-lab/out/
+subs-lab/*.mp4
+subs-lab/*.wav
