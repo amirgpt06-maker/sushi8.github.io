@@ -1,8 +1,8 @@
-"""Поиск и сопровождение всех лиц в ролике (YuNet) -> эллипсы для размытия по кадрам.
+"""Поиск и сопровождение всех лиц в ролике (YuNet) -> овалы лиц для размытия по кадрам.
 
 Использование: python facetrack.py source.mp4 cues.json out.json [preview.png]
 Лицо держится «треком»: если детектор на пару кадров его теряет (поворот головы), эллипс остаётся на месте;
-на склейках треки сбрасываются. Эллипс берётся с запасом — лоб, волосы, борода.
+на склейках треки сбрасываются. Овал — только лицо (брови–подбородок), без волос.
 """
 import json
 import sys
@@ -97,9 +97,9 @@ for tr in tracks:
     # сглаживание (без дрожания эллипса)
     k = np.ones(7) / 7
     vals = [np.convolve(np.pad(v, 3, mode="edge"), k, "valid") for v in vals]
-    size = np.maximum(vals[2], vals[3])
-    for f, x, y, sz in zip(full, vals[0], vals[1], size):
-        ell[f].append([round(float(x), 1), round(float(y - 0.10 * sz), 1), round(float(0.95 * sz), 1), round(float(1.25 * sz), 1)])
+    # только овал лица: от бровей до подбородка, без волос; низ бороды остаётся виден
+    for f, x, y, bw_, bh_ in zip(full, vals[0], vals[1], vals[2], vals[3]):
+        ell[f].append([round(float(x), 1), round(float(y + 0.06 * bh_), 1), round(float(0.50 * bw_), 1), round(float(0.60 * bh_), 1)])
 json.dump({"fps": fps, "ellipses": ell}, open(out, "w"))
 print("кадров с лицами:", sum(1 for e in ell if e), "эллипсов в среднем:", round(sum(len(e) for e in ell) / N, 2))
 

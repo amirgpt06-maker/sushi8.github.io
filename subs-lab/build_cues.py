@@ -12,7 +12,7 @@ import soundfile as sf
 
 # буква, имя буквы (с огласовками), чтение, слово, чтение слова, перевод, иконка, t буквы, t слова (None — искать паузу)
 ABC = [
-    ("ا", "أَلِف", "алиф", None, None, None, None, 7.86, None),
+    ("ا", "أَلِف", "алиф", "أَلْفٌ", "альфун", "тысяча", "1000", 7.86, 8.56),
     ("ب", "بَاء", "ба", "بَابٌ", "бабун", "дверь", "🚪", 9.26, 9.86),
     ("ت", "تَاء", "та", "تُفَّاحٌ", "туффахун", "яблоки", "🍎", 10.74, 11.55),
     ("ث", "ثَاء", "са", "ثَوْبٌ", "саубун", "одежда", "👘", 12.24, 12.96),
@@ -74,22 +74,37 @@ def dips(a, b, n):
 s1 = dips(26.48, 27.84, 1)       # захратун | син
 s2 = dips(28.16, 30.16, 2)       # суратун | шин | шамсун
 fix = {"س": (s1[0], 28.16), "ش": (s2[0], s2[1])}
+def word_end(t0):
+    """Конец слова: первая пауза (≥ 0.12 с тишины) после начала слова."""
+    thr = np.percentile(20 * np.log10(env + 1e-6), 35) + 6
+    loud = 20 * np.log10(env + 1e-6) > thr
+    i = int((t0 + 0.15) * 100)
+    quiet = 0
+    while i < len(loud) - 1 and i < int((t0 + 1.2) * 100):
+        quiet = quiet + 1 if not loud[i] else 0
+        if quiet >= 12:
+            return (i - quiet) / 100
+        i += 1
+    return t0 + 0.6
+
+
 cards = []
 for L, name, rd, w, wr, tr, ic, tl, tw in ABC:
     if L in fix:
         tl, tw = fix[L]
     elif isinstance(tw, tuple):
         tw = dips(*tw, 1)[0]
+    we = word_end(tw) if tw else None
     cards.append({"letter": L, "name": name, "name_ru": rd, "word": w, "word_ru": wr, "tr": tr, "icon": ic,
-                  "tl": round(tl - 0.06, 2), "tw": round(tw - 0.06, 2) if tw else None})
+                  "tl": round(tl - 0.06, 2), "tw": round(tw - 0.06, 2) if tw else None, "we": round(max(we, tw + 0.35), 2) if tw else None})
 for a, b in zip(cards, cards[1:]):
-    a["end"] = round(min(b["tl"] - 0.08, a["tl"] + 4.0), 2)
-cards[-1]["end"] = END - 0.15
+    a["end"] = round(min(b["tl"] + 0.22, a["tl"] + 4.0), 2)
+cards[-1]["end"] = END - 0.05
 for c in cards:   # карточка не переживает склейку
     for ct in CUTS:
         if c["tl"] < ct < c["end"]:
-            c["end"] = ct - 0.12
+            c["end"] = ct + 0.05
 json.dump({"cards": cards, "subs": [{"t": a, "end": b, "lines": l} for a, b, l in SUBS],
            "names": [{"t": t, "name": n} for t, n in NAMES], "cuts": CUTS, "end": END}, open(sys.argv[2], "w"), ensure_ascii=False, indent=1)
 for c in cards:
-    print(f'{c["letter"]} {c["name_ru"]:>5}  буква {c["tl"]:6.2f}  слово {str(c["tw"]):>6}  до {c["end"]:6.2f}  {c["tr"]}')
+    print(f'{c["letter"]} {c["name_ru"]:>5}  буква {c["tl"]:6.2f}  слово {str(c["tw"]):>6}–{str(c["we"]):>6}  до {c["end"]:6.2f}  {c["tr"]}')

@@ -18,7 +18,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lesson-01-ai"))
 import mix as sfx  # noqa: E402  синтез эффектов (SR=48000)
 
 src, cues_f, ov_dir, out = sys.argv[1:5]
-TAIL = float(sys.argv[5]) if len(sys.argv) > 5 else 3.0
+TAIL = float(sys.argv[5]) if len(sys.argv) > 5 else 0.0
+SPEED = 1.03                                        # лёгкое незаметное ускорение всего ролика
 FACES = json.load(open(sys.argv[6]))["ellipses"] if len(sys.argv) > 6 else None
 D = json.load(open(cues_f))
 CUTS, END = D["cuts"], D["end"]
@@ -111,10 +112,11 @@ for i in range(NT):
         e = (1 - t / 0.5) ** 2
         blur += 24 * e
         lift -= 0.5 * e
-    if t > END:                                     # финал: стоп-кадр уходит в размытие
-        e = min(1, (t - END) / 0.6)
-        blur += 30 * e
-        sc *= 1 + 0.05 * e
+    if t > END - 0.8:                               # финал: мягкий наезд, размытие и затемнение
+        e = min(1, (t - (END - 0.8)) / 0.8) ** 2
+        blur += 14 * e
+        sc *= 1 + 0.03 * e
+        lift -= 0.98 * e
     x = xform(x, sc)
     if blur > 0.3:
         x = cv2.GaussianBlur(x, (0, 0), blur)
@@ -125,6 +127,8 @@ for i in range(NT):
         ov = cv2.imread(str(ovf), cv2.IMREAD_UNCHANGED).astype(np.float32) / 255
         a = ov[..., 3:4]
         x = x * (1 - a) + ov[..., :3] * a
+    if t > END - 0.8:                               # оверлей тоже уходит в затемнение
+        x = x * (1 - min(1, (t - (END - 0.8)) / 0.8) ** 2)
     x = x + rng.normal(0, 0.008, (H // 2, W // 2, 1)).astype(np.float32).repeat(2, 0).repeat(2, 1)
     enc.stdin.write((np.clip(x, 0, 1) * 255 + 0.5).astype(np.uint8).tobytes())
 enc.stdin.close()
@@ -146,20 +150,27 @@ def put(sig, t, g):
     fxb[s:s + len(sig)] += sig * g
 
 
+# звуки (CC0, uisfx): глухая механическая клавиша на появление слова, мягкий «клик мыши» на переходах
+import librosa  # noqa: E402
+from scipy.signal import butter, sosfilt  # noqa: E402
+SFX_DIR = Path(__file__).resolve().parent / "sfx"
+key, _ = librosa.load(str(SFX_DIR / "key.mp3"), sr=SR)
+key = sosfilt(butter(2, 3200, "lowpass", fs=SR, output="sos"), key) + 0.5 * sosfilt(butter(2, 220, "lowpass", fs=SR, output="sos"), key)
+key /= np.abs(key).max()
+click, _ = librosa.load(str(SFX_DIR / "click.mp3"), sr=SR)
+click /= np.abs(click).max()
 for c in CUTS:
-    put(sfx.whoosh(0.7, up=True, amp=0.5), c - 0.4, 0.9)
+    put(click, c - 0.04, 0.32)
 for c in D["cards"]:
     if c["tw"]:
-        put(sfx.tap(), c["tw"] + 0.02, 0.45)
+        put(key, c["tw"] - 0.01, 0.42)
 for n in D["names"]:
-    put(sfx.pop(900, 600, 0.12, 0.3), n["t"], 0.5)
-put(sfx.whoosh(1.0, up=True, amp=0.4), END - 0.6, 0.8)
-put(sfx.chime(), END + 0.35, 0.6)
-put(sfx.sparkle(0.12), END + 0.6, 0.8)
-mixb += (fxb * 0.55)[:, None]
+    put(click, n["t"], 0.22)
+mixb += fxb[:, None]
 mixb = mixb[: int(NT / FPS * SR)]
 sf.write(str(work / "mix.wav"), mixb / max(1.0, np.abs(mixb).max() / 0.95), SR)
 subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(work / "v.mp4"), "-i", str(work / "mix.wav"),
-                "-af", "loudnorm=I=-14:TP=-1.5:LRA=9", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest",
+                "-filter:v", f"setpts=PTS/{SPEED},fps={FPS}", "-af", f"atempo={SPEED},loudnorm=I=-14:TP=-1.5:LRA=9",
+                "-c:v", "libx264", "-preset", "slow", "-crf", "19", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-shortest",
                 "-map_metadata", "-1", "-movflags", "+faststart", out], check=True)
-print("готово:", out, f"{NT / FPS:.1f} с")
+print("готово:", out, f"{NT / FPS / SPEED:.1f} с")
