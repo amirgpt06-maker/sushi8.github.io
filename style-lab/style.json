@@ -1,0 +1,24 @@
+{
+  "name": "apple-reels",
+  "source": "4 референс-ролика, вертикаль 9:16, 15-37 с",
+  "format": { "w": 1080, "h": 1920, "fps": 30 },
+  "text": {
+    "y": 0.60,
+    "in_dur": 0.55, "stagger": 0.08, "rise_px": 26, "blur_px": 16,
+    "out_dur": 0.32, "blur_out_px": 12,
+    "phrase_len_words": [2, 4], "phrase_seconds": [0.5, 1.4]
+  },
+  "watermark": { "text": "@your_handle", "font": "script" },
+  "grade": {
+    "lift": 0.035, "contrast": 1.10, "saturation": 0.88, "shadows_tint_bgr": [1.05, 1.0, 0.96],
+    "highlights_tint_bgr": [0.97, 1.0, 1.04], "vignette": 0.30, "grain": 0.016, "bloom": 0.10
+  },
+  "motion": {
+    "base_push": 0.045,
+    "punch": { "scale": 1.12, "in_s": 0.22, "hold_s": 0.5, "out_s": 0.5 },
+    "flash": { "color_rgb": [255, 110, 20], "peak": 0.55, "dur_s": 0.28 },
+    "glitch": { "dur_s": 0.22, "bands": 9, "max_shift_px": 70 }
+  },
+  "cuts": { "hold_talking_head_s": [2.5, 15], "fast_montage_s": [0.15, 0.6], "cuts_per_10s": [1.7, 8.1] },
+  "audio": { "target_lufs": -14, "sfx_gain": 0.5, "sfx_on": ["cut", "punch", "flash", "word"] }
+}

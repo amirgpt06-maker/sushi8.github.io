@@ -10,3 +10,5 @@ knight-vfx/*.wav
 knight-vfx/*.exr
 knight-vfx/*.hdr
 __pycache__/
+style-lab/*.mp4
+style-lab/out/

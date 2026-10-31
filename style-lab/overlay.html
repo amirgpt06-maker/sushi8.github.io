@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family: "Inter"; src: url("fonts/Inter.ttf"); font-weight: 100 900; }
+@font-face { font-family: "Oswald"; src: url("fonts/Oswald.ttf"); font-weight: 200 700; }
+@font-face { font-family: "Allura"; src: url("fonts/Allura-Regular.ttf"); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1080px; height: 1920px; background: transparent; overflow: hidden; font-family: "Inter", "Noto Color Emoji", sans-serif; color: #fff; }
+.cue { position: absolute; left: 0; width: 1080px; text-align: center; display: none; }
+.cue.on { display: block; }
+.w { display: inline-block; will-change: transform, opacity, filter; }
+
+/* Заголовок: строчные, жирный, очень плотный трекинг */
+.title .l1 { font-weight: 700; font-size: 104px; letter-spacing: -0.045em; line-height: 0.98; text-shadow: 0 4px 40px rgba(0,0,0,.35); }
+.title.italic .l1 { font-style: italic; transform-origin: left; }
+.title .sub { margin-top: 26px; font-weight: 300; font-size: 40px; letter-spacing: 0.18em; opacity: .85; text-shadow: 0 2px 20px rgba(0,0,0,.4); }
+.title .tag { display: flex; justify-content: space-between; width: 340px; margin: 0 auto 34px; font-size: 27px; font-weight: 400; letter-spacing: 0.06em; opacity: .9; }
+.title.left { text-align: left; padding-left: 64px; }
+.title.left .tag { margin-left: 0; }
+
+/* Карточка «слово за словом»: тёмно-синий фон, приглушённое серое слово */
+.card { left: 0; top: 0; height: 1920px; background: #1d2340; display: none; }
+.card.on { display: block; }
+.card .word { position: absolute; left: 0; width: 1080px; top: 780px; text-align: center; font-weight: 500; font-size: 92px; letter-spacing: -0.03em; color: #7b819c; }
+
+/* Крупные тонкие цифры */
+.num { font-family: "Oswald"; font-weight: 200; font-size: 300px; letter-spacing: 0.02em; color: #cfeaf3; opacity: .92; line-height: 1; }
+.num .ghost { opacity: .25; font-size: 220px; margin-top: -40px; }
+
+/* UI-плашки: синяя кнопка и серая «пилюля» */
+.pills { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.pill { padding: 22px 64px; border-radius: 999px; font-size: 38px; font-weight: 600; background: rgba(20,20,24,.78); color: #fff; backdrop-filter: blur(12px); }
+.pill.blue { background: #3b3df4; box-shadow: 0 12px 40px rgba(59,61,244,.45); }
+.pill.light { background: rgba(255,255,255,.9); color: #111; }
+
+/* Водяной знак: ник скриптом */
+#wm { position: absolute; left: 0; width: 1080px; bottom: 150px; text-align: center; font-family: "Allura"; font-size: 54px; opacity: .55; text-shadow: 0 2px 12px rgba(0,0,0,.5); }
+#wm.plain { font-family: "Inter"; font-size: 26px; letter-spacing: .08em; opacity: .35; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="wm"></div>
+<script>
+const clamp = (x) => Math.max(0, Math.min(1, x));
+const ease = (p) => 1 - Math.pow(1 - p, 4);
+let CUES = [], S = {};
+const els = [];
+
+function build(cues, style) {
+  CUES = cues; S = style;
+  const root = document.getElementById("root");
+  const wm = document.getElementById("wm");
+  wm.textContent = style.watermark?.text || "";
+  wm.className = style.watermark?.font === "plain" ? "plain" : "";
+  wm.style.display = style.watermark?.text ? "block" : "none";
+  const words = (s, cls = "") => s.split(/\s+/).map((w) => `<span class="w ${cls}">${w}</span>`).join(" ");
+  cues.forEach((c, i) => {
+    const el = document.createElement("div");
+    const top = (c.y ?? style.text.y) * 1920;
+    if (c.kind === "title") {
+      el.className = `cue title ${c.italic ? "italic" : ""} ${c.align === "left" ? "left" : ""}`;
+      el.style.top = top + "px";
+      el.innerHTML = (c.tag ? `<div class="tag"><span class="w">[</span><span class="w">${c.tag}</span><span class="w">]</span></div>` : "") +
+        c.lines.map((l) => `<div class="l1">${words(l)}</div>`).join("") + (c.sub ? `<div class="sub">${words(c.sub)}</div>` : "");
+    } else if (c.kind === "card") {
+      el.className = "card";
+      el.innerHTML = `<div class="word"><span class="w">${c.text}</span></div>`;
+    } else if (c.kind === "number") {
+      el.className = "cue";
+      el.style.top = (c.y ?? 0.16) * 1920 + "px";
+      el.innerHTML = `<div class="num"><span class="w">${c.text}</span>${c.ghost ? `<div class="ghost w">${c.ghost}</div>` : ""}</div>`;
+    } else if (c.kind === "pills") {
+      el.className = "cue";
+      el.style.top = top + "px";
+      el.innerHTML = `<div class="pills">${c.items.map((p) => `<div class="pill w ${p.style || ""}">${p.text}</div>`).join("")}</div>`;
+    }
+    root.appendChild(el);
+    els.push({ el, c, ws: [...el.querySelectorAll(".w")], i });
+  });
+}
+
+// t — секунды. Возвращает true, если на кадре что-то видно.
+function render(t) {
+  let any = false;
+  const st = S.text;
+  for (const { el, c, ws } of els) {
+    const t0 = c.t, t1 = c.t + c.d;
+    const on = t >= t0 - 0.01 && t <= t1 + st.out_dur;
+    el.classList.toggle("on", on);
+    if (!on) continue;
+    any = true;
+    const out = clamp((t - t1) / st.out_dur);
+    const eo = ease(out);
+    ws.forEach((w, k) => {
+      const inDur = c.kind === "card" ? 0.4 : st.in_dur;
+      const p = clamp((t - t0 - k * st.stagger - (w.classList.contains("ghost") ? 0.3 : 0)) / inDur);
+      const e = ease(p);
+      const isSub = w.parentElement.classList.contains("sub") ? 0.2 : 0;
+      const pp = clamp((t - t0 - k * st.stagger - isSub) / inDur), ee = ease(pp);
+      const blur = (1 - ee) * st.blur_px + eo * st.blur_out_px;
+      const y = (1 - ee) * st.rise_px - eo * 14;
+      const op = clamp(pp * 1.5) * (1 - eo);
+      let tr = `translateY(${y.toFixed(1)}px)`;
+      if (c.italic) tr += " skewX(-10deg)";
+      w.style.transform = tr;
+      w.style.opacity = op.toFixed(3);
+      w.style.filter = blur > 0.2 ? `blur(${blur.toFixed(1)}px)` : "none";
+    });
+    if (c.kind === "card") el.style.opacity = (1 - eo * 0.0).toFixed(2);
+  }
+  return any;
+}
+window.build = build; window.render = render;
+</script>
+</body>
+</html>
