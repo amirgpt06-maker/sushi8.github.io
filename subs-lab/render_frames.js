@@ -6,6 +6,8 @@ const path = require("path");
 
 const [dataF, outDir, from, to, fps, only] = process.argv.slice(2);
 const data = JSON.parse(fs.readFileSync(dataF, "utf8"));
+const iconsF = path.join(__dirname, "icons.json");
+if (fs.existsSync(iconsF)) data.icons = JSON.parse(fs.readFileSync(iconsF, "utf8"));
 fs.mkdirSync(outDir, { recursive: true });
 const F = parseFloat(fps);
 const frames = only ? only.split(",").map(Number) : (() => { const a = []; for (let i = Math.round(from * F); i < Math.round(to * F); i++) a.push(i); return a; })();

@@ -1,0 +1,2 @@
+Иконки: Hugeicons (MIT, https://hugeicons.com) и IconPark (Apache-2.0, https://github.com/bytedance/IconPark).
+Шрифты: Noto Naskh Arabic, Inter (SIL OFL).

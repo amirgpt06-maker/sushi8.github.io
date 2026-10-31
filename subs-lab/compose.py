@@ -1,6 +1,6 @@
 """Сборка ролика «Арабский алфавит» в стиле Apple: исходник + оверлей (arabic.html) + переходы + звук.
 
-Использование: python compose.py source.mp4 arabic_cues.json overlay_dir out.mp4 [хвост_с=3.0]
+Использование: python compose.py source.mp4 arabic_cues.json overlay_dir out.mp4 [хвост_с=3.0] [faces.json]
 Переходы на склейках — размытие + «проход сквозь» кадр (наезд/отъезд) + лёгкая засветка;
 внутри планов — медленный наезд; в конце — стоп-кадр, уходящий в размытие под итоговую карточку.
 """
@@ -19,6 +19,7 @@ import mix as sfx  # noqa: E402  синтез эффектов (SR=48000)
 
 src, cues_f, ov_dir, out = sys.argv[1:5]
 TAIL = float(sys.argv[5]) if len(sys.argv) > 5 else 3.0
+FACES = json.load(open(sys.argv[6]))["ellipses"] if len(sys.argv) > 6 else None
 D = json.load(open(cues_f))
 CUTS, END = D["cuts"], D["end"]
 cap = cv2.VideoCapture(src)
@@ -51,6 +52,25 @@ def xform(img, sc, cy=0.42):
     return cv2.warpAffine(img, M, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
 
 
+def blur_faces(img, ells):
+    """Аккуратное размытие лиц: сильный гаусс внутри эллипса, мягкий растушёванный край."""
+    out = img.copy()
+    for x, y, rx, ry in ells:
+        pad = 1.35
+        x0, x1 = int(max(0, x - rx * pad)), int(min(W, x + rx * pad))
+        y0, y1 = int(max(0, y - ry * pad)), int(min(H, y + ry * pad))
+        if x1 - x0 < 4 or y1 - y0 < 4:
+            continue
+        roi = out[y0:y1, x0:x1]
+        bl = cv2.GaussianBlur(roi, (0, 0), max(6.0, 0.30 * rx))
+        bl = cv2.GaussianBlur(bl, (0, 0), max(4.0, 0.15 * rx))
+        m = np.zeros(roi.shape[:2], np.float32)
+        cv2.ellipse(m, (int(x - x0), int(y - y0)), (int(rx), int(ry)), 0, 0, 360, 1.0, -1)
+        m = cv2.GaussianBlur(m, (0, 0), max(3.0, 0.16 * rx))[..., None]
+        out[y0:y1, x0:x1] = roi * (1 - m) + bl * m
+    return out
+
+
 def shot_scale(t):
     for a, b in zip(shots, shots[1:]):
         if a <= t < b:
@@ -71,6 +91,8 @@ for i in range(NT):
             last = fr
     fr = last
     x = fr.astype(np.float32) / 255
+    if FACES:
+        x = blur_faces(x, FACES[min(i, N - 1)])
     sc, blur, lift = shot_scale(t), 0.0, 0.0
     # переход: за 0.3 с до склейки кадр «уходит» вперёд и размывается, после — новый приходит из размытия
     for c in CUTS:

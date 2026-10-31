@@ -22,7 +22,7 @@ html, body { width: 1080px; height: 1920px; background: transparent; overflow: h
 
 /* ученик */
 .who { left: 50%; top: 286px; height: 112px; border-radius: 999px; display: flex; align-items: center; gap: 20px; padding: 0 48px 0 16px; transform-origin: center; }
-.who .av { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #7f98ff, #ff86c8 60%, #ffc95e); color: #fff; font-weight: 800; font-size: 34px; display: flex; align-items: center; justify-content: center; }
+.who .av { width: 80px; height: 80px; border-radius: 50%; background: #0b0b0f; color: #fff; font-weight: 800; font-size: 34px; display: flex; align-items: center; justify-content: center; }
 .who small { display: block; font-size: 21px; letter-spacing: .14em; color: rgba(11,11,15,.5); font-weight: 600; text-transform: uppercase; }
 .who b { font-size: 44px; letter-spacing: -.02em; }
 
@@ -33,12 +33,13 @@ html, body { width: 1080px; height: 1920px; background: transparent; overflow: h
 .bname .ar { font-size: 46px; letter-spacing: 0; color: rgba(11,11,15,.75); font-weight: 700; }
 .badge { left: 540px; top: 1022px; width: 128px; height: 128px; margin-left: -232px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: "Naskh"; font-weight: 700; font-size: 70px; line-height: 1; padding-bottom: 10px; }
 .icon { left: 540px; top: 1000px; width: 172px; height: 172px; margin-left: -86px; border-radius: 50px; display: flex; align-items: center; justify-content: center; }
-.icon .emo { font-size: 100px; }
+.icon .ico { width: 96px; height: 96px; color: #0b0b0f; overflow: visible; }
+.ico.h g, .ico.h path, .ico.h circle { stroke-width: 1.3px; }
+.ico.p * { stroke-width: 3.2px; }
 .glow { left: 540px; top: 1090px; width: 420px; height: 260px; margin: -130px 0 0 -210px; border-radius: 50%; filter: blur(50px); opacity: .55;
   background: radial-gradient(circle at 30% 40%, #8fa4ff 0, transparent 60%), radial-gradient(circle at 70% 50%, #ff9ccf 0, transparent 60%), radial-gradient(circle at 50% 80%, #ffd27a 0, transparent 60%); }
 .word { left: 0; width: 1080px; top: 1166px; text-align: center; font-family: "Naskh"; font-weight: 700; font-size: 124px; line-height: 1.45; direction: rtl; }
-.translit { left: 0; width: 1080px; top: 1356px; text-align: center; font-size: 32px; font-weight: 400; letter-spacing: .26em; color: rgba(11,11,15,.5); }
-.trans { left: 0; width: 1080px; top: 1396px; text-align: center; font-size: 66px; font-weight: 700; letter-spacing: -.04em; }
+.trans { left: 0; width: 1080px; top: 1366px; text-align: center; font-size: 66px; font-weight: 700; letter-spacing: -.04em; }
 
 /* субтитры преподавателя */
 .sub { left: 90px; width: 900px; top: 1460px; border-radius: 44px; padding: 34px 40px 38px; text-align: center; }
@@ -53,7 +54,7 @@ html, body { width: 1080px; height: 1920px; background: transparent; overflow: h
 #grid { position: absolute; left: 110px; width: 860px; top: 760px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 22px; direction: rtl; }
 #grid div { height: 108px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-family: "Naskh"; font-weight: 700; font-size: 54px; line-height: 1; padding-bottom: 8px; }
 #end .stat { position: absolute; left: 0; width: 1080px; top: 1380px; text-align: center; font-size: 34px; font-weight: 500; letter-spacing: .06em; color: rgba(11,11,15,.6); }
-#end .ok { position: absolute; left: 490px; top: 1460px; width: 100px; height: 100px; border-radius: 50%; background: #1f9d55; color: #fff; font-size: 58px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+#end .ok { position: absolute; left: 490px; top: 1460px; width: 100px; height: 100px; border-radius: 50%; background: #0b0b0f; color: #fff; font-size: 58px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
 </style>
 </head>
 <body>
@@ -77,8 +78,12 @@ function io(t, t0, t1, din = 0.5, dout = 0.28, rise = 26, blurIn = 16) {
   return [clamp((t - t0) / din * 1.6) * (1 - q), (1 - p) * rise - q * 18, (1 - p) * blurIn + q * 12];
 }
 
+let ICONS = {};
+const ICON = (L) => { const ic = ICONS[L]; if (!ic) return ""; const set = ic.src.startsWith("Hugeicons") ? "h" : "p";
+  return `<svg class="ico ${set}" viewBox="${ic.viewBox}" fill="none">${ic.body}</svg>`; };
 function build(data) {
-  D = data;
+  D = data; ICONS = data.icons || {};
+  D.cards.forEach((c) => { c.fill = ICONS[c.letter]?.fill; });
   const root = document.getElementById("root");
   root.innerHTML = `
     <div id="strip" class="abs glass">${ORDER.map((l) => `<span>${l}</span>`).join("")}</div>
@@ -86,13 +91,11 @@ function build(data) {
     ${D.names.map((n, i) => `<div class="abs who glass" id="who${i}"><div class="av">${n.name[0]}</div><div><small>ученик</small><b>${n.name}</b></div></div>`).join("")}
     ${D.subs.map((s, i) => `<div class="abs sub glass" id="sub${i}">${s.lines.map((l) => `<div class="l">${l.split(" ").map((w) => `<span class="w">${w}</span>`).join(" ")}</div>`).join("")}</div>`).join("")}
     ${D.cards.map((c, i) => `<div class="abs card" id="card${i}">
-        <div class="abs glow"></div>
         <div class="abs big">${c.letter}</div>
         <div class="abs bname"><span class="ar">${c.name}</span> · ${c.name_ru}</div>
         ${c.word ? `<div class="abs badge glass">${c.letter}</div>
-        <div class="abs icon glass"><span class="emo">${c.icon}</span></div>
+        <div class="abs icon glass">${ICON(c.letter)}</div>
         <div class="abs word ar">${c.word}</div>
-        <div class="abs translit">${c.word_ru.toUpperCase()}</div>
         <div class="abs trans">${c.tr}</div>` : ""}
       </div>`).join("")}
     <div id="end" class="abs"><div class="eyebrow">[ проверка пройдена ]</div><h1>28 букв.<span>4 ученика.</span></h1>
@@ -106,8 +109,10 @@ function build(data) {
   R.cells = [...document.querySelectorAll("#grid div")];
   R.cards = D.cards.map((c, i) => {
     const el = document.getElementById("card" + i), q = (s) => el.querySelector(s);
-    return { el, c, big: q(".big"), bname: q(".bname"), badge: q(".badge"), icon: q(".icon"), emo: q(".icon .emo"), glow: q(".glow"),
-             word: q(".word"), translit: q(".translit"), trans: q(".trans") };
+    const strokes = [...el.querySelectorAll(".ico path, .ico circle, .ico rect, .ico line, .ico polyline, .ico ellipse, .ico polygon")]
+      .map((sh) => { let L = 100; try { L = sh.getTotalLength() + 1; } catch (e) {} sh.style.strokeDasharray = L; sh.style.strokeDashoffset = L; return [sh, L]; });
+    return { el, c, big: q(".big"), bname: q(".bname"), badge: q(".badge"), icon: q(".icon"), ico: q(".ico"), strokes,
+             word: q(".word"), trans: q(".trans") };
   });
   R.who = D.names.map((n, i) => document.getElementById("who" + i));
   R.subs = D.subs.map((s, i) => ({ el: document.getElementById("sub" + i), ws: [...document.querySelectorAll(`#sub${i} .w`)], s }));
@@ -152,7 +157,7 @@ function render(t) {
   });
 
   // карточки букв
-  R.cards.forEach(({ el, c, big, bname, badge, icon, emo, glow, word, translit, trans }) => {
+  R.cards.forEach(({ el, c, big, bname, badge, icon, ico, strokes, word, trans }) => {
     const on = t >= c.tl - 0.02 && t <= c.end + 0.02;
     el.style.display = on ? "" : "none";
     if (!on) return;
@@ -165,21 +170,19 @@ function render(t) {
     const bigOp = clamp((t - c.tl) / 0.28) * (1 - m) * fade;
     set(big, bigOp, (1 - pin) * 30 + outY - m * 60, (0.9 + 0.1 * pin) * (1 - 0.55 * m), (1 - pin) * 18 + m * 14 + outBlur, -m * 200);
     set(bname, clamp((t - c.tl - 0.12) / 0.3) * (1 - m) * fade, (1 - ease(clamp((t - c.tl - 0.12) / 0.4))) * 18 + outY, 1, (1 - pin) * 10 + m * 10 + outBlur);
-    set(glow, 0.55 * pin * fade, 0, 0.9 + 0.15 * Math.sin(t * 2.2), 0);
     if (!c.word) return;
     const pb = ease(clamp((t - tw - 0.15) / 0.4));
     set(badge, clamp((t - tw - 0.15) / 0.25) * fade, (1 - pb) * 20 + outY, 0.6 + 0.4 * back(clamp((t - tw - 0.15) / 0.5)), (1 - pb) * 10 + outBlur);
-    // иконка: пружина + лёгкое «парение»
-    const pi = clamp((t - tw - 0.05) / 0.6);
-    const sc = t >= tw ? 0.55 + 0.45 * back(pi) : 0.55;
-    set(icon, clamp((t - tw) / 0.22) * fade, 8 * Math.sin((t - tw) * 2.6) * pi + outY, sc, (1 - ease(pi)) * 12 + outBlur);
-    emo.style.transform = `rotate(${((1 - ease(pi)) * -14 + 3 * Math.sin((t - tw) * 2.1)).toFixed(2)}deg)`;
+    // иконка: стеклянная плитка выезжает, линия иконки прорисовывается (как в SF Symbols)
+    const pi = clamp((t - tw) / 0.5);
+    set(icon, clamp((t - tw) / 0.25) * fade, (1 - ease(pi)) * 24 + outY, 0.86 + 0.14 * ease(pi), (1 - ease(pi)) * 10 + outBlur);
+    const pd = ease(clamp((t - tw - 0.08) / 0.75));
+    strokes.forEach(([sh, L]) => { sh.style.strokeDashoffset = (L * (1 - pd)).toFixed(1); });
+    if (c.fill) ico.style.fill = `rgba(11,11,15,${clamp((t - tw - 0.55) / 0.35).toFixed(3)})`;
     const pw = ease(clamp((t - tw) / 0.5));
     set(word, clamp((t - tw) / 0.3) * fade, (1 - pw) * 34 + outY, 0.96 + 0.04 * pw, (1 - pw) * 18 + outBlur);
-    const pl = ease(clamp((t - tw - 0.16) / 0.45));
-    set(translit, clamp((t - tw - 0.16) / 0.3) * fade, (1 - pl) * 20 + outY, 1, (1 - pl) * 12 + outBlur);
-    const pt = ease(clamp((t - tw - 0.26) / 0.45));
-    set(trans, clamp((t - tw - 0.26) / 0.3) * fade, (1 - pt) * 26 + outY, 1, (1 - pt) * 14 + outBlur);
+    const pt = ease(clamp((t - tw - 0.2) / 0.45));
+    set(trans, clamp((t - tw - 0.2) / 0.3) * fade, (1 - pt) * 26 + outY, 1, (1 - pt) * 14 + outBlur);
   });
 
   // финальная карточка
