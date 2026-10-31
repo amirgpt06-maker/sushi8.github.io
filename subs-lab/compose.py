@@ -150,20 +150,18 @@ def put(sig, t, g):
     fxb[s:s + len(sig)] += sig * g
 
 
-# звуки (CC0, uisfx): глухая механическая клавиша на появление слова, мягкий «клик мыши» на переходах
+# звуки (CC0, uisfx): чёткий стеклянный щелчок на появление слова, мягкий «клик мыши» на переходах
 import librosa  # noqa: E402
 from scipy.signal import butter, sosfilt  # noqa: E402
 SFX_DIR = Path(__file__).resolve().parent / "sfx"
-key, _ = librosa.load(str(SFX_DIR / "key.mp3"), sr=SR)
-key = sosfilt(butter(2, 3200, "lowpass", fs=SR, output="sos"), key) + 0.5 * sosfilt(butter(2, 220, "lowpass", fs=SR, output="sos"), key)
-key /= np.abs(key).max()
+appear, _ = librosa.load(str(SFX_DIR / "appear.wav"), sr=SR)   # чёткий щелчок появления слова (см. sfx/make_appear.py)
 click, _ = librosa.load(str(SFX_DIR / "click.mp3"), sr=SR)
 click /= np.abs(click).max()
 for c in CUTS:
     put(click, c - 0.04, 0.32)
 for c in D["cards"]:
     if c["tw"]:
-        put(key, c["tw"] - 0.01, 0.42)
+        put(appear, c["tw"] - 0.015, 0.5)
 for n in D["names"]:
     put(click, n["t"], 0.22)
 mixb += fxb[:, None]

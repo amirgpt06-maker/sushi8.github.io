@@ -1,1 +1,2 @@
 Звуки key.mp3 (mechanical/press) и click.mp3 (minimal/press) — из пакета uisfx 0.4.0, CC0 1.0 (общественное достояние), https://github.com/romainsimon/uisfx
+appear.wav собран из glass_snap.mp3 (uisfx glass/snap, CC0 1.0) и синтезированного шума — скрипт make_appear.py.

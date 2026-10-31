@@ -34,7 +34,9 @@ html, body { width: 1080px; height: 1920px; background: transparent; overflow: h
 .bname .ar { font-size: 46px; letter-spacing: 0; color: rgba(255,255,255,.85); font-weight: 700; }
 .badge { left: 540px; top: 1092px; width: 128px; height: 128px; margin-left: -232px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: "Naskh"; font-weight: 700; font-size: 70px; line-height: 1; padding-bottom: 10px; }
 .icon { left: 540px; top: 1070px; width: 172px; height: 172px; margin-left: -86px; border-radius: 50px; display: flex; align-items: center; justify-content: center; }
-.icon .emo { font-size: 104px; }
+.icon .emo { font-size: 104px; display: inline-block; }
+.icon.crop { overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12%); }
+.icon .sym { font-family: "DejaVu Sans", sans-serif; font-size: 92px; font-weight: 700; color: #0b0b0f; line-height: 1; }
 .icon .num { font-size: 50px; font-weight: 800; letter-spacing: -.04em; color: #0b0b0f; }
 .glow { left: 540px; top: 1090px; width: 420px; height: 260px; margin: -130px 0 0 -210px; border-radius: 50%; filter: blur(50px); opacity: .55;
   background: radial-gradient(circle at 30% 40%, #8fa4ff 0, transparent 60%), radial-gradient(circle at 70% 50%, #ff9ccf 0, transparent 60%), radial-gradient(circle at 50% 80%, #ffd27a 0, transparent 60%); }
@@ -93,10 +95,9 @@ function build(data) {
     ${D.names.map((n, i) => `<div class="abs who glass" id="who${i}"><div class="av">${n.name[0]}</div><div><small>ученик</small><b>${n.name}</b></div></div>`).join("")}
     ${D.subs.map((s, i) => `<div class="abs sub" id="sub${i}">${s.lines.map((l) => `<div class="l">${l.split(" ").map((w) => `<span class="w">${w}</span>`).join(" ")}</div>`).join("")}</div>`).join("")}
     ${D.cards.map((c, i) => `<div class="abs card" id="card${i}">
-        <div class="abs big">${c.letter}</div>
-        <div class="abs bname"><span class="ar">${c.name}</span> · ${c.name_ru}</div>
         ${c.word ? `<div class="abs badge glass">${c.letter}</div>
-        <div class="abs icon glass">${/^\d+$/.test(c.icon) ? `<span class="num">${c.icon}</span>` : `<span class="emo">${c.icon}</span>`}</div>
+        <div class="abs icon glass ${c.crop ? "crop" : ""}">${/^\d+$/.test(c.icon) ? `<span class="num">${c.icon}</span>` : c.icon === "♂" ? `<span class="sym">♂</span>`
+          : `<span class="emo" style="${c.crop ? `transform:translate(${c.crop[1]}%,${c.crop[2]}%) scale(${c.crop[0]})` : ""}">${c.icon}</span>`}</div>
         <div class="abs word ar">${c.word}</div>
         <div class="abs trans">${c.tr}</div>` : ""}
       </div>`).join("")}
@@ -108,7 +109,7 @@ function build(data) {
   R.label = document.getElementById("label");
   R.cards = D.cards.map((c, i) => {
     const el = document.getElementById("card" + i), q = (s) => el.querySelector(s);
-    return { el, c, big: q(".big"), bname: q(".bname"), badge: q(".badge"), icon: q(".icon"), emo: q(".icon span"),
+    return { el, c, badge: q(".badge"), icon: q(".icon"), emo: q(".icon span"),
              word: q(".word"), trans: q(".trans") };
   });
   R.who = D.names.map((n, i) => document.getElementById("who" + i));
@@ -154,30 +155,21 @@ function render(t) {
     });
   });
 
-  // карточки букв: слово, иконка и перевод проявляются ровно пока ученик произносит слово
-  R.cards.forEach(({ el, c, big, bname, badge, icon, emo, word, trans }) => {
-    const on = t >= c.tl - 0.02 && t <= c.end + 0.02;
+  // карточки слов: короткое мягкое появление (0.3 с) в момент, когда ученик начинает слово,
+  // и слово держится на экране, пока не прозвучит следующее
+  R.cards.forEach(({ el, c, badge, icon, word, trans }) => {
+    if (!c.word) return;
+    const on = t >= c.tw - 0.02 && t <= c.end + 0.02;
     el.style.display = on ? "" : "none";
     if (!on) return;
-    const out = smooth(clamp((t - (c.end - 0.42)) / 0.42));
-    const fade = 1 - out, outBlur = out * 14, outY = -out * 26;
-    const pin = smooth(clamp((t - c.tl) / 0.6));
-    const tw = c.tw ?? 1e9, dur = Math.max(0.5, (c.we ?? tw + 0.5) - tw);
-    // буква «перелетает» в бейдж за время произнесения слова
-    const m = smooth(clamp((t - tw) / (dur * 0.9)));
-    set(big, pin * (1 - m) * fade, (1 - pin) * 34 + outY - m * 60, (0.92 + 0.08 * pin) * (1 - 0.55 * m), (1 - pin) * 18 + m * 16 + outBlur, -m * 200);
-    const pn = smooth(clamp((t - c.tl - 0.15) / 0.55));
-    set(bname, pn * (1 - m) * fade, (1 - pn) * 18 + outY, 1, (1 - pn) * 10 + m * 10 + outBlur);
-    if (!c.word) return;
-    const pb = smooth(clamp((t - tw - dur * 0.25) / (dur * 0.75)));
-    set(badge, pb * fade, (1 - pb) * 18 + outY, 0.82 + 0.18 * pb, (1 - pb) * 10 + outBlur);
-    // иконка: мягко выплывает из размытия, без «пружины», потом едва заметно «дышит»
-    const pi = smooth(clamp((t - tw) / dur));
-    set(icon, pi * fade, (1 - pi) * 30 + outY + 3 * Math.sin((t - tw) * 2.2) * pi, 0.88 + 0.12 * pi, (1 - pi) * 14 + outBlur);
-    const pw = smooth(clamp((t - tw) / dur));
-    set(word, pw * fade, (1 - pw) * 34 + outY, 0.97 + 0.03 * pw, (1 - pw) * 18 + outBlur);
-    const pt = smooth(clamp((t - tw - dur * 0.3) / dur));
-    set(trans, pt * fade, (1 - pt) * 24 + outY, 1, (1 - pt) * 14 + outBlur);
+    const out = smooth(clamp((t - (c.end - 0.25)) / 0.25));
+    const fade = 1 - out, outBlur = out * 12, outY = -out * 22;
+    const p = (d, len = 0.3) => smooth(clamp((t - c.tw - d) / len));
+    const pi = p(0), pw = p(0.03), pb = p(0.06), pt = p(0.1);
+    set(icon, pi * fade, (1 - pi) * 22 + outY + 2.5 * Math.sin((t - c.tw) * 2.0), 0.9 + 0.1 * pi, (1 - pi) * 10 + outBlur);
+    set(badge, pb * fade, (1 - pb) * 16 + outY, 0.86 + 0.14 * pb, (1 - pb) * 8 + outBlur);
+    set(word, pw * fade, (1 - pw) * 24 + outY, 0.98 + 0.02 * pw, (1 - pw) * 12 + outBlur);
+    set(trans, pt * fade, (1 - pt) * 18 + outY, 1, (1 - pt) * 10 + outBlur);
   });
   return true;
 }
