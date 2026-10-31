@@ -33,9 +33,9 @@ for i in range(len(raw), N if not raw else 0):
     det.setInputSize((big.shape[1], big.shape[0]))
     _, f2 = det.detect(big)
     det.setInputSize((W, H))
-    boxes = [] if faces is None else [list(f[:4]) + [float(f[14])] for f in faces]
+    boxes = [] if faces is None else [[float(v) for v in f[:4]] + [float(f[14])] for f in faces]
     if f2 is not None:
-        boxes += [[f[0] / 1.6, f[1] / 1.6, f[2] / 1.6, f[3] / 1.6, float(f[14])] for f in f2]
+        boxes += [[float(f[0]) / 1.6, float(f[1]) / 1.6, float(f[2]) / 1.6, float(f[3]) / 1.6, float(f[14])] for f in f2]
     # слить дубликаты
     keep = []
     for b in sorted(boxes, key=lambda b: -b[4]):
