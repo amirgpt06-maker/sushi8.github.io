@@ -5,6 +5,7 @@
 внутри планов — медленный наезд; в конце — стоп-кадр, уходящий в размытие под итоговую карточку.
 """
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -29,7 +30,9 @@ W, H = int(cap.get(3)), int(cap.get(4))
 N = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 NT = N + int(TAIL * FPS)
 shots = [0.0] + CUTS + [N / FPS]
-work = Path(tempfile.mkdtemp(prefix="arab_"))
+work = Path(out).with_suffix(".work")            # промежуточное видео без звука — для быстрой замены звука
+work.mkdir(parents=True, exist_ok=True)
+AUDIO_ONLY = os.environ.get("AUDIO_ONLY") == "1" and (work / "v.mp4").exists()
 
 yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
 vig = (1 - 0.14 * np.clip(((xx - W / 2) / (W / 2)) ** 2 + ((yy - H / 2) / (H / 2)) ** 2, 0, 1.6) ** 1.3)[..., None]
@@ -79,12 +82,12 @@ def shot_scale(t):
     return 1.04
 
 
-enc = subprocess.Popen(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{W}x{H}",
+enc = None if AUDIO_ONLY else subprocess.Popen(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{W}x{H}",
                         "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "medium", "-crf", "17", "-pix_fmt", "yuv420p",
                         str(work / "v.mp4")], stdin=subprocess.PIPE)
 last = None
 rng = np.random.default_rng(3)
-for i in range(NT):
+for i in range(0 if enc else NT, NT):
     t = i / FPS
     if i < N:
         ok, fr = cap.read()
@@ -131,8 +134,9 @@ for i in range(NT):
         x = x * (1 - min(1, (t - (END - 0.8)) / 0.8) ** 2)
     x = x + rng.normal(0, 0.008, (H // 2, W // 2, 1)).astype(np.float32).repeat(2, 0).repeat(2, 1)
     enc.stdin.write((np.clip(x, 0, 1) * 255 + 0.5).astype(np.uint8).tobytes())
-enc.stdin.close()
-enc.wait()
+if enc:
+    enc.stdin.close()
+    enc.wait()
 
 # --- звук: оригинал + мягкие эффекты (без музыки) ---
 SR = sfx.SR
@@ -150,18 +154,13 @@ def put(sig, t, g):
     fxb[s:s + len(sig)] += sig * g
 
 
-# звуки (CC0, uisfx): чёткий стеклянный щелчок на появление слова, мягкий «клик мыши» на переходах
+# звук только на переходах (появление слов — без звука). TRANS=page.wav | mouse_studio.mp3 | mouse_soft.mp3
 import librosa  # noqa: E402
-from scipy.signal import butter, sosfilt  # noqa: E402
 SFX_DIR = Path(__file__).resolve().parent / "sfx"
-appear, _ = librosa.load(str(SFX_DIR / "appear.wav"), sr=SR)   # чёткий щелчок появления слова (см. sfx/make_appear.py)
-click, _ = librosa.load(str(SFX_DIR / "click.mp3"), sr=SR)
-click /= np.abs(click).max()
+trans, _ = librosa.load(str(SFX_DIR / os.environ.get("TRANS", "page.wav")), sr=SR)
+trans /= np.abs(trans).max()
 for c in CUTS:
-    put(click, c - 0.04, 0.32)
-for c in D["cards"]:
-    if c["tw"]:
-        put(appear, c["tw"] - 0.015, 0.5)
+    put(trans, c - 0.12, 0.3)
 mixb += fxb[:, None]
 mixb = mixb[: int(NT / FPS * SR)]
 sf.write(str(work / "mix.wav"), mixb / max(1.0, np.abs(mixb).max() / 0.95), SR)

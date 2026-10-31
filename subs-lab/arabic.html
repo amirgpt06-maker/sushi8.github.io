@@ -31,7 +31,7 @@ html, body { width: 1080px; height: 1920px; background: transparent; overflow: h
 .badge { left: 540px; top: 1092px; width: 128px; height: 128px; margin-left: -232px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: "Naskh"; font-weight: 700; font-size: 70px; line-height: 1; padding-bottom: 10px; }
 .icon { left: 540px; top: 1070px; width: 172px; height: 172px; margin-left: -86px; border-radius: 50px; display: flex; align-items: center; justify-content: center; }
 .icon .emo { font-size: 104px; display: inline-block; }
-.icon.crop { overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12%); }
+.icon .emo.shadow { filter: brightness(0); opacity: .86; }
 .icon .sym { font-family: "DejaVu Sans", sans-serif; font-size: 92px; font-weight: 700; color: #0b0b0f; line-height: 1; }
 .icon .num { font-size: 50px; font-weight: 800; letter-spacing: -.04em; color: #0b0b0f; }
 .glow { left: 540px; top: 1090px; width: 420px; height: 260px; margin: -130px 0 0 -210px; border-radius: 50%; filter: blur(50px); opacity: .55;
@@ -90,9 +90,7 @@ function build(data) {
     <div id="label" class="abs">АРАБСКИЙ АЛФАВИТ</div><div id="count" class="abs"></div>
     ${D.subs.map((s, i) => `<div class="abs sub" id="sub${i}">${s.lines.map((l) => `<div class="l">${l.split(" ").map((w) => `<span class="w">${w}</span>`).join(" ")}</div>`).join("")}</div>`).join("")}
     ${D.cards.map((c, i) => `<div class="abs card" id="card${i}">
-        ${c.word ? `<div class="abs badge glass">${c.letter}</div>
-        <div class="abs icon glass ${c.crop ? "crop" : ""}">${/^\d+$/.test(c.icon) ? `<span class="num">${c.icon}</span>` : c.icon === "♂" ? `<span class="sym">♂</span>`
-          : `<span class="emo" style="${c.crop ? `transform:translate(${c.crop[1]}%,${c.crop[2]}%) scale(${c.crop[0]})` : ""}">${c.icon}</span>`}</div>
+        ${c.word ? `        <div class="abs icon glass">${/^\d+$/.test(c.icon) ? `<span class="num">${c.icon}</span>` : `<span class="emo ${c.shadow ? "shadow" : ""}">${c.icon}</span>`}</div>
         <div class="abs word ar">${c.word}</div>
         <div class="abs trans">${c.tr}</div>` : ""}
       </div>`).join("")}
@@ -104,7 +102,7 @@ function build(data) {
   R.label = document.getElementById("label");
   R.cards = D.cards.map((c, i) => {
     const el = document.getElementById("card" + i), q = (s) => el.querySelector(s);
-    return { el, c, badge: q(".badge"), icon: q(".icon"), emo: q(".icon span"),
+    return { el, c, icon: q(".icon"), emo: q(".icon span"),
              word: q(".word"), trans: q(".trans") };
   });
   R.subs = D.subs.map((s, i) => ({ el: document.getElementById("sub" + i), ws: [...document.querySelectorAll(`#sub${i} .w`)], s }));
@@ -144,7 +142,7 @@ function render(t) {
 
   // карточки слов: короткое мягкое появление (0.3 с) в момент, когда ученик начинает слово,
   // и слово держится на экране, пока не прозвучит следующее
-  R.cards.forEach(({ el, c, badge, icon, word, trans }) => {
+  R.cards.forEach(({ el, c, icon, word, trans }) => {
     if (!c.word) return;
     const on = t >= c.tw - 0.02 && t <= c.end + 0.02;
     el.style.display = on ? "" : "none";
@@ -152,9 +150,8 @@ function render(t) {
     const out = smooth(clamp((t - (c.end - 0.25)) / 0.25));
     const fade = 1 - out, outBlur = out * 12, outY = -out * 22;
     const p = (d, len = 0.3) => smooth(clamp((t - c.tw - d) / len));
-    const pi = p(0), pw = p(0.03), pb = p(0.06), pt = p(0.1);
+    const pi = p(0), pw = p(0.03), pt = p(0.1);
     set(icon, pi * fade, (1 - pi) * 22 + outY + 2.5 * Math.sin((t - c.tw) * 2.0), 0.9 + 0.1 * pi, (1 - pi) * 10 + outBlur);
-    set(badge, pb * fade, (1 - pb) * 16 + outY, 0.86 + 0.14 * pb, (1 - pb) * 8 + outBlur);
     set(word, pw * fade, (1 - pw) * 24 + outY, 0.98 + 0.02 * pw, (1 - pw) * 12 + outBlur);
     set(trans, pt * fade, (1 - pt) * 18 + outY, 1, (1 - pt) * 10 + outBlur);
   });
