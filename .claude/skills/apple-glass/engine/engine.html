@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<!--
+  «Apple стекло» — движок оверлея. build(data) строит сцену из cues.json, render(t) рисует кадр и
+  возвращает fx (то, что делает compose.py поверх видео: размытие фона, наезд, стеклянная линза, засветка),
+  events() — список звуков с точными временами (печать по буквам, стекло, клики, деньги...).
+-->
+<style>
+@font-face { font-family: "Inter"; src: url("fonts/Inter.ttf"); font-weight: 100 900; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1080px; height: 1920px; background: transparent; overflow: hidden; font-family: "Inter", "SF Pro Display", sans-serif; color: #fff;
+  -webkit-font-smoothing: antialiased; font-feature-settings: "ss01", "cv11"; }
+.abs { position: absolute; left: 0; top: 0; }
+.emo { font-family: "Noto Color Emoji"; line-height: 1; }
+.shadowed { text-shadow: 0 2px 18px rgba(0,0,0,.28), 0 1px 3px rgba(0,0,0,.18); }
+
+/* стопка слов: мелкое слово — КЛЮЧЕВОЕ — мелкое слово */
+.block { position: absolute; display: inline-flex; flex-direction: column; white-space: nowrap; transform-origin: 50% 50%; }
+.line { display: block; line-height: .98; }
+.line.left { text-align: left; } .line.center { text-align: center; } .line.right { text-align: right; }
+.sz-s  { font-size: 40px; font-weight: 400; letter-spacing: -.01em; margin: 0 4px -2px; }
+.sz-m  { font-size: 72px; font-weight: 500; letter-spacing: -.035em; }
+.sz-l  { font-size: 98px; font-weight: 600; letter-spacing: -.045em; line-height: .9; }
+.sz-caps { font-size: 82px; font-weight: 800; letter-spacing: -.02em; text-transform: uppercase; line-height: .92; }
+.sz-xl { font-size: 206px; font-weight: 700; letter-spacing: -.045em; line-height: .9; }
+.sz-label { font-size: 48px; font-weight: 400; letter-spacing: -.01em; }
+.w { display: inline-block; white-space: pre; }
+.w.b { font-weight: 800; }
+.ch { display: inline-block; white-space: pre; }
+
+/* карточка с фото */
+.cardbox { position: absolute; left: 192px; top: 612px; width: 696px; height: 696px; border-radius: 52px; overflow: hidden; background: #f4f4f6;
+  box-shadow: 0 40px 90px rgba(0,0,0,.38), 0 8px 24px rgba(0,0,0,.22); }
+.cardbox img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cardbox .emo { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 380px; }
+.cardbox::after { content: ""; position: absolute; inset: 0; border-radius: 52px; box-shadow: inset 0 0 0 2px rgba(255,255,255,.35), inset 0 2px 0 rgba(255,255,255,.45); }
+.persp { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; perspective: 1400px; }
+.clabel { position: absolute; left: 0; width: 1080px; text-align: center; font-size: 56px; font-weight: 400; letter-spacing: -.015em; white-space: nowrap; }
+
+/* вспышка: белый/чёрный экран с печатным текстом */
+.flash { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+.flash .txt { position: absolute; left: 0; width: 1080px; top: 922px; text-align: center; font-size: 62px; font-weight: 400; white-space: nowrap; }
+
+/* фокус-рамка из четырёх стрелок */
+.corner { position: absolute; width: 46px; height: 46px; margin: -23px 0 0 -23px; }
+
+/* призыв */
+.chev { position: absolute; width: 64px; height: 40px; margin-left: -32px; }
+
+.bill { position: absolute; left: 0; top: 0; font-family: "Noto Color Emoji"; line-height: 1; will-change: transform; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs id="defs">
+    <filter id="glassout" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence id="gturb" type="fractalNoise" baseFrequency="0.006 0.018" numOctaves="1" seed="7" result="n"/>
+      <feDisplacementMap id="gdisp" in="SourceGraphic" in2="n" scale="0" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur id="gblur" in="d" stdDeviation="0"/>
+    </filter>
+  </defs>
+</svg>
+<div id="root"></div>
+<script>
+const W = 1080, H = 1920;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const eOut = (k) => 1 - Math.pow(1 - clamp(k), 3);
+const eIn = (k) => Math.pow(clamp(k), 3);
+const eIO = (k) => { k = clamp(k); return k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; };
+// пружина Apple: быстрый выход, лёгкий перелёт ~4%, успокоение
+const spring = (k) => { k = clamp(k); return 1 - Math.exp(-6.2 * k) * Math.cos(7.2 * k); };
+function rng(seed) { let s = seed >>> 0 || 1; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+const KEYS = ["key1", "key2", "key3", "key4"];
+
+let D, EV, ITEMS, FILT = 0, root;
+const el = (tag, cls, parent, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; (parent || root).appendChild(e); return e; };
+const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+// направленное размытие (смаз в движении) — отдельный SVG-фильтр на элемент
+function motionBlur(node) {
+  const id = "mb" + (FILT++);
+  const f = document.createElementNS("http://www.w3.org/2000/svg", "filter");
+  f.setAttribute("id", id); f.setAttribute("x", "-50%"); f.setAttribute("y", "-50%"); f.setAttribute("width", "200%"); f.setAttribute("height", "200%");
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "feGaussianBlur");
+  g.setAttribute("stdDeviation", "0 0"); f.appendChild(g); document.getElementById("defs").appendChild(f);
+  return (bx, by) => { if (bx < .3 && by < .3) { node.style.filter = ""; return; } g.setAttribute("stdDeviation", `${bx.toFixed(1)} ${by.toFixed(1)}`); node.style.filter = `url(#${id})`; };
+}
+
+// --- якорь: лицо говорящего (из anchor.py); текст держится под подбородком и плавно ходит за головой ---
+function face(t) {
+  const A = D.anchor;
+  const def = { cx: W / 2, cy: 820, w: 420, h: 520 };
+  if (!A || !A.f || !A.f.length) return def;
+  const i = clamp(Math.round(t * A.fps), 0, A.f.length - 1);
+  const f = A.f[i];
+  return f ? { cx: f[0], cy: f[1], w: f[2], h: f[3] } : def;
+}
+function chinPos(t, it) {
+  if (it.pos) return { x: it.pos[0], y: it.pos[1] };
+  const f = face(t);
+  return { x: clamp(f.cx, 330, 750), y: clamp(f.cy + 0.80 * f.h, 1000, 1560) };
+}
+
+// --- раскрытие слова: мягкая градиентная шторка слева направо + расфокус -> резкость (как в референсе) ---
+function wordReveal(span, k) {
+  k = clamp(k);
+  if (k >= 1) { span.style.webkitMaskImage = ""; span.style.filter = ""; span.style.opacity = 1; return; }
+  const p = k * 150 - 25;
+  span.style.webkitMaskImage = `linear-gradient(90deg, #000 ${p - 25}%, rgba(0,0,0,.35) ${p}%, transparent ${p + 25}%)`;
+  span.style.filter = `blur(${((1 - k) * 7).toFixed(1)}px)`;
+  span.style.opacity = k <= 0 ? 0 : 1;
+}
+const wordDur = (w) => clamp(0.03 * w.length + 0.08, 0.14, 0.42);
+
+// строки: [{size, align, words:[[текст, t, "b"|"a"]...]}] или {size, text, t}
+function normLines(lines, t0) {
+  return lines.map((L) => {
+    const words = L.words || String(L.text).split(" ").map((w, i) => [w, (L.t != null ? L.t : t0) + i * 0.16]);
+    return { size: L.size || "m", align: L.align || "center", color: L.color, words };
+  });
+}
+function buildLines(parent, lines, cls = "") {
+  const spans = [];
+  for (const L of lines) {
+    const ln = el("div", `line ${L.align} sz-${L.size} ${cls}`, parent);
+    if (L.color) ln.style.color = L.color;
+    L.words.forEach(([w, t, st], j) => {
+      const s = el("span", "w" + (st === "b" ? " b" : ""), ln, esc(w) + (j < L.words.length - 1 ? " " : ""));
+      if (st === "a") s.style.color = D.accent || "#F28C28";
+      spans.push({ s, t, w });
+    });
+  }
+  return spans;
+}
+function typeEvents(text, t0, step, g, kind = "key") {
+  const R = rng(Math.round(t0 * 1000));
+  [...text].forEach((c, i) => { if (c.trim()) EV.push({ t: +(t0 + i * step).toFixed(3), s: kind === "key" ? KEYS[Math.floor(R() * 4)] : kind, g: g * (0.8 + 0.4 * R()) }); });
+}
+
+// ======================= элементы =======================
+const MAKE = {};
+
+// Живые субтитры под подбородком: «этот / Детский / набор»
+MAKE.words = (it) => {
+  const box = el("div", "abs");
+  const blk = el("div", "block shadowed", box);
+  const lines = normLines(it.lines, it.t);
+  const spans = buildLines(blk, lines);
+  const mb = motionBlur(blk);
+  if (it.sfx) EV.push({ t: it.t, s: it.sfx, g: 0.22 });
+  if (it.exit === "swipe") EV.push({ t: it.end - 0.14, s: "click2", g: 0.16 });
+  return (t) => {
+    if (t < it.t - 0.05 || t > it.end + 0.05) { box.style.display = "none"; return; }
+    box.style.display = "";
+    for (const { s, t: tw, w } of spans) wordReveal(s, (t - tw) / wordDur(w));
+    const p = chinPos(t, it);
+    const rise = (1 - eOut((t - it.t) / 0.35)) * 16;
+    let dx = 0, op = 1, bx = 0;
+    const ex = clamp((t - (it.end - 0.16)) / 0.16);
+    if (ex > 0) {
+      if (it.exit === "swipe") { const e = eIn(ex); dx = -260 * e; bx = 26 * e; op = 1 - e; }
+      else { op = 1 - eIn(ex); bx = 0; blk.style.filter = `blur(${(ex * 8).toFixed(1)}px)`; }
+    }
+    if (it.exit === "swipe" || ex <= 0) mb(bx, 0);
+    blk.style.opacity = op;
+    blk.style.left = "0px"; blk.style.top = "0px";
+    const r = blk.getBoundingClientRect();
+    blk.style.transform = `translate(${(p.x - r.width / 2 + dx).toFixed(1)}px, ${(p.y - r.height / 2 + rise).toFixed(1)}px)`;
+  };
+};
+
+// Призыв в конце: «ОТПРАВЬ» / «"+"» / прыгающая стрелка вниз
+MAKE.cta = (it) => {
+  const box = el("div", "abs");
+  const blk = el("div", "block shadowed", box);
+  const spans = buildLines(blk, normLines([{ size: "caps", text: it.text, t: it.t }, ...(it.sub ? [{ size: "s", text: it.sub, t: it.t + 0.25 }] : [])]));
+  const ch = el("div", "chev", box, `<svg viewBox="0 0 64 40" width="64" height="40"><path d="M10 10 L32 30 L54 10" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
+  if (it.sfx !== false) EV.push({ t: it.t, s: "pop", g: 0.2 });
+  return (t) => {
+    if (t < it.t - 0.05 || t > it.end) { box.style.display = "none"; return; }
+    box.style.display = "";
+    for (const { s, t: tw, w } of spans) wordReveal(s, (t - tw) / wordDur(w));
+    const p = chinPos(t, it);
+    const r = blk.getBoundingClientRect();
+    blk.style.transform = `translate(${(p.x - r.width / 2).toFixed(1)}px, ${(p.y - r.height / 2).toFixed(1)}px)`;
+    const k = clamp((t - it.t - 0.35) / 0.3);
+    ch.style.opacity = k;
+    ch.style.left = p.x + "px";
+    ch.style.top = (p.y + r.height / 2 + 34 + Math.sin((t - it.t) * Math.PI * 2 / 0.9) * 9 + (1 - eOut(k)) * -20).toFixed(1) + "px";
+    ch.style.filter = "drop-shadow(0 2px 10px rgba(0,0,0,.3))";
+  };
+};
+
+// Фокус-рамка: четыре стрелки к центру лица, раскрываются к глазам/подбородку, в конце схлопываются
+MAKE.focus = (it) => {
+  const box = el("div", "abs");
+  const cs = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sy]) => {
+    const c = el("div", "corner", box, `<svg viewBox="0 0 46 46" width="46" height="46"><g fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"
+      transform="rotate(${sx < 0 ? (sy < 0 ? 0 : -90) : (sy < 0 ? 90 : 180)} 23 23)"><path d="M8 8 L34 34"/><path d="M34 16 L34 34 L16 34"/></g></svg>`);
+    c.style.filter = "drop-shadow(0 1px 6px rgba(0,0,0,.35))";
+    return { c, sx, sy };
+  });
+  EV.push({ t: it.t, s: "focus", g: 0.10 });
+  return (t) => {
+    if (t < it.t || t > it.end) { box.style.display = "none"; return; }
+    box.style.display = "";
+    const f = face(t);
+    const open = eOut((t - it.t) / 0.32) * (1 - eIO((t - (it.end - 0.28)) / 0.28));
+    const rx = lerp(14, 0.30 * f.w, open), ry = lerp(14, 0.27 * f.h, open);
+    const op = clamp((t - it.t) / 0.08) * (1 - clamp((t - (it.end - 0.1)) / 0.1));
+    for (const { c, sx, sy } of cs) {
+      c.style.left = (f.cx + sx * rx).toFixed(1) + "px"; c.style.top = (f.cy - 0.02 * f.h + sy * ry).toFixed(1) + "px";
+      c.style.opacity = op; c.style.transform = `scale(${lerp(0.55, 1, open).toFixed(3)})`;
+    }
+  };
+};
+
+// Размытие фона (только fx для compose.py)
+MAKE.blur = (it) => (t, fx) => {
+  const a = it.in ?? 0.28, b = it.out ?? 0.32;
+  const k = Math.min(eIO((t - it.t) / a), 1 - eIO((t - (it.end - b)) / b));
+  if (k > 0) { fx.blur = Math.max(fx.blur, k * (it.amount ?? 1)); fx.dim = Math.max(fx.dim, k * (it.dim ?? 0.5)); }
+};
+
+// Наезд камеры: резкий (cut) или плавный
+MAKE.zoom = (it) => (t, fx) => {
+  if (t < it.t || t > it.end) return;
+  const s = it.scale ?? 1.12;
+  const k = it.ramp ? eIO((t - it.t) / it.ramp) * (1 - eIO((t - (it.end - it.ramp)) / it.ramp)) : 1;
+  fx.zoom *= lerp(1, s, k);
+};
+
+// Световая засветка (light leak) — переход, делает compose.py
+MAKE.leak = (it) => {
+  EV.push({ t: it.t - 0.12, s: "riser", g: 0.26 });
+  return (t, fx) => { const d = it.dur ?? 0.45; const k = (t - it.t) / d; if (k >= 0 && k <= 1) fx.leak = k; };
+};
+
+// Вспышка: белый/чёрный экран, текст печатается по буквам (разрядка сжимается, серый -> чёрный/белый)
+MAKE.flash = (it) => {
+  const box = el("div", "flash");
+  box.style.background = it.bg || "#fff";
+  const ink = it.ink || (/^#?(fff|ffffff|white)$/i.test((it.bg || "#fff").replace("#", "")) ? "#111" : "#f2f2f2");
+  const tx = el("div", "txt", box);
+  const chars = [...it.text].map((c) => { const s = el("span", "ch", tx, esc(c)); s.style.color = ink; return s; });
+  const step = it.step ?? 0.045, t0 = it.t + (it.delay ?? 0.06);
+  typeEvents(it.text, t0, step, 0.24);
+  if (it.air) EV.push({ t: it.t, s: "air", g: 0.22 });
+  return (t) => {
+    if (t < it.t || t >= it.end) { box.style.display = "none"; return; }
+    box.style.display = "";
+    const n = chars.length, done = (t - t0) / (step * n);
+    tx.style.letterSpacing = (lerp(0.32, 0, eOut(done)) ).toFixed(3) + "em";
+    chars.forEach((s, i) => {
+      const k = clamp((t - t0 - i * step) / 0.09);
+      s.style.opacity = k; s.style.filter = k < 1 ? `blur(${((1 - k) * 4).toFixed(1)}px)` : "";
+    });
+    const ac = it.accent ? clamp((t - (it.accentAt ?? t0 + step * n + 0.15)) / 0.18) : 0;
+    tx.style.color = ""; chars.forEach((s) => s.style.color = ac > 0 ? mix(ink, it.accent, ac) : ink);
+    tx.style.opacity = lerp(0.55, 1, clamp(done));
+  };
+};
+function mix(a, b, k) {
+  const h = (c) => { c = c.replace("#", ""); if (c.length === 3) c = [...c].map((x) => x + x).join(""); return [0, 2, 4].map((i) => parseInt(c.substr(i, 2), 16)); };
+  const A = h(a), B = h(b); return `rgb(${A.map((v, i) => Math.round(lerp(v, B[i], k))).join(",")})`;
+}
+
+// Заголовок на размытом фоне: «маркетплейс / 1688», печать по буквам, уезжает вверх с 3D-взмахом, ниже — пояснение
+MAKE.title = (it) => {
+  const box = el("div", "persp");
+  const blk = el("div", "block shadowed", box);
+  blk.style.alignItems = "center";
+  let labSpans = [];
+  // label — мелкая подпись над заголовком, under — под ним (каждая со своим временем появления)
+  if (it.label) labSpans = labSpans.concat(buildLines(blk, normLines([{ size: "label", text: it.label, t: it.labelT ?? it.t + 0.5 }], it.t)));
+  const tl = el("div", "line center sz-xl", blk);
+  if (it.size) tl.style.fontSize = it.size + "px";
+  const chars = [...it.text].map((c) => el("span", "ch", tl, esc(c)));
+  if (it.under) labSpans = labSpans.concat(buildLines(blk, normLines([{ size: "label", text: it.under, t: it.underT ?? it.t + 0.5 }], it.t)));
+  const sub = el("div", "block shadowed", box);
+  const subSpans = it.sub ? buildLines(sub, normLines(it.sub, it.t)) : [];
+  const step = it.step ?? 0.07, t0 = it.t;
+  const R = rng(99);
+  const POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const scr = it.from ? 0.42 : 0;   // перемешивание букв из прошлого заголовка (TAOBAO -> POIZON)
+  if (it.sfx !== false) {
+    typeEvents(it.text, t0, it.from ? scr / Math.max(1, it.text.length) : step, 0.24);
+    for (const { t: tw, w } of subSpans) typeEvents(w, tw, wordDur(w) / Math.max(1, w.length), 0.14);
+    for (const { t: tw, w } of labSpans) typeEvents(w, tw, wordDur(w) / Math.max(1, w.length), 0.12);
+    if (it.up != null) EV.push({ t: it.up, s: "swoosh", g: 0.16 });
+  }
+  return (t) => {
+    if (t < it.t - 0.02 || t > it.end) { box.style.display = "none"; return; }
+    box.style.display = "";
+    chars.forEach((s, i) => {
+      if (it.from) {
+        const ki = clamp((t - t0) / scr * chars.length - i);
+        const src = [...it.from][i] || " ";
+        s.textContent = ki >= 1 ? it.text[i] : (t < t0 ? src : POOL[Math.floor(R() * POOL.length)]);
+        s.style.opacity = 1; s.style.filter = ki < 1 && t >= t0 ? "blur(1.5px)" : "";
+      } else {
+        const k = clamp((t - t0 - i * step) / 0.16);
+        s.style.opacity = k; s.style.filter = k < 1 ? `blur(${((1 - k) * 10).toFixed(1)}px)` : "";
+        s.style.color = mix("#9a9aa2", "#ffffff", k);
+      }
+    });
+    for (const { s, t: tw, w } of labSpans) wordReveal(s, (t - tw) / wordDur(w));
+    for (const { s, t: tw, w } of subSpans) wordReveal(s, (t - tw) / wordDur(w));
+    // положение блока: центр, затем вверх с 3D-взмахом
+    const r = blk.getBoundingClientRect();
+    const u = it.up != null ? clamp((t - it.up) / 0.5) : 0;
+    const yc = lerp(it.y ?? 960, it.yUp ?? 470, eIO(u));
+    const swing = Math.sin(Math.PI * clamp(u * 1.1));
+    const ex = clamp((t - (it.end - 0.18)) / 0.18);
+    const op = (it.from ? 1 : clamp((t - it.t + 0.02) / 0.12)) * (1 - eIn(ex));
+    blk.style.opacity = op;
+    blk.style.transformOrigin = "50% 50%";
+    blk.style.transform = `translate(${(W / 2 - r.width / 2).toFixed(1)}px, ${(yc - r.height / 2 - 40 * eIn(ex)).toFixed(1)}px) rotateX(${(26 * swing).toFixed(2)}deg) rotateZ(${(-4 * swing).toFixed(2)}deg) scale(${(1 - 0.06 * swing).toFixed(3)})`;
+    blk.style.filter = ex > 0 ? `blur(${(ex * 10).toFixed(1)}px)` : "";
+    if (subSpans.length) {
+      const rs = sub.getBoundingClientRect();
+      sub.style.opacity = 1 - eIn(ex);
+      sub.style.transform = `translate(${(W / 2 - rs.width / 2).toFixed(1)}px, ${((it.ySub ?? 1180) - rs.height / 2 - 40 * eIn(ex)).toFixed(1)}px)`;
+      sub.style.filter = ex > 0 ? `blur(${(ex * 10).toFixed(1)}px)` : "";
+    }
+  };
+};
+
+// Карточка с фото: влёт с 3D-поворотом, подписи сверху/снизу, «перелистывание» свайпом со стеклянной линзой,
+// уход через стеклянное растворение (рябь + расфокус)
+MAKE.card = (it) => {
+  const box = el("div", "persp");
+  const card = el("div", "cardbox", box);
+  if (it.img) el("img", "", card).src = it.img; else el("div", "emo", card, it.emoji || "📦");
+  const pages = it.pages.map((p, i) => {
+    const top = el("div", "clabel shadowed", box, esc(p.top || "")); top.style.top = "372px";
+    const bot = el("div", "clabel shadowed", box); bot.style.top = "1346px";
+    const spans = buildLines(bot, normLines([{ size: "m", text: p.bottom || "", t: p.t + (i ? 0.08 : 0.42) }], p.t)).map((x) => { x.s.parentNode.className = "line center"; return x; });
+    return { ...p, top, bot, mt: motionBlur(top), mbb: motionBlur(bot), spans };
+  });
+  EV.push({ t: it.t, s: "tink", g: 0.16 });
+  pages.slice(1).forEach((p) => { EV.push({ t: p.t - 0.02, s: "click2", g: 0.2 }); if (it.lens !== false) EV.push({ t: p.t - 0.85, s: "tink", g: 0.12 }); });
+  if (it.exit !== "cut") EV.push({ t: it.end - 0.5, s: "shimmer", g: 0.14 });
+  return (t, fx) => {
+    if (t < it.t || t > it.end) { box.style.display = "none"; return; }
+    box.style.display = "";
+    // влёт
+    const k = (t - it.t) / 0.62, s = spring(k);
+    let sc = lerp(0.84, 1, s);
+    // перелистывание: карточка «отступает», пока меняются подписи
+    for (const p of pages.slice(1)) {
+      const a = eIO((t - (p.t - 0.45)) / 0.35), b = eIO((t - (p.t + 0.45)) / 0.45);
+      sc *= 1 - 0.17 * a * (1 - b);
+    }
+    const tx = lerp(70, 0, s), ty = lerp(-90, 0, s);
+    card.style.opacity = clamp((t - it.t) / 0.12);
+    card.style.transform = `translate(${tx.toFixed(1)}px, ${ty.toFixed(1)}px) rotateZ(${lerp(9, 0, s).toFixed(2)}deg) rotateY(${lerp(-24, 0, s).toFixed(2)}deg) rotateX(${lerp(10, 0, s).toFixed(2)}deg) scale(${sc.toFixed(4)})`;
+    // подписи
+    pages.forEach((p, i) => {
+      const nxt = pages[i + 1];
+      let x = 0, bx = 0, op = 1;
+      if (i > 0) { const e = clamp((t - p.t) / 0.3); x = 420 * (1 - eOut(e)); bx = 30 * (1 - eOut(e)); op = e <= 0 ? 0 : clamp(e * 3); }
+      else { op = clamp((t - it.t - 0.1) / 0.2); }
+      if (nxt) { const e = clamp((t - nxt.t + 0.04) / 0.22); if (e > 0) { x = -460 * eIn(e); bx = 30 * eIn(e); op *= 1 - eIn(e); } }
+      const vis = op > 0.001;
+      for (const n of [p.top, p.bot]) { n.style.display = vis ? "" : "none"; n.style.opacity = op; n.style.transform = `translateX(${x.toFixed(1)}px)`; }
+      p.mt(bx, 0); p.mbb(bx, 0);
+      for (const { s, t: tw, w } of p.spans) wordReveal(s, (t - tw) / wordDur(w));
+      if (i === 0) p.top.style.filter = p.top.style.filter || (op < 1 ? `blur(${((1 - op) * 8).toFixed(1)}px)` : "");
+    });
+    // стеклянная линза — «палец», который перелистывает
+    if (it.lens !== false) for (const p of pages.slice(1)) {
+      const a = t - (p.t - 0.9);
+      if (a < 0 || a > 2.3) continue;
+      const r = 72, y0 = 372 + 34;
+      const x = 540 + 220 - 330 * eIO((a - 0.65) / 0.45) + 150 * eIO((a - 1.25) / 0.9);
+      const op = clamp(a / 0.2) * (1 - clamp((a - 1.9) / 0.4));
+      fx.lens = [x, y0 + 10 * Math.sin(a * 2.2), r * lerp(0.7, 1, eOut(a / 0.3)), op];
+    }
+    // уход: стеклянное растворение
+    const g = clamp((t - (it.end - 0.5)) / 0.5);
+    if (g > 0 && it.exit !== "cut") {
+      // мягкая «волна» стекла: крупная низкочастотная рябь + сильный расфокус, без рваных краёв
+      document.getElementById("gdisp").setAttribute("scale", (46 * Math.sin(Math.PI * Math.min(1, g * 1.2))).toFixed(1));
+      document.getElementById("gblur").setAttribute("stdDeviation", (3 + 20 * eIO(g)).toFixed(1));
+      document.getElementById("gturb").setAttribute("baseFrequency", `${(0.005 + 0.002 * g).toFixed(4)} ${(0.016 - 0.004 * g).toFixed(4)}`);
+      box.style.filter = "url(#glassout)";
+      box.style.opacity = 1 - eIn(g);
+      card.style.transform += ` scale(${(1 + 0.05 * g).toFixed(3)})`;
+    } else box.style.filter = "", box.style.opacity = 1;
+  };
+};
+
+// Условная купюра (своя рисованная, не копия реальной валюты): бумага, гильоширная рамка, овал, номинал
+function BILL(w) {
+  const h = Math.round(w * 0.43);
+  let g = "";
+  for (let k = 0; k < 18; k++) g += `<path d="M${14 + k * 2} ${h * 0.5} Q ${w * 0.25} ${8 + k * 1.2} ${w * 0.5} ${h * 0.5} T ${w - 14 - k * 2} ${h * 0.5}" stroke="rgba(40,70,45,.10)" stroke-width="1" fill="none"/>`;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <defs><linearGradient id="bp${w}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dfe6d6"/><stop offset=".5" stop-color="#c3cfb8"/><stop offset="1" stop-color="#aebda3"/></linearGradient>
+    <radialGradient id="bo${w}"><stop offset="0" stop-color="#9fb090"/><stop offset="1" stop-color="#5f7a5a"/></radialGradient></defs>
+    <rect width="${w}" height="${h}" rx="${w * 0.012}" fill="url(#bp${w})"/>
+    <rect x="${w * 0.03}" y="${h * 0.07}" width="${w * 0.94}" height="${h * 0.86}" rx="${w * 0.01}" fill="none" stroke="#4d6b4f" stroke-width="${Math.max(1.5, w * 0.009)}"/>
+    <rect x="${w * 0.045}" y="${h * 0.11}" width="${w * 0.91}" height="${h * 0.78}" fill="none" stroke="#6f8a68" stroke-width="${Math.max(1, w * 0.003)}" stroke-dasharray="${w * 0.006} ${w * 0.004}"/>
+    ${g}
+    <ellipse cx="${w * 0.5}" cy="${h * 0.5}" rx="${w * 0.13}" ry="${h * 0.34}" fill="url(#bo${w})" stroke="#3f5a42" stroke-width="${w * 0.005}"/>
+    <text x="${w * 0.1}" y="${h * 0.34}" font-family="Inter" font-weight="800" font-size="${h * 0.2}" fill="#3e5a40">100</text>
+    <text x="${w * 0.9}" y="${h * 0.84}" text-anchor="end" font-family="Inter" font-weight="800" font-size="${h * 0.26}" fill="#3e5a40">100</text>
+    <circle cx="${w * 0.78}" cy="${h * 0.33}" r="${h * 0.12}" fill="none" stroke="#56724f" stroke-width="${w * 0.004}"/>
+  </svg>`;
+}
+
+// Дождь из купюр (или любого эмодзи/картинки): 3D-вращение, смаз, крупные — ближе и размытее;
+// cover: в конце огромная купюра закрывает кадр — склейка прячется за ней
+MAKE.rain = (it) => {
+  const box = el("div", "abs");
+  const R = rng(it.seed ?? 11);
+  const n = it.n ?? 14, dur = it.end - it.t;
+  const ps = Array.from({ length: n }, (_, i) => {
+    const near = R();
+    const size = lerp(300, 880, near);
+    const b = el("div", "bill", box, it.emoji ? it.emoji : BILL(size)); if (it.emoji) b.style.fontSize = size + "px";
+    return { b, size, near, t0: it.t + R() * dur * 0.75, x: lerp(-150, W - 150, R()), v: lerp(1300, 2600, near), rx: lerp(-1, 1, R()), ry: lerp(-1, 1, R()), spin: lerp(220, 620, R()) * (R() < .5 ? -1 : 1), drift: lerp(-260, 260, R()), ph: R() * 360 };
+  });
+  let cover = null;
+  if (it.cover) { cover = el("div", "bill", box, it.emoji ? it.emoji : BILL(1500)); if (it.emoji) cover.style.fontSize = "1500px"; EV.push({ t: it.end - 0.32, s: "swoosh", g: 0.22 }); }
+  EV.push({ t: it.t + 0.05, s: "cash", g: it.cashGain ?? 0.3 });
+  return (t) => {
+    if (t < it.t || t > it.end + 0.05) { box.style.display = "none"; return; }
+    box.style.display = "";
+    for (const p of ps) {
+      const a = t - p.t0;
+      if (a < 0 || a > 2.2) { p.b.style.display = "none"; continue; }
+      p.b.style.display = "";
+      const y = -p.size + p.v * a, x = p.x + p.drift * a;
+      const ang = p.ph + p.spin * a;
+      p.b.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate3d(${p.rx.toFixed(2)}, ${p.ry.toFixed(2)}, 0.4, ${ang.toFixed(1)}deg)`;
+      p.b.style.filter = `blur(${lerp(2, 14, p.near * p.near).toFixed(1)}px) brightness(${lerp(0.95, 0.75, p.near).toFixed(2)})`;
+      p.b.style.opacity = p.near > 0.85 ? 0.92 : 1;
+    }
+    if (cover) {
+      const c = clamp((t - (it.end - 0.32)) / 0.36);
+      cover.style.display = c > 0 && c < 1 ? "" : "none";
+      cover.style.transform = `translate(${lerp(-1300, 300, eIO(c)).toFixed(0)}px, ${lerp(-900, 500, eIO(c)).toFixed(0)}px) rotate(${lerp(-35, 10, c).toFixed(1)}deg)`;
+      cover.style.filter = "blur(26px) brightness(.55)";
+    }
+  };
+};
+
+function build(data) {
+  D = data; EV = []; FILT = 0;
+  root = document.getElementById("root"); root.innerHTML = "";
+  ITEMS = data.items.map((it) => ({ it, f: MAKE[it.type](it) }));
+}
+function render(t) {
+  const fx = { blur: 0, dim: 0, zoom: 1, lens: null, leak: -1, face: face(t) };
+  for (const { f } of ITEMS) f && f(t, fx);
+  return fx;
+}
+function events() { return EV.sort((a, b) => a.t - b.t); }
+</script>
+</body>
+</html>

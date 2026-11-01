@@ -1,0 +1,37 @@
+{
+ "fps": 30, "duration": 21.0, "anchor": null, "accent": "#F28C28",
+ "items": [
+  {"type":"words","t":0.15,"end":1.55,"sfx":"pop","lines":[
+     {"size":"s","align":"left","words":[["это",0.15]]},
+     {"size":"l","words":[["Apple",0.24]]},
+     {"size":"s","align":"right","words":[["стекло",0.52]]}]},
+  {"type":"focus","t":0.95,"end":1.70},
+  {"type":"blur","t":1.25,"end":6.70},
+  {"type":"card","t":1.60,"end":6.65,"emoji":"🎬","pages":[
+     {"t":1.60,"top":"Было","bottom":"обычный монтаж"},
+     {"t":4.10,"top":"Стало","bottom":"Apple стекло"}]},
+  {"type":"focus","t":6.75,"end":7.55},
+  {"type":"words","t":7.00,"end":8.20,"lines":[
+     {"size":"s","words":[["вот",7.00],["такая",7.10]]},
+     {"size":"l","words":[["разница",7.25]]}]},
+  {"type":"words","t":8.40,"end":9.30,"exit":"swipe","lines":[{"size":"m","words":[["свайп",8.40],["влево",8.62]]}]},
+  {"type":"flash","t":9.40,"end":9.95,"bg":"#ffffff","text":"печать"},
+  {"type":"flash","t":9.95,"end":10.55,"bg":"#000000","text":"по буквам","air":true},
+  {"type":"flash","t":10.55,"end":11.20,"bg":"#ffffff","text":"как в Apple","accent":"#E58A1F","accentAt":11.02},
+  {"type":"leak","t":11.17,"dur":0.45},
+  {"type":"zoom","t":11.20,"end":12.60,"scale":1.12},
+  {"type":"rain","t":12.20,"end":14.40,"n":16,"cover":true},
+  {"type":"words","t":12.70,"end":14.30,"lines":[
+     {"size":"s","words":[["и",12.70],["даже",12.80]]},
+     {"size":"caps","words":[["деньги",12.95]]},
+     {"size":"s","words":[["падают",13.40]]}]},
+  {"type":"blur","t":14.30,"end":19.00,"in":0.08},
+  {"type":"title","t":14.45,"end":17.20,"text":"1080","label":"качество","labelT":15.05,"up":15.55,
+     "sub":[{"size":"m","words":[["всё",16.05],["чётко",16.20,"b"]]},
+            {"size":"caps","words":[["миллиметрично",16.45]]},
+            {"size":"s","words":[["и",16.85],["красиво",16.95]]}]},
+  {"type":"title","t":17.25,"end":18.25,"text":"GLASS","size":150,"label":"эффект","labelT":17.55},
+  {"type":"title","t":18.25,"end":19.00,"text":"APPLE","size":150,"from":"GLASS","label":"стиль","labelT":18.45},
+  {"type":"cta","t":19.10,"end":21.00,"text":"Отправь","sub":"\"+\""}
+ ]
+}
