@@ -13,12 +13,12 @@ html, body { width: 1080px; height: 1920px; background: transparent; overflow: h
 .glass { background: linear-gradient(160deg, rgba(255,255,255,.94), rgba(246,246,250,.80)); box-shadow: 0 24px 60px rgba(20,20,40,.16), inset 0 0 0 1.5px rgba(255,255,255,.95); }
 
 /* полоса алфавита */
-#strip { left: 160px; width: 760px; top: 92px; height: 124px; border-radius: 62px; overflow: hidden;
+#strip { left: 130px; width: 820px; top: 88px; height: 140px; border-radius: 70px; overflow: hidden; background: rgba(14,14,18,.66); box-shadow: 0 16px 44px rgba(0,0,0,.28);
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22%, #000 78%, transparent 100%); }
-#strip span { position: absolute; top: 0; left: 0; width: 90px; height: 124px; line-height: 124px; margin-left: -45px; text-align: center;
-  font-family: "Naskh"; font-weight: 700; font-size: 52px; color: #0b0b0f; }
-#count { right: 160px; top: 230px; font-size: 22px; font-weight: 600; letter-spacing: .14em; color: rgba(11,11,15,.55); }
-#label { left: 160px; top: 230px; font-size: 22px; font-weight: 500; letter-spacing: .14em; color: rgba(11,11,15,.55); }
+#strip span { position: absolute; top: 0; left: 0; width: 100px; height: 140px; line-height: 140px; margin-left: -50px; text-align: center;
+  font-family: "Naskh"; font-weight: 700; font-size: 62px; color: #ffd23f; }
+#count { right: 130px; top: 250px; padding: 10px 22px; border-radius: 999px; background: rgba(14,14,18,.66); font-size: 26px; font-weight: 800; letter-spacing: .12em; color: #fff; }
+#label { left: 130px; top: 250px; padding: 10px 22px; border-radius: 999px; background: rgba(14,14,18,.66); font-size: 26px; font-weight: 800; letter-spacing: .12em; color: #fff; }
 
 /* ученик */
 
@@ -29,15 +29,15 @@ html, body { width: 1080px; height: 1920px; background: transparent; overflow: h
 .bname { left: 0; width: 1080px; top: 1440px; text-align: center; font-size: 34px; letter-spacing: .18em; color: rgba(255,255,255,.62); font-weight: 500; }
 .bname .ar { font-size: 46px; letter-spacing: 0; color: rgba(255,255,255,.85); font-weight: 700; }
 .badge { left: 540px; top: 1092px; width: 128px; height: 128px; margin-left: -232px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: "Naskh"; font-weight: 700; font-size: 70px; line-height: 1; padding-bottom: 10px; }
-.icon { left: 540px; top: 1070px; width: 172px; height: 172px; margin-left: -86px; border-radius: 50px; display: flex; align-items: center; justify-content: center; }
-.icon .emo { font-size: 104px; display: inline-block; }
+.icon { left: 540px; top: 1020px; width: 204px; height: 204px; margin-left: -102px; border-radius: 58px; display: flex; align-items: center; justify-content: center; }
+.icon .emo { font-size: 124px; display: inline-block; }
 .icon .emo.shadow { filter: brightness(0); opacity: .86; }
-.icon .sym { font-family: "DejaVu Sans", sans-serif; font-size: 92px; font-weight: 700; color: #0b0b0f; line-height: 1; }
-.icon .num { font-size: 50px; font-weight: 800; letter-spacing: -.04em; color: #0b0b0f; }
+.icon .sym { font-family: "DejaVu Sans", sans-serif; font-size: 108px; font-weight: 700; color: #0b0b0f; line-height: 1; }
+.icon .num { font-size: 60px; font-weight: 800; letter-spacing: -.04em; color: #0b0b0f; }
 .glow { left: 540px; top: 1090px; width: 420px; height: 260px; margin: -130px 0 0 -210px; border-radius: 50%; filter: blur(50px); opacity: .55;
   background: radial-gradient(circle at 30% 40%, #8fa4ff 0, transparent 60%), radial-gradient(circle at 70% 50%, #ff9ccf 0, transparent 60%), radial-gradient(circle at 50% 80%, #ffd27a 0, transparent 60%); }
-.word { left: 0; width: 1080px; top: 1236px; text-align: center; font-family: "Naskh"; font-weight: 700; font-size: 124px; line-height: 1.45; direction: rtl; color: #fff; text-shadow: 0 6px 34px rgba(0,0,0,.35); }
-.trans { left: 0; width: 1080px; top: 1436px; text-align: center; font-size: 66px; font-weight: 700; letter-spacing: -.04em; color: #ffd23f; text-shadow: 0 4px 24px rgba(0,0,0,.4); }
+.word { left: 0; width: 1080px; top: 1300px; text-align: center; font-family: "Naskh"; font-weight: 700; font-size: 124px; line-height: 1.45; direction: rtl; color: #fff; text-shadow: 0 6px 34px rgba(0,0,0,.35); }
+.trans { left: 0; width: 1080px; top: 1500px; text-align: center; font-size: 66px; font-weight: 700; letter-spacing: -.04em; color: #ffd23f; text-shadow: 0 4px 24px rgba(0,0,0,.4); }
 
 /* субтитры преподавателя */
 .sub { left: 60px; width: 960px; top: 1500px; text-align: center; color: #fff; background: none !important; box-shadow: none !important; text-shadow: 0 4px 28px rgba(0,0,0,.45); }
@@ -120,7 +120,7 @@ function render(t) {
   const pos = cur <= 0 ? Math.max(cur, 0) : (cur - 1) + k;
   R.glyphs.forEach((g, i) => {
     const d = i - pos, ad = Math.abs(d);
-    const x = 380 - d * 96;
+    const x = 410 - d * 104;
     const sc = 1.45 - Math.min(ad, 1) * 0.55 - Math.max(ad - 1, 0) * 0.04;
     const op = i < cur || (i === cur) ? Math.max(0.12, 1 - ad * 0.24) : Math.max(0.06, 0.42 - ad * 0.09);
     g.style.left = x.toFixed(1) + "px";

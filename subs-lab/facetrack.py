@@ -99,7 +99,7 @@ for tr in tracks:
     vals = [np.convolve(np.pad(v, 3, mode="edge"), k, "valid") for v in vals]
     # только овал лица: от бровей до подбородка, без волос; низ бороды остаётся виден
     for f, x, y, bw_, bh_ in zip(full, vals[0], vals[1], vals[2], vals[3]):
-        ell[f].append([round(float(x), 1), round(float(y + 0.06 * bh_), 1), round(float(0.50 * bw_), 1), round(float(0.60 * bh_), 1)])
+        ell[f].append([round(float(x), 1), round(float(y + 0.02 * bh_), 1), round(float(0.58 * bw_), 1), round(float(0.72 * bh_), 1)])
 json.dump({"fps": fps, "ellipses": ell}, open(out, "w"))
 print("кадров с лицами:", sum(1 for e in ell if e), "эллипсов в среднем:", round(sum(len(e) for e in ell) / N, 2))
 
