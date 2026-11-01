@@ -66,8 +66,8 @@ def blur_faces(img, ells):
         if x1 - x0 < 4 or y1 - y0 < 4:
             continue
         roi = out[y0:y1, x0:x1]
-        bl = cv2.GaussianBlur(roi, (0, 0), max(8.0, 0.36 * rx))
-        bl = cv2.GaussianBlur(bl, (0, 0), max(5.0, 0.18 * rx))
+        bl = cv2.GaussianBlur(roi, (0, 0), max(6.0, 0.30 * rx))
+        bl = cv2.GaussianBlur(bl, (0, 0), max(4.0, 0.15 * rx))
         m = np.zeros(roi.shape[:2], np.float32)
         cv2.ellipse(m, (int(x - x0), int(y - y0)), (int(rx), int(ry)), 0, 0, 360, 1.0, -1)
         m = cv2.GaussianBlur(m, (0, 0), max(3.0, 0.16 * rx))[..., None]
