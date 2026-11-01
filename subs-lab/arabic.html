@@ -13,12 +13,12 @@ html, body { width: 1080px; height: 1920px; background: transparent; overflow: h
 .glass { background: linear-gradient(160deg, rgba(255,255,255,.94), rgba(246,246,250,.80)); box-shadow: 0 24px 60px rgba(20,20,40,.16), inset 0 0 0 1.5px rgba(255,255,255,.95); }
 
 /* полоса алфавита */
-#strip { left: 130px; width: 820px; top: 88px; height: 140px; border-radius: 70px; overflow: hidden; background: rgba(14,14,18,.66); box-shadow: 0 16px 44px rgba(0,0,0,.28);
+#strip { left: 160px; width: 760px; top: 92px; height: 124px; border-radius: 62px; overflow: hidden;
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22%, #000 78%, transparent 100%); }
-#strip span { position: absolute; top: 0; left: 0; width: 100px; height: 140px; line-height: 140px; margin-left: -50px; text-align: center;
-  font-family: "Naskh"; font-weight: 700; font-size: 62px; color: #ffd23f; }
-#count { right: 130px; top: 250px; padding: 10px 22px; border-radius: 999px; background: rgba(14,14,18,.66); font-size: 26px; font-weight: 800; letter-spacing: .12em; color: #fff; }
-#label { left: 130px; top: 250px; padding: 10px 22px; border-radius: 999px; background: rgba(14,14,18,.66); font-size: 26px; font-weight: 800; letter-spacing: .12em; color: #fff; }
+#strip span { position: absolute; top: 0; left: 0; width: 90px; height: 124px; line-height: 124px; margin-left: -45px; text-align: center;
+  font-family: "Naskh"; font-weight: 700; font-size: 52px; color: #0b0b0f; }
+#count { right: 160px; top: 232px; font-size: 30px; font-weight: 900; letter-spacing: .1em; color: #0b0b0f; }
+#label { left: 160px; top: 232px; font-size: 30px; font-weight: 900; letter-spacing: .1em; color: #0b0b0f; }
 
 /* ученик */
 
@@ -120,7 +120,7 @@ function render(t) {
   const pos = cur <= 0 ? Math.max(cur, 0) : (cur - 1) + k;
   R.glyphs.forEach((g, i) => {
     const d = i - pos, ad = Math.abs(d);
-    const x = 410 - d * 104;
+    const x = 380 - d * 96;
     const sc = 1.45 - Math.min(ad, 1) * 0.55 - Math.max(ad - 1, 0) * 0.04;
     const op = i < cur || (i === cur) ? Math.max(0.12, 1 - ad * 0.24) : Math.max(0.06, 0.42 - ad * 0.09);
     g.style.left = x.toFixed(1) + "px";
