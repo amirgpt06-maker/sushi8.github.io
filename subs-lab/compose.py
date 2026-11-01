@@ -46,7 +46,7 @@ def grade(x):
     x = x * (np.array([1.025, 1.0, 0.975]) * (1 - l) + np.array([0.985, 1.0, 1.02]) * l)   # BGR
     l = x.mean(2, keepdims=True)
     x = l + (x - l) * 1.06
-    return np.clip(x * vig, 0, 1)
+    return np.clip(x, 0, 1)           # без виньетки: углы не затемняются
 
 
 def xform(img, sc, cy=0.42):
