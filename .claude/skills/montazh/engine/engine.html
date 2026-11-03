@@ -33,7 +33,7 @@ html, body { width: 1080px; height: 1920px; background: transparent; overflow: h
 .sz-it   { font-size: 118px; font-weight: 800; font-style: italic; letter-spacing: -.045em; line-height: .86;
            text-shadow: -7px 0 0 rgba(255,255,255,.22), -14px 0 0 rgba(255,255,255,.09), 0 2px 18px rgba(0,0,0,.3); }
 .sz-sub  { font-size: 34px; font-weight: 500; letter-spacing: .01em; line-height: 1.35; }
-.sz-tag  { font-size: 28px; font-weight: 500; letter-spacing: .22em; line-height: 1.6; }
+.sz-tag  { font-size: 32px; font-weight: 600; letter-spacing: .16em; line-height: 1.6; }
 .sz-para { font-size: 52px; font-weight: 600; letter-spacing: -.04em; line-height: .98; }
 .para { position: absolute; white-space: nowrap; }
 .flash .sz-sp { font-size: 48px; }
@@ -139,7 +139,7 @@ function face(t) {
 function chinPos(t, it) {
   if (it.pos) return { x: it.pos[0], y: it.pos[1] };
   const f = face(t);
-  return { x: clamp(f.cx, 330, 750), y: clamp(f.cy + 0.80 * f.h, 1000, 1560) };
+  return { x: clamp(f.cx, 330, 750), y: clamp(f.cy + (D.chin ?? 0.80) * f.h, 1000, 1560) };   // chin: 0.95–1.0 для человека с бородой
 }
 
 // --- раскрытие слова: мягкая градиентная шторка слева направо + расфокус -> резкость (как в референсе) ---
