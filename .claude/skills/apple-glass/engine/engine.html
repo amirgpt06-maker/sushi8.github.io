@@ -193,6 +193,7 @@ MAKE.words = (it) => {
   const mb = motionBlur(blk);
   if (it.sfx) EV.push({ t: it.t, s: it.sfx, g: 0.22 });
   for (const sp of spans) if (sp.typed && it.sfxType !== false) typeEvents(sp.w, sp.t, sp.step, 0.1);
+  lines.forEach((L) => { if (L.size === "tag" && it.sfx !== false) EV.push({ t: L.words[0][1], s: "tagpop", g: 0.28 }); });   // [ тег ] — UI-поп
   if (it.fx === "cinema" && !it.pos && !it.anchor) it.pos = [540, 1060];
   if (it.exit === "swipe") EV.push({ t: it.end - 0.14, s: "click2", g: 0.16 });
   return (t) => {
@@ -323,7 +324,11 @@ MAKE.blur = (it) => (t, fx) => {
 };
 
 // Наезд камеры: резкий (cut) или плавный
-MAKE.zoom = (it) => (t, fx) => {
+MAKE.zoom = (it) => {
+  if (it.ramp && it.sfx !== false) EV.push({ t: it.t - 0.05, s: "whoosh", g: 0.24 });   // плавный наезд — «вжух»
+  return zoomFx(it);
+};
+const zoomFx = (it) => (t, fx) => {
   if (t < it.t || t > it.end) return;
   const s = it.scale ?? 1.12;
   const k = it.ramp ? eIO((t - it.t) / it.ramp) * (1 - eIO((t - (it.end - it.ramp)) / it.ramp)) : 1;
@@ -345,7 +350,7 @@ function flashLines(it) {
   const blk = el("div", "block", box);
   blk.style.alignItems = "center"; blk.style.color = ink;
   const spans = buildLines(blk, normLines(it.lines.map((L) => ({ ...L, size: L.size || "sp" })), it.t));
-  for (const sp of spans) if (!sp.typed && it.sfx !== false) EV.push({ t: sp.t, s: KEYS[Math.floor(sp.t * 97) % 4], g: 0.16 });
+  for (const sp of spans) if (!sp.typed && it.sfx !== false) EV.push({ t: sp.t, s: "cardclick", g: 0.3 });   // щелчок на каждой строке карточки
   for (const sp of spans) if (sp.typed) typeEvents(sp.w, sp.t, sp.step, 0.12);
   return (t) => {
     if (t < it.t || t >= it.end) { box.style.display = "none"; return; }
@@ -572,6 +577,7 @@ function build(data) {
   const top = root;
   ITEMS = data.items.map((it) => {
     root = el("div", "abs", top);            // у каждого элемента свой контейнер — для слоёв «за человеком / перед ним»
+    if (it.sound) EV.push({ t: it.t + (it.soundAt || 0), s: it.sound, g: it.soundGain ?? 0.26 });   // любой звук на появление элемента
     const f = MAKE[it.type](it);
     const c = root; root = top;
     return { it, f, c };

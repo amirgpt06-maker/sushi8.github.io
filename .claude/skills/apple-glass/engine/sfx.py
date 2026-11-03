@@ -153,4 +153,12 @@ save("cash", mech * 0.7 + mech2 + bell * 0.6, 0.8)
 tt = t_(0.45)
 fo = (np.sin(2 * np.pi * 1250 * tt) + 0.4 * np.sin(2 * np.pi * 2700 * tt)) * np.minimum(1, tt / 0.02) * np.exp(-tt / 0.18)
 save("focus", fo, 0.5)
+
+# роли «Кино-типографики» (если нет своего пака): щелчок карточки, UI-поп тега, вжух наезда, перелив
+save("cardclick", mclick(1.0, 2600)[: int(0.05 * SR)], 0.8)
+tt = t_(0.18)
+save("tagpop", np.sin(2 * np.pi * np.cumsum(700 * np.exp(-tt / 0.02) + 380) / SR) * env(len(tt), 0.001, 0.03), 0.8)
+save("whoosh", sw * np.sin(np.pi * t_(0.32) / 0.32) ** 1.6, 0.6)
+tt = t_(0.7)
+save("chime", sum(a * np.sin(2 * np.pi * f * tt) * np.exp(-tt / d) for f, a, d in [(2637, 1, .25), (3951, .6, .2), (5274, .4, .15), (7902, .2, .1)]) * np.minimum(1, tt / 0.004), 0.6)
 print("звуки:", sorted(p.name for p in out.glob("*.wav")))
