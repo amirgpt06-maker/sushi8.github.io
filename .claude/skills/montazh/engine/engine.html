@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <!--
-  «Apple стекло» — движок оверлея. build(data) строит сцену из cues.json, render(t) рисует кадр и
+  Наш стиль монтажа — движок оверлея. build(data) строит сцену из cues.json, render(t) рисует кадр и
   возвращает fx (то, что делает compose.py поверх видео: размытие фона, наезд, стеклянная линза, засветка),
   events() — список звуков с точными временами (печать по буквам, стекло, клики, деньги...).
 -->
@@ -191,7 +191,8 @@ MAKE.words = (it) => {
   const lines = normLines(it.lines, it.t);
   const spans = buildLines(blk, lines);
   const mb = motionBlur(blk);
-  if (it.sfx) EV.push({ t: it.t, s: it.sfx, g: 0.22 });
+  if (typeof it.sfx === "string") EV.push({ t: it.t, s: it.sfx, g: 0.22 });
+  else if (!it.sound && it.sfx !== false && it.fx !== "cinema") EV.push({ t: it.t, s: "blockpop", g: 1.4, v: 1 });   // новая подпись — поп (как в референсах)
   if (it.fx === "cinema" && it.sfx !== false) {
     // как в референсах 4 и 9: поп на появлении блока, тише — на каждой добавочной строке, «Type» — на печати, отдельный звук — на теге.
     // g — относительно громкости голоса (v:1): 1.0 = на уровне голоса
@@ -268,6 +269,15 @@ MAKE.mark = (it) => {
   };
 };
 
+// Нижний тёмный градиент под субтитры (читаемость без плашек)
+MAKE.shade = (it) => {
+  const box = el("div", "abs");
+  box.style.width = "1080px"; box.style.height = "1920px";
+  const f = it.from ?? 50, a = it.strength ?? 0.6;
+  box.style.background = `linear-gradient(180deg, rgba(0,0,0,0) ${f}%, rgba(0,0,0,${a * 0.5}) ${f + 18}%, rgba(0,0,0,${a}) 100%)`;
+  return (t) => { const k = Math.min(clamp((t - it.t) / 0.3), clamp((it.end - t) / 0.3)); box.style.display = k > 0 ? "" : "none"; box.style.opacity = k; };
+};
+
 // Силуэт: человек залит цветом (заставка «тёмная фигура» в первом кадре) — делает compose.py по маске
 MAKE.silhouette = (it) => (t, fx) => {
   if (t < it.t || t > it.end) return;
@@ -289,7 +299,7 @@ MAKE.cta = (it) => {
   const blk = el("div", "block shadowed", box);
   const spans = buildLines(blk, normLines([{ size: "caps", text: it.text, t: it.t }, ...(it.sub ? [{ size: "s", text: it.sub, t: it.t + 0.25 }] : [])]));
   const ch = el("div", "chev", box, `<svg viewBox="0 0 64 40" width="64" height="40"><path d="M10 10 L32 30 L54 10" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
-  if (it.sfx !== false) EV.push({ t: it.t, s: "pop", g: 0.2 });
+  if (it.sfx !== false && !it.sound) EV.push({ t: it.t, s: "blockpop", g: 1.4, v: 1 });   // призыв — поп
   return (t) => {
     if (t < it.t - 0.05 || t > it.end) { box.style.display = "none"; return; }
     box.style.display = "";

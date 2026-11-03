@@ -1,0 +1,55 @@
+{
+  "_about": "Роль -> файл из пака пользователя (Botanica v5). Схема и громкость сняты с его референсов (сопоставление спектров). Роли без строки здесь (riser, shimmer, swoosh, air, focus, whoosh, chime) берутся из синтеза engine/sfx. Поменяйте file, чтобы заменить звук.",
+  "blockpop": {
+    "file": "Pop, Button, Scale, Transform, Ui_9.wav",
+    "max_s": 1.5
+  },
+  "pop": {
+    "file": "Pop, Button, Scale, Transform, Ui_9.wav",
+    "max_s": 1.5
+  },
+  "linepop": {
+    "file": "Pop, Button, Scale, Transform, Ui_16.wav",
+    "max_s": 1.5
+  },
+  "typeone": {
+    "file": "Type (one)_4.wav",
+    "max_s": 1.5
+  },
+  "key1": {
+    "file": "Type (one)_4.wav",
+    "max_s": 1.5
+  },
+  "key2": {
+    "file": "Type (one) _3.wav",
+    "max_s": 1.5
+  },
+  "key3": {
+    "file": "Type (one) _1.wav",
+    "max_s": 1.5
+  },
+  "key4": {
+    "file": "Type (one) _2.wav",
+    "max_s": 1.5
+  },
+  "tagpop": {
+    "file": "Texter, Gratonal, Button_1.wav",
+    "max_s": 1.5
+  },
+  "cardclick": {
+    "file": "Pop, Button, Scale, Transform, Ui_15.wav",
+    "max_s": 1.5
+  },
+  "tink": {
+    "file": "Pop, Button, Scale, Transform, Ui_15.wav",
+    "max_s": 1.5
+  },
+  "click2": {
+    "file": "Pop, Button, Scale, Transform, Ui_8.wav",
+    "max_s": 1.5
+  },
+  "cash": {
+    "file": "Cash, Coin, Paid.wav",
+    "max_s": 1.5
+  }
+}

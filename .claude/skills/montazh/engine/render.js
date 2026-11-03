@@ -1,4 +1,4 @@
-// «Apple стекло»: рендер оверлея в PNG с прозрачностью + fx.json (что делать с видео) + events.json (звуки).
+// Наш стиль монтажа: рендер оверлея в PNG с прозрачностью + fx.json (что делать с видео) + events.json (звуки).
 // node render.js cues.json out_dir [from_s] [to_s] [кадры через запятую]
 // Пути картинок (img) в cues.json — относительно самого cues.json. anchor.json (лицо) подхватывается из cues.anchor.
 const { chromium } = require("playwright");
