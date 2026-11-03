@@ -1,5 +1,5 @@
 {
-  "_about": "Какой файл из звукового пака играет на каждый эффект. Имя файла — как в паке (поиск рекурсивный). max_s — обрезка в секундах, peak — громкость пика. Поменяйте имя, чтобы заменить звук.",
+  "_about": "Какой файл из звукового пака играет на каждый эффект. Имя файла — как в паке (поиск рекурсивный). max_s — обрезка в секундах, peak — громкость пика. Поменяйте имя, чтобы заменить звук. Роли blockpop/linepop/typeone/tagpop/cardclick и их громкость относительно голоса сняты с референсов 4 и 9 (там этот пак).",
   "key1": {
     "file": "Type (one) _1.wav",
     "max_s": 0.25
@@ -52,20 +52,24 @@
     "file": "Select, Gratonal, Gleam_5.wav",
     "max_s": 0.45
   },
-  "cardclick": {
-    "file": "Pop, Button, Scale, Transform, Ui.wav",
-    "max_s": 0.3
+  "blockpop": {
+    "file": "Pop, Button, Scale, Transform, Ui_9.wav",
+    "max_s": 1.5
+  },
+  "linepop": {
+    "file": "Pop, Button, Scale, Transform, Ui_16.wav",
+    "max_s": 1.0
+  },
+  "typeone": {
+    "file": "Type (one)_4.wav",
+    "max_s": 0.5
   },
   "tagpop": {
-    "file": "Pop, Button, Scale, Transform, Ui_8.wav",
-    "max_s": 0.8
+    "file": "Texter, Gratonal, Button_1.wav",
+    "max_s": 0.5
   },
-  "whoosh": {
-    "file": "Laser.wav",
-    "max_s": 0.6
-  },
-  "chime": {
-    "file": "Select, Gratonal, Gleam_5.wav",
-    "max_s": 0.7
+  "cardclick": {
+    "file": "Pop, Button, Scale, Transform, Ui_15.wav",
+    "max_s": 1.0
   }
 }

@@ -78,8 +78,7 @@
    "behind": true,
    "label": "это",
    "labelT": 3.3,
-   "sound": "chime",
-   "soundGain": 0.24,
+   "sound": "blockpop",
    "sfx": false
   },
   {

@@ -248,13 +248,22 @@ voice, _ = sf.read(str(work / "a.wav"))
 total = int((t1 - t0) * SR)
 mixb = np.zeros((total, 2))
 mixb[: min(total, len(voice))] = voice[:total]
+# громкость голоса: RMS звучащих кадров; если голоса нет — как в референсах (≈ −24 dBFS)
+_m = voice.mean(1) if voice.ndim > 1 else voice
+_fr = np.sqrt(np.convolve(_m ** 2, np.ones(2048) / 2048, "valid")[::512] + 1e-12) if len(_m) > 4096 else np.array([1e-6])
+_v = _fr[_fr > np.percentile(_fr, 40)]
+VOICE_DB = float(20 * np.log10(np.percentile(_v, 60) + 1e-9)) if len(_v) else -90.0
+if VOICE_DB < -45:
+    VOICE_DB = -24.0
+VREL = 10 ** ((VOICE_DB + 18) / 20)          # множитель для событий v:1
+print(f"голос {VOICE_DB:.1f} dBFS")
 cache = {}
 for e in EV:
     if not (t0 - 1 <= e["t"] < t1):
         continue
     if e["s"] not in cache:
         cache[e["s"]], _ = sf.read(str(sfx_path(e["s"])))
-    sig = cache[e["s"]] * e["g"] * SFX_GAIN
+    sig = cache[e["s"]] * e["g"] * SFX_GAIN * (VREL if e.get("v") else 1.0)
     st = int((e["t"] - t0) * SR)
     if st < 0:
         sig, st = sig[-st:], 0

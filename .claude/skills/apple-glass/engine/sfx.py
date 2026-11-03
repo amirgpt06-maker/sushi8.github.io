@@ -161,4 +161,10 @@ save("tagpop", np.sin(2 * np.pi * np.cumsum(700 * np.exp(-tt / 0.02) + 380) / SR
 save("whoosh", sw * np.sin(np.pi * t_(0.32) / 0.32) ** 1.6, 0.6)
 tt = t_(0.7)
 save("chime", sum(a * np.sin(2 * np.pi * f * tt) * np.exp(-tt / d) for f, a, d in [(2637, 1, .25), (3951, .6, .2), (5274, .4, .15), (7902, .2, .1)]) * np.minimum(1, tt / 0.004), 0.6)
+
+# роли «Кино-типографики» по референсам 4 и 9 (без пака — синтез): поп блока, поп строки, печать, тег
+tt = t_(0.25)
+save("blockpop", np.sin(2 * np.pi * np.cumsum(900 * np.exp(-tt / 0.025) + 300) / SR) * env(len(tt), 0.001, 0.05), 0.8)
+save("linepop", np.sin(2 * np.pi * np.cumsum(1200 * np.exp(-tt / 0.02) + 450) / SR) * env(len(tt), 0.001, 0.035), 0.6)
+save("typeone", key(2), 0.8)
 print("звуки:", sorted(p.name for p in out.glob("*.wav")))

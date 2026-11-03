@@ -192,11 +192,20 @@ MAKE.words = (it) => {
   const spans = buildLines(blk, lines);
   const mb = motionBlur(blk);
   if (it.sfx) EV.push({ t: it.t, s: it.sfx, g: 0.22 });
-  // печать: в «кино» — один «Type» на появление строки (как в референсах), иначе — по буквам
-  for (const sp of spans) if (sp.typed && it.sfxType !== false) {
-    if (it.fx === "cinema" || it.sfxType === "one") EV.push({ t: sp.t, s: "key1", g: 0.22 }); else typeEvents(sp.w, sp.t, sp.step, 0.1);
+  if (it.fx === "cinema" && it.sfx !== false) {
+    // как в референсах 4 и 9: поп на появлении блока, тише — на каждой добавочной строке, «Type» — на печати, отдельный звук — на теге.
+    // g — относительно громкости голоса (v:1): 1.0 = на уровне голоса
+    lines.forEach((L, j) => {
+      const t0 = L.words[0][1];
+      const role = L.size === "tag" ? ["tagpop", 0.85] : L.type ? ["typeone", 0.7] : j === 0 || t0 - lines[0].words[0][1] < 0.12 ? ["blockpop", 1.4] : ["linepop", 0.56];
+      if (j > 0 && role[0] === "blockpop") return;              // строки, появившиеся вместе с первой, — один звук на блок
+      EV.push({ t: t0, s: role[0], g: role[1], v: 1 });
+    });
+  } else {
+    for (const sp of spans) if (sp.typed && it.sfxType !== false) {
+      if (it.sfxType === "one") EV.push({ t: sp.t, s: "key1", g: 0.22 }); else typeEvents(sp.w, sp.t, sp.step, 0.1);
+    }
   }
-  lines.forEach((L) => { if (L.size === "tag" && it.sfx !== false) EV.push({ t: L.words[0][1], s: "tagpop", g: 0.28 }); });   // [ тег ] — UI-поп
   if (it.fx === "cinema" && !it.pos && !it.anchor) it.pos = [540, 1060];
   if (it.exit === "swipe") EV.push({ t: it.end - 0.14, s: "click2", g: 0.16 });
   return (t) => {
@@ -223,6 +232,7 @@ MAKE.words = (it) => {
 
 // «Караоке»-абзац: вся фраза видна приглушённо, сказанные слова становятся белыми (выравнивание влево/вправо, сбоку от человека)
 MAKE.para = (it) => {
+  if (it.sfx !== false) EV.push({ t: it.t, s: "blockpop", g: 1.4, v: 1 });   // новый абзац — как новая подпись
   const box = el("div", "para shadowed");
   box.style.textAlign = it.align || "left";
   const spans = [];
@@ -328,7 +338,7 @@ MAKE.blur = (it) => (t, fx) => {
 
 // Наезд камеры: резкий (cut) или плавный
 MAKE.zoom = (it) => {
-  if (it.ramp && it.sfx !== false) EV.push({ t: it.t - 0.05, s: "whoosh", g: 0.24 });   // плавный наезд — «вжух»
+  if (it.ramp && it.sfx) EV.push({ t: it.t - 0.05, s: typeof it.sfx === "string" ? it.sfx : "whoosh", g: 0.24 });   // звук на наезде — только если задан
   return zoomFx(it);
 };
 const zoomFx = (it) => (t, fx) => {
@@ -354,7 +364,7 @@ function flashLines(it) {
   blk.style.alignItems = "center"; blk.style.color = ink;
   const NL = normLines(it.lines.map((L) => ({ ...L, size: L.size || "sp" })), it.t);
   const spans = buildLines(blk, NL);
-  if (it.sfx !== false) for (const L of NL) EV.push({ t: L.words[0][1], s: L.type ? "key1" : "cardclick", g: 0.2 });   // ОДИН звук на строку карточки
+  if (it.sfx !== false) for (const L of NL) EV.push({ t: L.words[0][1], s: L.type ? "typeone" : "cardclick", g: 0.8, v: 1 });   // один звук на строку карточки
   return (t) => {
     if (t < it.t || t >= it.end) { box.style.display = "none"; return; }
     box.style.display = "";
@@ -581,7 +591,10 @@ function build(data) {
   const top = root;
   ITEMS = data.items.map((it) => {
     root = el("div", "abs", top);            // у каждого элемента свой контейнер — для слоёв «за человеком / перед ним»
-    if (it.sound) EV.push({ t: it.t + (it.soundAt || 0), s: it.sound, g: it.soundGain ?? 0.26 });   // любой звук на появление элемента
+    if (it.sound) {                          // любой звук на появление элемента; роли «кино» — относительно голоса
+      const rel = ["blockpop", "linepop", "typeone", "tagpop", "cardclick"].includes(it.sound);
+      EV.push({ t: it.t + (it.soundAt || 0), s: it.sound, g: it.soundGain ?? (rel ? 1.4 : 0.26), v: rel ? 1 : 0 });
+    }
     const f = MAKE[it.type](it);
     const c = root; root = top;
     return { it, f, c };
