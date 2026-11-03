@@ -115,9 +115,13 @@ def grade_film(x, amt=1.0):
     hsv[..., 0] = h - F(8 * amt) * green                      # зелень чуть в оливу
     y = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
     # сохранить среднюю яркость исходного кадра
-    new_l = float(cv2.cvtColor(y, cv2.COLOR_BGR2GRAY).mean())
-    y = y * F(src_l / max(new_l, 1e-4))
-    return np.clip(y, 0, 1)
+    # вернуть среднюю яркость кадра гаммой средних тонов (небо и чёрные остаются плотными, а не «умножаются» вверх)
+    y = np.clip(y, 1e-5, 1)
+    g = 1.0
+    for _ in range(3):
+        cur = float(cv2.cvtColor(y ** F(g), cv2.COLOR_BGR2GRAY).mean())
+        g *= float(np.log(max(src_l, 1e-4)) / np.log(max(cur, 1e-4))) if 0 < cur < 1 else 1.0
+    return np.clip(y ** F(g), 0, 1)
 
 
 def mask_at(i, s, cx, cy):
