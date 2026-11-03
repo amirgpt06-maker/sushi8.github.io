@@ -179,7 +179,7 @@
   },
   {
    "type": "pill",
-   "t": 4.15,
+   "t": 4.72,
    "end": 6.5,
    "text": "по словам",
    "size": 38,
@@ -191,7 +191,7 @@
   },
   {
    "type": "tile",
-   "t": 4.35,
+   "t": 4.85,
    "end": 6.35,
    "img": "@local/ui/TextSelection1.png",
    "w": 560,
@@ -202,7 +202,7 @@
    "bg": "linear-gradient(160deg,#ffffff,#e3eafb 65%,#a9c2f8)",
    "swap": [
     [
-     5.3,
+     5.6,
      "@local/ui/Keyboard1.png"
     ]
    ],
@@ -252,7 +252,7 @@
   },
   {
    "type": "pill",
-   "t": 7.7,
+   "t": 8.27,
    "end": 10.0,
    "text": "в такт",
    "size": 38,
@@ -265,7 +265,7 @@
   },
   {
    "type": "tile",
-   "t": 7.9,
+   "t": 8.4,
    "end": 10.0,
    "img": "@local/ui/Volume.jpg",
    "w": 560,
@@ -276,7 +276,7 @@
    "bg": "linear-gradient(160deg,#ffffff,#ece6fb 65%,#c7b9f4)",
    "swap": [
     [
-     8.85,
+     9.1,
      "@local/ui/MusicPlayer.jpg"
     ]
    ],
@@ -330,7 +330,7 @@
   },
   {
    "type": "pill",
-   "t": 11.15,
+   "t": 11.77,
    "end": 13.2,
    "text": "bounce it!",
    "size": 38,
@@ -343,7 +343,7 @@
   },
   {
    "type": "tile",
-   "t": 11.35,
+   "t": 11.9,
    "end": 13.1,
    "img": "@local/ui/FaceID3.png",
    "w": 560,
@@ -354,11 +354,11 @@
    "bg": "linear-gradient(160deg,#ffffff,#ecebef 60%,#d3cddd)",
    "swap": [
     [
-     11.95,
+     12.3,
      "@local/ui/On.png"
     ],
     [
-     12.5,
+     12.75,
      "@local/ui/Battery10.png"
     ]
    ],
