@@ -8,9 +8,12 @@ const path = require("path");
 const [cuesF, outDir, from, to, only] = process.argv.slice(2);
 const data = JSON.parse(fs.readFileSync(cuesF, "utf8"));
 const base = path.dirname(path.resolve(cuesF));
+// "@local/…" — файлы пака пользователя в engine/local (картинки iOS, шрифты); иначе путь относительно cues.json
+const res = (v) => (v.startsWith("@local/") ? "file://" + path.join(__dirname, v.slice(1)) : "file://" + path.resolve(base, v));
 const fps = data.fps || 30;
 for (const it of data.items) {
-  if (it.img && !/^(file|https?|data):/.test(it.img)) it.img = "file://" + path.resolve(base, it.img);
+  for (const k of ["img"]) if (it[k] && !/^(file|https?|data):/.test(it[k])) it[k] = res(it[k]);
+  if (it.swap && it.type === "tile") it.swap = it.swap.map(([st, v]) => [st, /\.(png|jpe?g|webp)$/i.test(v) && !/^(file|https?|data):/.test(v) ? res(v) : v]);
   if (it.src) it.src = path.resolve(base, it.src);       // фон для замены (bg) — путь для compose.py
 }
 if (typeof data.anchor === "string") data.anchor = JSON.parse(fs.readFileSync(path.resolve(base, data.anchor), "utf8"));
@@ -34,7 +37,7 @@ const frames = only ? only.split(",").map(Number) : (() => { const a = []; for (
       const i = frames[k];
       const name = `${String(i).padStart(5, "0")}.png`;
       const f = await p.evaluate((t) => render(t, "front"), i / fps);
-      fx[i] = { blur: +f.blur.toFixed(4), dim: +f.dim.toFixed(4), zoom: +f.zoom.toFixed(4), lens: f.lens && f.lens.map((v) => +v.toFixed(2)), leak: +f.leak.toFixed(4),
+      fx[i] = { blur: +f.blur.toFixed(4), dim: +f.dim.toFixed(4), zoom: +f.zoom.toFixed(4), lens: f.lens && f.lens.map((v) => +v.toFixed(2)), ball: f.ball && f.ball.map((v) => +v.toFixed(3)), leak: +f.leak.toFixed(4),
                 sil: +f.sil.toFixed(3), silColor: f.silColor, bg: f.bg, back: f.hasBack, face: [f.face.cx, f.face.cy, f.face.w, f.face.h].map((v) => +(+v).toFixed(1)) };
       await p.screenshot({ path: path.join(outDir, name), omitBackground: true });
       if (f.hasBack) {                                   // слой «за человеком» — отдельной картинкой

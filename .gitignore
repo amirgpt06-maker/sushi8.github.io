@@ -15,3 +15,4 @@ style-lab/out/
 subs-lab/*.mp4
 subs-lab/*.wav
 .claude/skills/montazh/engine/sfx_local/
+.claude/skills/montazh/engine/local/

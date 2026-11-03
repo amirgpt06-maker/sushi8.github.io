@@ -33,10 +33,15 @@ LOCAL = Path(os.environ["SFX_LOCAL"]) if os.environ.get("SFX_LOCAL") else HERE /
 SFX_DIRS = [d for d in (LOCAL, HERE / "sfx") if d.exists()]   # сначала свой пак (sfx_local), потом синтез
 
 
+ALIAS = {"aplkey1": "key1", "aplkey2": "key2", "aplkey3": "key3", "aplkey4": "key4", "wbwhoosh": "swoosh", "wbslide": "swoosh",
+         "wbpop": "pop", "wbbounce": "tink", "wbclick": "click2", "wbselect": "typeone", "wbshimmer": "shimmer"}   # если пака нет — синтез
+
+
 def sfx_path(role):
-    for d in SFX_DIRS:
-        if (d / f"{role}.wav").exists():
-            return d / f"{role}.wav"
+    for r in (role, ALIAS.get(role, role)):
+        for d in SFX_DIRS:
+            if (d / f"{r}.wav").exists():
+                return d / f"{r}.wav"
     raise FileNotFoundError(f"нет звука «{role}» ни в sfx_local, ни в sfx")
 cap = cv2.VideoCapture(src)
 FPS = cap.get(cv2.CAP_PROP_FPS)
@@ -158,6 +163,38 @@ def lens(img, x, y, r, a):
     return out_
 
 
+def ball(img, x, y, r, a, frost):
+    """Стеклянный шар: как настоящая линза-сфера — переворачивает и увеличивает то, что за ним, края загибаются;
+    frost 0..1 — шар мутнеет до лавандового матового стекла."""
+    if a <= 0.01 or r < 4:
+        return img
+    p = int(r + 30)
+    x0, x1, y0, y1 = int(max(0, x - p)), int(min(W, x + p)), int(max(0, y - p)), int(min(H, y + p))
+    if x1 - x0 < 8 or y1 - y0 < 8:
+        return img
+    gx, gy = xx[y0:y1, x0:x1] - x, yy[y0:y1, x0:x1] - y
+    d = np.sqrt(gx * gx + gy * gy) / r
+    dd = np.clip(d, 0, 0.999)
+    z = np.sqrt(1 - dd * dd)                                   # «выпуклость» сферы
+    k = -0.75 * (1 - 0.55 * (1 - z))                           # переворот + сжатие к краю
+    mx, my = (x + gx * k).astype(np.float32), (y + gy * k).astype(np.float32)
+    ref = cv2.remap(img, mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+    ref = cv2.GaussianBlur(ref, (0, 0), 1.2 + 10 * frost)
+    lav = np.float32([0.97, 0.80, 0.78])                       # BGR лаванда
+    tint = (0.10 + 0.75 * frost)
+    ref = ref * (1 - tint) + (lav * (0.9 + 0.1 * z[..., None])) * tint
+    hl = np.exp(-(((gx + 0.38 * r) / (0.42 * r)) ** 2 + ((gy + 0.45 * r) / (0.3 * r)) ** 2)) * (0.35 - 0.2 * frost)
+    ref = ref + hl[..., None] - (np.clip(gy / r, 0, 1) ** 2 * 0.10)[..., None]
+    edge = np.exp(-((d - 1) * r / 2.0) ** 2) * 0.35
+    m = np.clip((1 - d) * r / 1.5, 0, 1)[..., None]
+    sh = (np.exp(-(np.clip(d - 1, 0, None) * r / 16) ** 2) * (d > 1) * 0.10)[..., None]
+    roi = img[y0:y1, x0:x1]
+    res = roi * (1 - sh) * (1 - m) + np.clip(ref + edge[..., None], 0, 1) * m
+    out_ = img.copy()
+    out_[y0:y1, x0:x1] = roi * (1 - a) + res * a
+    return out_
+
+
 def leak(img, k):
     """Световая засветка (оранжевый + розовый, диагональные лучи), режим screen; k 0..1."""
     a = np.sin(np.pi * np.clip(k, 0, 1)) ** 1.2
@@ -186,7 +223,7 @@ if enc:
         if not ok:
             break
         x = fr.astype(np.float32) * (1 / 255)
-        f = FX.get(i, {"blur": 0, "dim": 0, "zoom": 1, "lens": None, "leak": -1, "face": face_last})
+        f = FX.get(i, {"blur": 0, "dim": 0, "zoom": 1, "lens": None, "ball": None, "leak": -1, "face": face_last})
         face_last = f["face"]
         fx_, fy_ = f["face"][0], f["face"][1]
         b = f["blur"]
@@ -235,6 +272,8 @@ if enc:
                 x = x * (1 - al) + ov[..., :3] * al
         if f["lens"]:
             x = lens(x, *f["lens"])
+        if f.get("ball"):
+            x = ball(x, *f["ball"])
         if f["leak"] >= 0:
             x = leak(x, f["leak"])
         x = x + GRAIN[i % len(GRAIN)]

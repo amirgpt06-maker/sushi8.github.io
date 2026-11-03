@@ -63,6 +63,31 @@ html, body { width: 1080px; height: 1920px; background: transparent; overflow: h
 .chev { position: absolute; width: 64px; height: 40px; margin-left: -32px; }
 
 .bill { position: absolute; left: 0; top: 0; font-family: "Noto Color Emoji"; line-height: 1; will-change: transform; }
+/* ===== «Белый Apple-экран» (white board): SF Pro из пака пользователя (engine/local/fonts), иначе Inter ===== */
+@font-face { font-family: "SF"; src: url("local/fonts/SF-Pro-Display-Light.otf"); font-weight: 300; }
+@font-face { font-family: "SF"; src: url("local/fonts/SF-Pro-Display-Regular.otf"); font-weight: 400; }
+@font-face { font-family: "SF"; src: url("local/fonts/SF-Pro-Display-Medium.otf"); font-weight: 500; }
+@font-face { font-family: "SF"; src: url("local/fonts/SF-Pro-Display-Semibold.otf"); font-weight: 600; }
+@font-face { font-family: "SF"; src: url("local/fonts/SF-Pro-Display-Bold.otf"); font-weight: 700; }
+@font-face { font-family: "SF"; src: url("local/fonts/SF-Pro-Display-Heavy.otf"); font-weight: 800; }
+@font-face { font-family: "SF"; src: url("local/fonts/SF-Pro-Display-Black.otf"); font-weight: 900; }
+.wbf { font-family: "SF", "Inter", sans-serif; color: #0b0b0d; }
+.wbline { position: absolute; left: 0; width: 1080px; text-align: center; white-space: nowrap; line-height: 1; }
+.wbch { display: inline-block; white-space: pre; transform-origin: 50% 80%; }
+.wbw { display: inline-block; white-space: pre; }
+.pill { position: absolute; padding: 10px 30px 13px; border-radius: 999px; color: #fff; font-weight: 700; white-space: nowrap; line-height: 1;
+  background: linear-gradient(180deg, #f3846a, #ea5b40); box-shadow: 0 8px 22px rgba(234, 91, 64, .35), inset 0 1px 0 rgba(255,255,255,.35); }
+.tile { position: absolute; border-radius: 64px; overflow: hidden; box-shadow: 0 30px 70px rgba(30, 30, 60, .16), 0 6px 18px rgba(30,30,60,.08), inset 0 0 0 1.5px rgba(255,255,255,.7); }
+.tile .in { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.tile img { max-width: 86%; max-height: 86%; object-fit: contain; }
+.sel { position: absolute; background: rgba(120, 170, 245, .38); }
+.selh { position: absolute; width: 4px; background: #1f6ef5; }
+.selh::after { content: ""; position: absolute; left: -9px; width: 22px; height: 22px; border-radius: 50%; background: #1f6ef5; }
+.selh.a::after { top: -18px; } .selh.b::after { bottom: -18px; }
+.dock { position: absolute; height: 128px; border-radius: 40px; background: linear-gradient(180deg, #1c1c1e, #050506); box-shadow: 0 18px 40px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.12);
+  display: flex; align-items: center; padding: 0 22px; gap: 22px; }
+.dock .fold { font-family: "Noto Color Emoji"; font-size: 84px; line-height: 1; }
+.dock .lab { height: 78px; border-radius: 24px; background: #fff; color: #0b0b0d; display: flex; align-items: center; padding: 0 34px; font-weight: 600; font-size: 40px; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -595,6 +620,276 @@ MAKE.rain = (it) => {
   };
 };
 
+// ===================== «Белый Apple-экран» (white board) =====================
+// Сняты с референса пользователя: белый фон, оранжевая размытая волна, заголовок с буквами-пружинками,
+// плашки-теги, плитки-виджеты с баунсом, iOS-выделение текста, печать списка, тёмная кнопка с папкой,
+// стеклянный шар (делает compose.py по fx.ball), белый круг-шторка.
+const WB_ORANGE = "#f06b4e";
+const bounce = (k) => { k = clamp(k); return 1 - Math.exp(-7 * k) * Math.cos(9.5 * k); };          // пружина с заметным перелётом
+const exitK = (t, it, d = 0.3) => clamp((t - (it.end - d)) / d);
+function wbExit(node, t, it, baseTf = "") {
+  const d = it.exitDur ?? 0.32, k = exitK(t, it, d);
+  if (k <= 0) return false;
+  const e = eIn(k);
+  if (it.exit === "up") { node.style.transform = baseTf + ` translateY(${(-700 * e).toFixed(1)}px)`; node.style.filter = `blur(${(e * 14).toFixed(1)}px)`; }
+  else if (it.exit === "down") { node.style.transform = baseTf + ` translateY(${(700 * e).toFixed(1)}px)`; node.style.filter = `blur(${(e * 14).toFixed(1)}px)`; }
+  else if (it.exit === "circle") { node.style.clipPath = `circle(${(75 * (1 - e)).toFixed(1)}% at 50% 50%)`; node.style.transform = baseTf + ` scale(${(1 - 0.35 * e).toFixed(3)})`; }
+  else if (it.exit !== "cut") { node.style.opacity = 1 - e; node.style.filter = `blur(${(e * 12).toFixed(1)}px)`; }
+  return true;
+}
+
+// белый фон экрана (непрозрачный: видео под ним не видно)
+MAKE.wb = (it) => {
+  const box = el("div", "abs"); box.style.width = "1080px"; box.style.height = "1920px"; box.style.background = it.bg || "#fbfbfb";
+  return (t) => { box.style.display = t >= it.t && t < it.end ? "" : "none"; };
+};
+
+// оранжевая размытая волна (снизу или сверху); поднимается за rise с, уходит за fall с
+MAKE.wave = (it) => {
+  const box = el("div", "abs"); box.style.width = "1080px"; box.style.height = "1920px"; box.style.overflow = "hidden";
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", "1080"); svg.setAttribute("height", "1920"); svg.style.filter = `blur(${it.blur ?? 26}px)`;
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("fill", it.color || WB_ORANGE); svg.appendChild(path); box.appendChild(svg);
+  const top = it.from === "top", H0 = it.h ?? 560;
+  const R = rng(it.seed ?? 5);
+  // неровный «рваный» край, как в референсе: несколько крупных волн + мелкие частые бугры
+  const ph = [...Array.from({ length: 3 }, () => [R() * 6.28, 0.6 + R() * 1.4, 0.004 + R() * 0.006, 55]),
+              ...Array.from({ length: 5 }, () => [R() * 6.28, 1.5 + R() * 2.5, 0.018 + R() * 0.03, 26])];
+  if (it.sfx !== false) EV.push({ t: it.t, s: "wbwhoosh", g: 0.9, v: 1 });
+  return (t) => {
+    if (t < it.t || t > it.end) { box.style.display = "none"; return; }
+    box.style.display = "";
+    const k = eOut((t - it.t) / (it.rise ?? 0.8)) * (1 - eIn((t - (it.end - (it.fall ?? 0.45))) / (it.fall ?? 0.45)));
+    let d = "";
+    for (let x = -60; x <= 1140; x += 15) {
+      let h = H0 * k;
+      for (const [p, sp, f, amp] of ph) h += Math.sin(x * f + p + t * sp) * amp * k;
+      const y = top ? h : 1920 - h;
+      d += (d ? " L" : "M") + `${x} ${y.toFixed(1)}`;
+    }
+    d += top ? " L1140 -80 L-60 -80 Z" : " L1140 2000 L-60 2000 Z";
+    path.setAttribute("d", d);
+  };
+};
+
+// заголовок / строки: "bounce" — буквы выпрыгивают по одной (стоят врозь и съезжаются), "slide" — слово въезжает слева из размытия,
+// "type" — печать с проявлением (серый -> чёрный). Блок может переехать (move:[t, y]) и уйти (exit: up|down|blur|cut).
+MAKE.btext = (it) => {
+  const box = el("div", "abs wbf"); const lines = [];
+  for (const L of it.lines) {
+    const d = el("div", "wbline", box);
+    d.style.fontSize = (L.size ?? 104) + "px"; d.style.fontWeight = L.weight ?? 800; d.style.letterSpacing = (L.ls ?? -0.035) + "em";
+    if (L.color) d.style.color = L.color;
+    const mode = L.mode || "bounce", step = L.step ?? (mode === "type" ? 0.05 : 0.045);
+    let parts;
+    if (mode === "slide") parts = L.text.split(" ").map((w, i, a) => ({ s: el("span", "wbw", d, esc(w) + (i < a.length - 1 ? " " : "")), t: L.t + i * (L.wstep ?? 0.28) }));
+    else parts = [...L.text].map((c, i) => ({ s: el("span", "wbch", d, esc(c)), t: L.t + i * step }));
+    lines.push({ L, d, mode, parts, y: L.y ?? 0 });
+    if (it.sfx !== false && L.sfx !== false) {
+      if (mode === "slide") parts.forEach((p, i) => EV.push({ t: p.t, s: i ? "wbslide" : "wbwhoosh", g: i ? 0.7 : 0.6, v: 1 }));
+      else parts.forEach((p, i) => { if (p.s.textContent.trim()) EV.push({ t: p.t, s: "aplkey" + (1 + (i % 4)), g: mode === "type" ? 0.55 : 0.75, v: 1 }); });
+    }
+  }
+  return (t) => {
+    if (t < it.t - 0.02 || t > it.end) { box.style.display = "none"; return; }
+    box.style.display = ""; box.style.opacity = 1; box.style.filter = ""; box.style.clipPath = "";
+    let y0 = it.y ?? 820;
+    for (const [mt, my, md] of it.move || []) y0 = lerp(y0, my, bounce((t - mt) / (md ?? 0.55)));
+    for (const { L, d, mode, parts, y } of lines) {
+      d.style.top = (y0 + y) + "px";
+      for (const p of parts) {
+        const k = (t - p.t) / (mode === "slide" ? 0.45 : 0.42);
+        if (k <= 0) { p.s.style.opacity = 0; continue; }
+        if (mode === "bounce") {
+          const b = bounce(k);
+          p.s.style.opacity = clamp(k * 4);
+          p.s.style.transform = `translateY(${((1 - b) * 26).toFixed(1)}px) scale(${lerp(0.35, 1, b).toFixed(3)})`;
+          p.s.style.marginRight = `${((1 - eOut(clamp(k * 1.4))) * 0.32).toFixed(3)}em`;       // буквы сначала врозь
+          p.s.style.filter = k < 0.25 ? `blur(${((0.25 - k) * 16).toFixed(1)}px)` : "";
+        } else if (mode === "slide") {
+          const e = eOut(clamp(k));
+          p.s.style.opacity = clamp(k * 3);
+          p.s.style.transform = `translateX(${((1 - e) * -120).toFixed(1)}px)`;
+          p.s.style.filter = e < 1 ? `blur(${((1 - e) * 12).toFixed(1)}px)` : "";
+          p.s.style.color = mix("#9a9aa0", L.color || "#0b0b0d", e);
+        } else {
+          const e = clamp(k * 2.2);
+          p.s.style.opacity = e; p.s.style.filter = e < 1 ? `blur(${((1 - e) * 6).toFixed(1)}px)` : "";
+          p.s.style.color = mix("#b4b4ba", L.color || "#0b0b0d", clamp(k * 1.3));
+        }
+      }
+    }
+    wbExit(box, t, it);
+  };
+};
+
+// плашка-тег: прилетает снизу-слева с поворотом, пружиной встаёт ровно
+MAKE.pill = (it) => {
+  const p = el("div", "pill wbf", null, esc(it.text)); p.style.fontSize = (it.size ?? 40) + "px";
+  if (it.color) p.style.background = it.color;
+  if (it.sfx !== false) EV.push({ t: it.t, s: "wbpop", g: 0.8, v: 1 });
+  return (t) => {
+    if (t < it.t || t > it.end) { p.style.display = "none"; return; }
+    p.style.display = ""; p.style.opacity = 1; p.style.filter = ""; p.style.clipPath = "";
+    const b = bounce((t - it.t) / 0.5);
+    const r = p.getBoundingClientRect();
+    let [x, y] = it.pos || [540, 920];
+    for (const [mt, my, md] of it.move || []) y = lerp(y, my, bounce((t - mt) / (md ?? 0.55)));
+    const tf = `translate(${(x - r.width / 2 + (1 - b) * -160).toFixed(1)}px, ${(y + (1 - b) * 120).toFixed(1)}px) rotate(${((1 - b) * -14 + (it.rot ?? -2)).toFixed(2)}deg) scale(${lerp(0.5, 1, b).toFixed(3)})`;
+    p.style.left = "0px"; p.style.top = "0px"; p.style.transform = tf;
+    p.style.opacity = clamp((t - it.t) / 0.08);
+    wbExit(p, t, it, tf);
+  };
+};
+
+// плитка-виджет: картинка (из пака: engine/local/ui/…) или эмодзи/HTML в скруглённом квадрате; баунс-появление,
+// "swap": [[t, img|emoji], …] — смена содержимого с прыжком; exit "circle" — сжимается в круг.
+MAKE.tile = (it) => {
+  const w = it.w ?? 560, h = it.h ?? w;
+  const tl = el("div", "tile"); tl.style.width = w + "px"; tl.style.height = h + "px";
+  tl.style.background = it.bg || "linear-gradient(160deg, #ffffff, #eeeef3)";
+  const contents = [[it.t, it.img, it.emoji, it.html], ...(it.swap || []).map(([st, v]) => [st, /\.(png|jpe?g|webp)$/i.test(v) ? v : null, /\.(png|jpe?g|webp)$/i.test(v) ? null : v, null])];
+  const ins = contents.map(([st, img, emo, html]) => {
+    const d = el("div", "in", tl);
+    if (img) el("img", "", d).src = img;
+    else if (html) d.innerHTML = html;
+    else { const e = el("div", "emo", d, emo || "✨"); e.style.fontSize = (it.esize ?? Math.round(w * 0.42)) + "px"; }
+    return { d, st };
+  });
+  if (it.sfx !== false) { EV.push({ t: it.t, s: "wbbounce", g: 0.8, v: 1 }); for (const { st } of ins.slice(1)) EV.push({ t: st, s: "wbclick", g: 0.7, v: 1 }); }
+  return (t) => {
+    if (t < it.t || t > it.end) { tl.style.display = "none"; return; }
+    tl.style.display = ""; tl.style.opacity = 1; tl.style.filter = ""; tl.style.clipPath = "";
+    let [x, y] = it.pos || [540, 1120];
+    for (const [mt, my, md] of it.move || []) y = lerp(y, my, bounce((t - mt) / (md ?? 0.55)));
+    let s = lerp(0.55, 1, bounce((t - it.t) / 0.6));
+    let cur = 0; ins.forEach((c, i) => { if (t >= c.st) cur = i; });
+    ins.forEach((c, i) => {
+      const k = i === cur ? clamp((t - c.st) / 0.3) : 0;
+      c.d.style.opacity = i === cur ? 1 : 0;
+      c.d.style.transform = i === cur && i > 0 ? `scale(${lerp(0.6, 1, bounce((t - c.st) / 0.45)).toFixed(3)})` : "";
+      if (i === cur && i > 0) s *= 1 - 0.06 * Math.sin(Math.PI * k);
+    });
+    const tf = `translate(${(x - w / 2).toFixed(1)}px, ${(y - h / 2).toFixed(1)}px) scale(${s.toFixed(4)})`;
+    tl.style.left = "0px"; tl.style.top = "0px"; tl.style.transform = tf;
+    tl.style.opacity = clamp((t - it.t) / 0.1);
+    wbExit(tl, t, it, tf);
+  };
+};
+
+// iOS-выделение текста: жирный текст печатается, синяя подсветка растёт вместе с ним, ручки по краям
+MAKE.select = (it) => {
+  const box = el("div", "abs wbf");
+  const sel = el("div", "sel", box), ha = el("div", "selh a", box), hb = el("div", "selh b", box);
+  const tx = el("div", "abs", box); tx.style.whiteSpace = "nowrap"; tx.style.fontSize = (it.size ?? 76) + "px"; tx.style.fontWeight = 800; tx.style.letterSpacing = "-0.03em"; tx.style.lineHeight = 1;
+  const chars = [...it.text].map((c) => el("span", "wbch", tx, esc(c)));
+  const step = it.step ?? 0.06;
+  if (it.sfx !== false) { EV.push({ t: it.t, s: "wbselect", g: 0.8, v: 1 }); chars.forEach((c, i) => { if (c.textContent.trim()) EV.push({ t: it.t + 0.1 + i * step, s: "aplkey" + (1 + (i % 4)), g: 0.5, v: 1 }); }); }
+  return (t) => {
+    if (t < it.t || t > it.end) { box.style.display = "none"; return; }
+    box.style.display = ""; box.style.opacity = 1; box.style.filter = ""; box.style.clipPath = "";
+    chars.forEach((c, i) => { const k = clamp((t - it.t - 0.1 - i * step) / 0.25); c.style.opacity = k; c.style.transform = `scale(${lerp(0.5, 1, bounce(k)).toFixed(3)})`; });
+    const full = tx.getBoundingClientRect().width;
+    let shown = 0; chars.forEach((c) => { if (+c.style.opacity > 0) shown = c.offsetLeft + c.offsetWidth; });
+    let [x, y] = it.pos || [540, 820];
+    for (const [mt, my, md] of it.move || []) y = lerp(y, my, bounce((t - mt) / (md ?? 0.55)));
+    const x0 = x - full / 2 - 18, hgt = (it.size ?? 76) * 1.25;
+    const wsel = Math.max(clamp((t - it.t) / 0.25) * 70, shown + 36);
+    tx.style.left = (x - full / 2) + "px"; tx.style.top = (y - hgt / 2 + hgt * 0.12) + "px";
+    sel.style.left = x0 + "px"; sel.style.top = (y - hgt / 2) + "px"; sel.style.width = wsel + "px"; sel.style.height = hgt + "px";
+    ha.style.left = (x0 - 2) + "px"; ha.style.top = (y - hgt / 2) + "px"; ha.style.height = hgt + "px";
+    hb.style.left = (x0 + wsel - 2) + "px"; hb.style.top = (y - hgt / 2) + "px"; hb.style.height = hgt + "px";
+    wbExit(box, t, it);
+  };
+};
+
+// список: «• пункт» печатается по буквам, пункты один за другим (items: [[текст, t], …])
+MAKE.list = (it) => {
+  const box = el("div", "abs wbf"); const step = it.step ?? 0.055;
+  const rows = it.items.map(([text, t0], j) => {
+    const r = el("div", "abs", box); r.style.whiteSpace = "nowrap"; r.style.fontSize = (it.size ?? 66) + "px"; r.style.fontWeight = it.weight ?? 400; r.style.letterSpacing = "-0.02em";
+    const dot = el("span", "wbch", r, "•&nbsp;");
+    const cs = [...text].map((c) => el("span", "wbch", r, esc(c)));
+    if (it.sfx !== false) cs.forEach((c, i) => { if (c.textContent.trim()) EV.push({ t: t0 + 0.08 + i * step, s: "aplkey" + (1 + (i % 4)), g: 0.45, v: 1 }); });
+    return { r, dot, cs, t0, j };
+  });
+  return (t) => {
+    if (t < it.t || t > it.end) { box.style.display = "none"; return; }
+    box.style.display = ""; box.style.opacity = 1; box.style.filter = ""; box.style.clipPath = "";
+    let [x, y] = it.pos || [300, 940];
+    for (const [mt, my, md] of it.move || []) y = lerp(y, my, bounce((t - mt) / (md ?? 0.55)));
+    for (const { r, dot, cs, t0, j } of rows) {
+      r.style.left = x + "px"; r.style.top = (y + j * (it.size ?? 66) * 1.18) + "px";
+      dot.style.opacity = clamp((t - t0) / 0.1);
+      cs.forEach((c, i) => { const k = clamp((t - t0 - 0.08 - i * step) / 0.22); c.style.opacity = k; c.style.filter = k < 1 ? `blur(${((1 - k) * 5).toFixed(1)}px)` : ""; c.style.color = mix("#b4b4ba", "#0b0b0d", k); });
+    }
+    wbExit(box, t, it);
+  };
+};
+
+// тёмная кнопка-док: папка + белая подпись; swap: [t, "текст", "#1f6ef5"] — подпись меняется на цветную кнопку
+MAKE.dock = (it) => {
+  const d = el("div", "dock wbf"); el("div", "fold", d, it.icon || "📁");
+  const lab = el("div", "lab", d, esc(it.text || "Apple System"));
+  if (it.sfx !== false) { EV.push({ t: it.t, s: "wbbounce", g: 0.8, v: 1 }); if (it.swap) EV.push({ t: it.swap[0], s: "wbclick", g: 0.9, v: 1 }); }
+  return (t) => {
+    if (t < it.t || t > it.end) { d.style.display = "none"; return; }
+    d.style.display = ""; d.style.opacity = 1; d.style.filter = ""; d.style.clipPath = "";
+    let [x, y] = it.pos || [540, 1160];
+    for (const [mt, my, md] of it.move || []) y = lerp(y, my, bounce((t - mt) / (md ?? 0.6)));
+    let s = lerp(0.4, 1, bounce((t - it.t) / 0.6));
+    if (it.swap && t >= it.swap[0]) {
+      const k = clamp((t - it.swap[0]) / 0.35);
+      lab.textContent = it.swap[1]; lab.style.background = it.swap[2] || "#1f6ef5"; lab.style.color = "#fff";
+      s *= 1 + 0.08 * Math.sin(Math.PI * k) * (1 - k);
+    }
+    const r = d.getBoundingClientRect(), sw = r.width / Math.max(s, 0.01);
+    const tf = `translate(${(x - sw / 2).toFixed(1)}px, ${(y - 64).toFixed(1)}px) scale(${s.toFixed(4)})`;
+    d.style.left = "0px"; d.style.top = "0px"; d.style.transformOrigin = "50% 50%"; d.style.transform = tf;
+    d.style.opacity = clamp((t - it.t) / 0.1);
+    wbExit(d, t, it, tf);
+  };
+};
+
+// стеклянный шар: проезжает (x0 -> x1), преломляя то, что под ним; с frostAt мутнеет до лавандового и растёт до r1 (стирает экран)
+MAKE.ball = (it) => {
+  if (it.sfx !== false) { EV.push({ t: it.t, s: "wbwhoosh", g: 0.8, v: 1 }); if (it.frostAt) EV.push({ t: it.frostAt, s: "wbshimmer", g: 0.7, v: 1 }); }
+  return (t, fx) => {
+    if (t < it.t || t > it.end) return;
+    const k = eIO((t - it.t) / ((it.frostAt ?? it.end) - it.t));
+    const x = lerp(it.x0 ?? 900, it.x1 ?? 520, k), y = it.y ?? 820;
+    const f = it.frostAt ? clamp((t - it.frostAt) / (it.end - it.frostAt)) : 0;
+    const r = lerp(it.r0 ?? 150, it.r1 ?? 900, eIn(f));
+    const a = clamp((t - it.t) / 0.12);
+    fx.ball = [x, y, r, a, clamp(f * 1.6)];
+  };
+};
+
+// круг-шторка: цветной круг растёт из точки и закрывает экран
+MAKE.circle = (it) => {
+  const c = el("div", "abs"); c.style.borderRadius = "50%"; c.style.background = it.color || "#fbfbfb";
+  if (it.sfx !== false) EV.push({ t: it.t, s: "wbwhoosh", g: 0.6, v: 1 });
+  return (t) => {
+    if (t < it.t || t > it.end) { c.style.display = "none"; return; }
+    c.style.display = "";
+    const r = lerp(it.r0 ?? 40, 2400, eIn(clamp((t - it.t) / (it.dur ?? 0.45))));
+    const [x, y] = it.pos || [540, 2050];
+    c.style.width = c.style.height = 2 * r + "px"; c.style.transform = `translate(${(x - r).toFixed(1)}px, ${(y - r).toFixed(1)}px)`;
+  };
+};
+// значок/аватар-ник сверху (как «@ник» в пилюле)
+MAKE.handle = (it) => {
+  const d = el("div", "abs wbf"); d.style.cssText += "border:2px solid #cfcfd4;border-radius:999px;padding:6px 22px 6px 8px;font-size:26px;display:flex;align-items:center;gap:10px;background:#fff;color:#333;";
+  el("span", "emo", d, it.icon || "🙂").style.fontSize = "30px"; el("span", "", d, esc(it.text || "@nick"));
+  return (t) => {
+    if (t < it.t || t > it.end) { d.style.display = "none"; return; }
+    d.style.display = ""; const b = bounce((t - it.t) / 0.5); const r = d.getBoundingClientRect();
+    d.style.transform = `translate(${(540 - r.width / 2).toFixed(1)}px, ${(lerp(-80, it.y ?? 70, b)).toFixed(1)}px)`;
+    d.style.opacity = 1 - exitK(t, it, 0.25);
+  };
+};
+
 function build(data) {
   D = data; EV = []; FILT = 0;
   root = document.getElementById("root"); root.innerHTML = "";
@@ -617,7 +912,7 @@ function build(data) {
 }
 // layer: undefined — всё; "front" — без элементов behind:true; "back" — только они (их compose.py кладёт ЗА человека)
 function render(t, layer) {
-  const fx = { blur: 0, dim: 0, zoom: 1, lens: null, leak: -1, sil: 0, bg: null, face: face(t) };
+  const fx = { blur: 0, dim: 0, zoom: 1, lens: null, ball: null, leak: -1, sil: 0, bg: null, face: face(t) };
   for (const { it, f, c } of ITEMS) {
     f && f(t, fx);
     const show = !layer || (layer === "back" ? !!it.behind : !it.behind);

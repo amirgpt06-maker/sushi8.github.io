@@ -1,20 +1,23 @@
 {
-  "_about": "Роль -> файл из пака пользователя (Botanica v5). Схема и громкость сняты с его референсов (сопоставление спектров). Роли без строки здесь (riser, shimmer, swoosh, air, focus, whoosh, chime) берутся из синтеза engine/sfx. Поменяйте file, чтобы заменить звук.",
+  "_about": "Роль -> файл из паков пользователя (Botanica v5 и пак «Apple» со звуками/шрифтами/UI). Схема и громкость сняты с его референсов сопоставлением спектров. start — откуда вырезать кусок в файле-сборнике. Роли без строки берутся из синтеза engine/sfx.",
   "blockpop": {
-    "file": "Pop, Button, Scale, Transform, Ui_9.wav",
-    "max_s": 1.5
+    "file": "эпл печатание.mp3",
+    "start": 1.09,
+    "max_s": 0.3
   },
   "pop": {
     "file": "Pop, Button, Scale, Transform, Ui_9.wav",
     "max_s": 1.5
   },
   "linepop": {
-    "file": "Pop, Button, Scale, Transform, Ui_16.wav",
-    "max_s": 1.5
+    "file": "эпл печатание.mp3",
+    "start": 2.41,
+    "max_s": 0.3
   },
   "typeone": {
-    "file": "Type (one)_4.wav",
-    "max_s": 1.5
+    "file": "clickbutton.mp3",
+    "start": 32.16,
+    "max_s": 0.3
   },
   "key1": {
     "file": "Type (one)_4.wav",
@@ -33,12 +36,12 @@
     "max_s": 1.5
   },
   "tagpop": {
-    "file": "Texter, Gratonal, Button_1.wav",
-    "max_s": 1.5
+    "file": "notification3.mp3",
+    "max_s": 1.2
   },
   "cardclick": {
-    "file": "Pop, Button, Scale, Transform, Ui_15.wav",
-    "max_s": 1.5
+    "file": "App Click 15.wav",
+    "max_s": 0.7
   },
   "tink": {
     "file": "Pop, Button, Scale, Transform, Ui_15.wav",
@@ -51,5 +54,56 @@
   "cash": {
     "file": "Cash, Coin, Paid.wav",
     "max_s": 1.5
+  },
+  "aplkey1": {
+    "file": "эпл печатание.mp3",
+    "start": 1.09,
+    "max_s": 0.25
+  },
+  "aplkey2": {
+    "file": "эпл печатание.mp3",
+    "start": 2.41,
+    "max_s": 0.25
+  },
+  "aplkey3": {
+    "file": "эпл печатание.mp3",
+    "start": 3.74,
+    "max_s": 0.25
+  },
+  "aplkey4": {
+    "file": "эпл печатание.mp3",
+    "start": 3.9,
+    "max_s": 0.25
+  },
+  "wbwhoosh": {
+    "file": "вуши для разгона.mp3",
+    "start": 3.95,
+    "max_s": 0.7
+  },
+  "wbslide": {
+    "file": "Резкие вуши.mp3",
+    "start": 2.45,
+    "max_s": 0.45
+  },
+  "wbpop": {
+    "file": "ui-pop-up-2-197887.mp3",
+    "max_s": 0.5
+  },
+  "wbbounce": {
+    "file": "трансформация 1.mp3",
+    "max_s": 0.4
+  },
+  "wbclick": {
+    "file": "App Click 15.wav",
+    "max_s": 0.7
+  },
+  "wbselect": {
+    "file": "clickbutton.mp3",
+    "start": 32.16,
+    "max_s": 0.3
+  },
+  "wbshimmer": {
+    "file": "small_whoosh_chimes_1.wav",
+    "max_s": 1.15
   }
 }
