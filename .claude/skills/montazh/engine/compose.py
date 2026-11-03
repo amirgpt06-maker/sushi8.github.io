@@ -23,7 +23,8 @@ src, ov_dir, out = sys.argv[1:4]
 ov_dir = Path(ov_dir)
 SPEED = float(os.environ.get("SPEED", "1.0"))
 GMODE = os.environ.get("GRADE", "1")
-GRAIN_AMT = float(os.environ.get("GRAIN", "0"))      # 0 — без зерна (по умолчанию); 0.006 — лёгкое плёночное
+GRAIN_AMT = float(os.environ.get("GRAIN", "0"))
+FILM_AMT = float(os.environ.get("FILM", "1.0"))       # сила GRADE=film (0.5 — мягче, 1 — стандарт)      # 0 — без зерна (по умолчанию); 0.006 — лёгкое плёночное
 GRADE = GMODE != "0"
 MATTE = Path(os.environ["MATTE"]) if os.environ.get("MATTE") else None
 SFX_GAIN = float(os.environ.get("SFX_GAIN", "1.0"))
@@ -86,6 +87,37 @@ def grade_cinema(x):
     x = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
     x = x * F(0.96) + F(0.012)                              # матовые тени
     return np.clip(x * VIG, 0, 1)
+
+
+def grade_film(x, amt=1.0):
+    """«Как в кино», без передоза (просьба пользователя): плёночная S-кривая с мягким плечом в светах,
+    лёгкий сплит-тон (тени чуть холоднее, света чуть теплее), вибранс (тусклое ярче, насыщенное и кожа — почти без изменений),
+    зелень спокойнее и чуть в оливу. Средняя яркость кадра сохраняется — картинка не светлеет. amt 0..1 — сила."""
+    src_l = float(cv2.cvtColor(x, cv2.COLOR_BGR2GRAY).mean())
+    y = x
+    # кривая: контраст в середине + мягкое плечо в светах + чуть приподнятый, но плотный чёрный
+    s_ = y * y * (F(3) - F(2) * y)
+    y = y + (s_ - y) * F(0.22 * amt)
+    y = np.where(y > 0.78, F(0.78) + (y - F(0.78)) * F(1 - 0.35 * amt) / (F(1) + (y - F(0.78)) * F(1.2 * amt)), y)
+    y = F(0.012 * amt) + y * F(1 - 0.012 * amt)
+    # сплит-тон по яркости (BGR)
+    l = cv2.cvtColor(y, cv2.COLOR_BGR2GRAY)[..., None]
+    sh = np.clip(1 - l / 0.45, 0, 1) ** 1.5
+    hi = np.clip((l - 0.55) / 0.45, 0, 1) ** 1.5
+    y = y + (sh * np.float32([0.020, 0.006, -0.012]) + hi * np.float32([-0.016, 0.0, 0.020])) * F(amt)
+    # вибранс + зелень + защита кожи
+    hsv = cv2.cvtColor(np.clip(y, 0, 1), cv2.COLOR_BGR2HSV)
+    h, sat = hsv[..., 0], hsv[..., 1]
+    skin = np.exp(-((h - 25) / 18) ** 2)                      # оранжевые/телесные оттенки
+    green = np.exp(-((h - 105) / 30) ** 2)
+    boost = F(0.20 * amt) * (1 - sat) * (1 - 0.75 * skin) - F(0.12 * amt) * green
+    hsv[..., 1] = np.clip(sat * (1 + boost), 0, 1)
+    hsv[..., 0] = h - F(8 * amt) * green                      # зелень чуть в оливу
+    y = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+    # сохранить среднюю яркость исходного кадра
+    new_l = float(cv2.cvtColor(y, cv2.COLOR_BGR2GRAY).mean())
+    y = y * F(src_l / max(new_l, 1e-4))
+    return np.clip(y, 0, 1)
 
 
 def mask_at(i, s, cx, cy):
@@ -265,7 +297,7 @@ if enc:
                 x = cv2.GaussianBlur(x, (0, 0), sg)
         x = x * (1 - f["dim"])
         if GRADE:
-            x = grade_cinema(x) if GMODE == "cinema" else grade(x)
+            x = grade_cinema(x) if GMODE == "cinema" else grade_film(x, FILM_AMT) if GMODE == "film" else grade(x)
         if m is not None and f.get("sil", 0) > 0:      # силуэт: человек залит цветом
             c = np.float32([int(f.get("silColor", "#000000")[k:k + 2], 16) / 255 for k in (5, 3, 1)])
             x = x * (1 - m * F(f["sil"])) + c * m * F(f["sil"])
