@@ -34,8 +34,15 @@ for role, m in MAP.items():
     if len(y) == 0:
         print(f"пустой файл для «{role}»")
         continue
-    n = min(len(y), int(0.004 * 48000))
-    y[-n:] *= np.linspace(1, 0, n)                      # короткий спад, чтобы не щёлкало на обрезке
-    y = y / (np.abs(y).max() + 1e-9) * m.get("peak", 0.85)
+    full = librosa.get_duration(path=src)
+    if full > m.get("max_s", 1.0) + 0.01:               # обрезали — плавный спад 60 мс, чтобы звук не обрывался
+        n = min(len(y), int(0.06 * 48000))
+        y[-n:] *= np.linspace(1, 0, n) ** 2
+    act = y[np.abs(y) > 0.05 * np.abs(y).max()]          # громкость на слух: RMS звучащей части к одному уровню
+    rms = np.sqrt(np.mean(act ** 2)) + 1e-9
+    y = y * (10 ** (m.get("rms_db", -18) / 20) / rms)
+    pk = np.abs(y).max()
+    if pk > 0.9:
+        y *= 0.9 / pk
     sf.write(str(out / f"{role}.wav"), y.astype(np.float32), 48000)
     print(f"{role:8s} <- {m['file']}  ({len(y)/48000:.2f} с)")
