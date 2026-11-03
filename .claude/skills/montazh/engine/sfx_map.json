@@ -105,5 +105,14 @@
   "wbshimmer": {
     "file": "small_whoosh_chimes_1.wav",
     "max_s": 1.15
+  },
+  "shimmer": {
+    "file": "small_whoosh_chimes_1.wav",
+    "max_s": 1.15
+  },
+  "swoosh": {
+    "file": "Резкие вуши.mp3",
+    "start": 2.45,
+    "max_s": 0.45
   }
 }

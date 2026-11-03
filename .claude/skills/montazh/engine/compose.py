@@ -23,6 +23,7 @@ src, ov_dir, out = sys.argv[1:4]
 ov_dir = Path(ov_dir)
 SPEED = float(os.environ.get("SPEED", "1.0"))
 GMODE = os.environ.get("GRADE", "1")
+GRAIN_AMT = float(os.environ.get("GRAIN", "0"))      # 0 — без зерна (по умолчанию); 0.006 — лёгкое плёночное
 GRADE = GMODE != "0"
 MATTE = Path(os.environ["MATTE"]) if os.environ.get("MATTE") else None
 SFX_GAIN = float(os.environ.get("SFX_GAIN", "1.0"))
@@ -294,7 +295,8 @@ if enc:
             x = ball(x, *f["ball"])
         if f["leak"] >= 0:
             x = leak(x, f["leak"])
-        x = x + GRAIN[i % len(GRAIN)]
+        if GRAIN_AMT > 0:                              # зерно — только по просьбе (правка: «лишний шум убираем»)
+            x = x + GRAIN[i % len(GRAIN)] * (GRAIN_AMT / 0.006)
         enc.stdin.write((np.clip(x, 0, 1) * 255 + 0.5).astype(np.uint8).tobytes())
     enc.stdin.close()
     enc.wait()

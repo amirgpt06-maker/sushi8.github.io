@@ -512,10 +512,12 @@ MAKE.title = (it) => {
 MAKE.card = (it) => {
   const box = el("div", "persp");
   const card = el("div", "cardbox", box);
+  const cw = it.w ?? 696, chh = it.h ?? 696, ctop = 960 - chh / 2;     // размер карточки (по умолчанию квадрат 696; для фото 4:5 — 640x800)
+  card.style.width = cw + "px"; card.style.height = chh + "px"; card.style.left = (540 - cw / 2) + "px"; card.style.top = ctop + "px";
   if (it.img) el("img", "", card).src = it.img; else el("div", "emo", card, it.emoji || "📦");
   const pages = it.pages.map((p, i) => {
-    const top = el("div", "clabel shadowed", box, esc(p.top || "")); top.style.top = "372px";
-    const bot = el("div", "clabel shadowed", box); bot.style.top = "1346px";
+    const top = el("div", "clabel shadowed", box, esc(p.top || "")); top.style.top = (ctop - 240) + "px";
+    const bot = el("div", "clabel shadowed", box); bot.style.top = (ctop + chh + 38) + "px";
     const spans = buildLines(bot, normLines([{ size: "m", text: p.bottom || "", t: p.bt ?? p.t + (i ? 0.08 : 0.42) }], p.t))   // bt — когда показать нижнюю подпись.map((x) => { x.s.parentNode.className = "line center"; return x; });
     return { ...p, top, bot, mt: motionBlur(top), mbb: motionBlur(bot), spans };
   });
@@ -553,7 +555,7 @@ MAKE.card = (it) => {
     if (it.lens !== false) for (const p of pages.slice(1)) {
       const a = t - (p.t - 0.9);
       if (a < 0 || a > 2.3) continue;
-      const r = 72, y0 = 372 + 34;
+      const r = 72, y0 = ctop - 240 + 34;
       const x = 540 + 220 - 330 * eIO((a - 0.65) / 0.45) + 150 * eIO((a - 1.25) / 0.9);
       const op = clamp(a / 0.2) * (1 - clamp((a - 1.9) / 0.4));
       fx.lens = [x, y0 + 10 * Math.sin(a * 2.2), r * lerp(0.7, 1, eOut(a / 0.3)), op];
