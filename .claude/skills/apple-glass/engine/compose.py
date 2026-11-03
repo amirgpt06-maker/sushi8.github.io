@@ -29,7 +29,8 @@ SFX_GAIN = float(os.environ.get("SFX_GAIN", "1.0"))
 FX = {int(k): v for k, v in json.load(open(ov_dir / "fx.json")).items()}
 EV = json.load(open(ov_dir / "events.json"))
 HERE = Path(__file__).resolve().parent
-SFX_DIRS = [d for d in (HERE / "sfx_local", HERE / "sfx") if d.exists()]   # сначала свой пак (sfx_local), потом синтез
+LOCAL = Path(os.environ["SFX_LOCAL"]) if os.environ.get("SFX_LOCAL") else HERE / "sfx_local"   # SFX_LOCAL — другой набор звуков
+SFX_DIRS = [d for d in (LOCAL, HERE / "sfx") if d.exists()]   # сначала свой пак (sfx_local), потом синтез
 
 
 def sfx_path(role):

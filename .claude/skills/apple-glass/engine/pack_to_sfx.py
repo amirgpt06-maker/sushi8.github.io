@@ -18,7 +18,7 @@ HERE = Path(__file__).resolve().parent
 pack = Path(sys.argv[1])
 out = Path(sys.argv[2]) if len(sys.argv) > 2 else HERE / "sfx_local"
 out.mkdir(parents=True, exist_ok=True)
-MAP = json.load(open(HERE / "sfx_map.json", encoding="utf-8"))
+MAP = json.load(open(os.environ.get("SFX_MAP", HERE / "sfx_map.json"), encoding="utf-8"))   # SFX_MAP — другая таблица (набор)
 index = {}
 for root, _, files in os.walk(pack):
     for f in files:

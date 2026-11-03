@@ -79,7 +79,8 @@
    "label": "это",
    "labelT": 3.3,
    "sound": "chime",
-   "soundGain": 0.24
+   "soundGain": 0.24,
+   "sfx": false
   },
   {
    "type": "para",

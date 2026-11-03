@@ -352,9 +352,9 @@ function flashLines(it) {
   const ink = it.ink || (/^#?(fff|ffffff|f[0-9a-f]{5})$/i.test((it.bg || "").replace("#", "")) ? "#1a1a1a" : "#f2f2f2");
   const blk = el("div", "block", box);
   blk.style.alignItems = "center"; blk.style.color = ink;
-  const spans = buildLines(blk, normLines(it.lines.map((L) => ({ ...L, size: L.size || "sp" })), it.t));
-  for (const sp of spans) if (!sp.typed && it.sfx !== false) EV.push({ t: sp.t, s: "cardclick", g: 0.2 });   // щелчок на каждой строке карточки
-  for (const sp of spans) if (sp.typed && it.sfx !== false) EV.push({ t: sp.t, s: "key1", g: 0.2 });
+  const NL = normLines(it.lines.map((L) => ({ ...L, size: L.size || "sp" })), it.t);
+  const spans = buildLines(blk, NL);
+  if (it.sfx !== false) for (const L of NL) EV.push({ t: L.words[0][1], s: L.type ? "key1" : "cardclick", g: 0.2 });   // ОДИН звук на строку карточки
   return (t) => {
     if (t < it.t || t >= it.end) { box.style.display = "none"; return; }
     box.style.display = "";
