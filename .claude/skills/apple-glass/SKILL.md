@@ -87,7 +87,8 @@ rotateZ −4°), пояснение появляется ниже (y≈1180).
 ## Как делать ролик
 
 1. Исходник: вертикальное видео. Если звук грязный — `video-tools/clean_audio.sh`.
-2. Распознать речь с таймингами слов: `subs-lab/asr.py` (Whisper turbo офлайн) или `video-tools/transcribe.py`.
+2. Распознать речь с таймингами КАЖДОГО слова: `/root/venv-video/bin/python video-tools/words.py video.mp4 words.json`
+   (русская модель GigaAM v2, офлайн). Найти склейки (`scenedetect` в `/root/venv-video`).
    Найти склейки (`scenedetect` в `/root/venv-video`).
 3. Якорь-лицо: `/root/venv-video/bin/python engine/anchor.py source.mp4 anchor.json`.
 4. Написать `cues.json` (формат ниже; пример — `engine/example_cues.json`). Разбить речь на стопки по 1–3 слова,
@@ -142,7 +143,8 @@ rotateZ −4°), пояснение появляется ниже (y≈1180).
 }
 ```
 
-`img` — путь относительно cues.json (или `"emoji":"🎬"` вместо фото). `pos:[x,y]` у `words`/`cta` —
+`img` — путь относительно cues.json (или `"emoji":"🎬"` вместо фото). У страницы карточки `bt` — время появления нижней подписи (цены) по слову.
+`"textShadow": true` в корне cues.json — плотная тень у текста для светлого дневного видео (небо, гравий). `pos:[x,y]` у `words`/`cta` —
 закрепить блок вручную вместо привязки к лицу. `sfx:false` у `title`/`cta` — без звука.
 
 ## Проверено

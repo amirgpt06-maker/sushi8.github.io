@@ -473,7 +473,7 @@ MAKE.card = (it) => {
   const pages = it.pages.map((p, i) => {
     const top = el("div", "clabel shadowed", box, esc(p.top || "")); top.style.top = "372px";
     const bot = el("div", "clabel shadowed", box); bot.style.top = "1346px";
-    const spans = buildLines(bot, normLines([{ size: "m", text: p.bottom || "", t: p.t + (i ? 0.08 : 0.42) }], p.t)).map((x) => { x.s.parentNode.className = "line center"; return x; });
+    const spans = buildLines(bot, normLines([{ size: "m", text: p.bottom || "", t: p.bt ?? p.t + (i ? 0.08 : 0.42) }], p.t))   // bt — когда показать нижнюю подпись.map((x) => { x.s.parentNode.className = "line center"; return x; });
     return { ...p, top, bot, mt: motionBlur(top), mbb: motionBlur(bot), spans };
   });
   EV.push({ t: it.t, s: "tink", g: 0.16 });
@@ -588,6 +588,11 @@ MAKE.rain = (it) => {
 function build(data) {
   D = data; EV = []; FILT = 0;
   root = document.getElementById("root"); root.innerHTML = "";
+  if (data.textShadow) {                   // светлое видео (небо, день): тень у текста плотнее — читается на любом фоне
+    const st = document.createElement("style");
+    st.textContent = `.shadowed { text-shadow: ${data.textShadow === true ? "0 2px 22px rgba(0,0,0,.55), 0 1px 4px rgba(0,0,0,.45)" : data.textShadow}; }`;
+    document.head.appendChild(st);
+  }
   const top = root;
   ITEMS = data.items.map((it) => {
     root = el("div", "abs", top);            // у каждого элемента свой контейнер — для слоёв «за человеком / перед ним»
