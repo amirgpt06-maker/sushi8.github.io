@@ -1,0 +1,28 @@
+{
+ "fps": 30, "duration": 13.56, "anchor": null, "textShadow": true,
+ "items": [
+  {"type":"words","fx":"cinema","t":0.35,"end":2.75,"pos":[540,1000],"lines":[
+     {"size":"sp","words":[["апрель",0.40]]},
+     {"size":"hb","words":[["лес",0.80]]},
+     {"size":"it","words":[["оживает",1.25]]}]},
+  {"type":"leak","t":2.82,"dur":0.45},
+  {"type":"zoom","t":3.2,"end":5.75,"scale":1.08,"ramp":0.6},
+  {"type":"para","t":3.35,"end":5.65,"align":"left","pos":[90,1280],"lines":[
+     [["Иногда",3.50],["лучший",3.85]],
+     [["план",4.15],["—",4.35],["просто",4.50]],
+     [["выйти",4.85],["из",5.05],["дома",5.15]]]},
+  {"type":"flash","t":5.75,"end":6.30,"bg":"#121214","lines":[{"size":"sp","text":"тишина","t":5.80}]},
+  {"type":"flash","t":6.30,"end":6.85,"bg":"#f2eee7","lines":[{"size":"sp","text":"воздух","t":6.35}]},
+  {"type":"flash","t":6.85,"end":7.40,"bg":"#c79ea4","ink":"#5b1d2a","lines":[{"size":"hb","text":"друзья","t":6.88}]},
+  {"type":"title","t":7.42,"end":8.75,"text":"ЛЕС","size":380,"y":1120,"behind":true,"sfx":false,"sound":"blockpop"},
+  {"type":"words","fx":"cinema","t":8.85,"end":11.05,"pos":[540,1040],"lines":[
+     {"size":"sp","words":[["просто",8.90]]},
+     {"size":"hb","words":[["идём",9.25]]},
+     {"size":"it","words":[["дальше",9.70]]}]},
+  {"type":"zoom","t":11.1,"end":13.56,"scale":1.06,"ramp":0.8},
+  {"type":"words","fx":"cinema","t":11.15,"end":13.50,"pos":[540,1020],"lines":[
+     {"size":"hb","words":[["весна",11.20]]},
+     {"size":"sp","words":[["08",11.65],["·",11.65],["04",11.75],["·",11.75],["2025",11.85]]},
+     {"size":"tag","words":[["[ сохрани ]",12.40]]}]}
+ ]
+}
