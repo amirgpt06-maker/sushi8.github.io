@@ -27,6 +27,19 @@ html, body { width: 1080px; height: 1920px; background: transparent; overflow: h
 .sz-xl { font-size: 206px; font-weight: 700; letter-spacing: -.045em; line-height: .9; }
 .sz-label { font-size: 48px; font-weight: 400; letter-spacing: -.01em; }
 .w { display: inline-block; white-space: pre; }
+/* «Кино-типографика»: разреженное мелкое / ЖИРНОЕ / курсив с эхом / подстрочник / тег в скобках / абзац */
+.sz-sp   { font-size: 40px; font-weight: 400; letter-spacing: .42em; margin-right: -.42em; text-transform: lowercase; line-height: 1.5; }
+.sz-hb   { font-size: 118px; font-weight: 800; letter-spacing: -.05em; line-height: .86; }
+.sz-it   { font-size: 118px; font-weight: 800; font-style: italic; letter-spacing: -.045em; line-height: .86;
+           text-shadow: -7px 0 0 rgba(255,255,255,.22), -14px 0 0 rgba(255,255,255,.09), 0 2px 18px rgba(0,0,0,.3); }
+.sz-sub  { font-size: 34px; font-weight: 500; letter-spacing: .01em; line-height: 1.35; }
+.sz-tag  { font-size: 28px; font-weight: 500; letter-spacing: .22em; line-height: 1.6; }
+.sz-para { font-size: 52px; font-weight: 600; letter-spacing: -.04em; line-height: .98; }
+.para { position: absolute; white-space: nowrap; }
+.flash .sz-sp { font-size: 48px; }
+.mark { position: absolute; left: 0; width: 1080px; text-align: center; }
+.mark .n { font-size: 27px; font-weight: 500; letter-spacing: .14em; font-family: "DejaVu Sans Mono", monospace; }
+.mark .s { font-size: 12px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; opacity: .75; margin-top: 6px; font-family: "DejaVu Sans Mono", monospace; }
 .w.b { font-weight: 800; }
 .ch { display: inline-block; white-space: pre; }
 
@@ -119,7 +132,7 @@ const wordDur = (w) => clamp(0.03 * w.length + 0.08, 0.14, 0.42);
 function normLines(lines, t0) {
   return lines.map((L) => {
     const words = L.words || String(L.text).split(" ").map((w, i) => [w, (L.t != null ? L.t : t0) + i * 0.16]);
-    return { size: L.size || "m", align: L.align || "center", color: L.color, words };
+    return { size: L.size || "m", align: L.align || "center", color: L.color, words, type: L.type, step: L.step };
   });
 }
 function buildLines(parent, lines, cls = "") {
@@ -127,6 +140,12 @@ function buildLines(parent, lines, cls = "") {
   for (const L of lines) {
     const ln = el("div", `line ${L.align} sz-${L.size} ${cls}`, parent);
     if (L.color) ln.style.color = L.color;
+    if (L.type) {                       // строка печатается по буквам с курсором «|»
+      const text = L.words.map((x) => x[0]).join(" ");
+      const s = el("span", "w", ln, "");
+      spans.push({ s, t: L.words[0][1], w: text, typed: true, step: L.step || 0.045 });
+      continue;
+    }
     L.words.forEach(([w, t, st], j) => {
       const s = el("span", "w" + (st === "b" ? " b" : ""), ln, esc(w) + (j < L.words.length - 1 ? " " : ""));
       if (st === "a") s.style.color = D.accent || "#F28C28";
@@ -135,6 +154,28 @@ function buildLines(parent, lines, cls = "") {
   }
   return spans;
 }
+// «Кино»-появление слова: из крупного расфокуса (scale 1.18, blur 14) в резкость, 0.28 с
+function cinemaReveal(span, k) {
+  k = clamp(k);
+  if (k >= 1) { span.style.transform = ""; span.style.filter = ""; span.style.opacity = 1; return; }
+  const e = eOut(k);
+  span.style.opacity = clamp(k * 2.2);
+  span.style.filter = `blur(${((1 - e) * 14).toFixed(1)}px)`;
+  span.style.transform = `translateY(${((1 - e) * 10).toFixed(1)}px) scale(${(1 + 0.18 * (1 - e)).toFixed(3)})`;
+}
+function typedReveal(sp, t) {
+  const n = clamp(Math.floor((t - sp.t) / sp.step) + 1, 0, sp.w.length);
+  const done = sp.t + sp.w.length * sp.step;
+  const cur = t >= sp.t && (t < done + 0.7) && (t < done || Math.floor(t * 2.2) % 2 === 0);
+  sp.s.textContent = sp.w.slice(0, t < sp.t ? 0 : n) + (cur ? "|" : "");
+  sp.s.style.opacity = t < sp.t ? 0 : 1;
+}
+function reveal(sp, t, mode) {
+  if (sp.typed) return typedReveal(sp, t);
+  const k = (t - sp.t) / (mode === "cinema" ? 0.28 : wordDur(sp.w));
+  return mode === "cinema" ? cinemaReveal(sp.s, k) : wordReveal(sp.s, k);
+}
+
 function typeEvents(text, t0, step, g, kind = "key") {
   const R = rng(Math.round(t0 * 1000));
   [...text].forEach((c, i) => { if (c.trim()) EV.push({ t: +(t0 + i * step).toFixed(3), s: kind === "key" ? KEYS[Math.floor(R() * 4)] : kind, g: g * (0.8 + 0.4 * R()) }); });
@@ -151,25 +192,81 @@ MAKE.words = (it) => {
   const spans = buildLines(blk, lines);
   const mb = motionBlur(blk);
   if (it.sfx) EV.push({ t: it.t, s: it.sfx, g: 0.22 });
+  for (const sp of spans) if (sp.typed && it.sfxType !== false) typeEvents(sp.w, sp.t, sp.step, 0.1);
+  if (it.fx === "cinema" && !it.pos && !it.anchor) it.pos = [540, 1060];
   if (it.exit === "swipe") EV.push({ t: it.end - 0.14, s: "click2", g: 0.16 });
   return (t) => {
     if (t < it.t - 0.05 || t > it.end + 0.05) { box.style.display = "none"; return; }
     box.style.display = "";
-    for (const { s, t: tw, w } of spans) wordReveal(s, (t - tw) / wordDur(w));
+    for (const sp of spans) reveal(sp, t, it.fx);
     const p = chinPos(t, it);
-    const rise = (1 - eOut((t - it.t) / 0.35)) * 16;
+    const rise = it.fx === "cinema" ? 0 : (1 - eOut((t - it.t) / 0.35)) * 16;
     let dx = 0, op = 1, bx = 0;
-    const ex = clamp((t - (it.end - 0.16)) / 0.16);
+    const xd = it.fx === "cinema" ? 0.22 : 0.16;
+    const ex = clamp((t - (it.end - xd)) / xd);
+    let sc = 1;
     if (ex > 0) {
       if (it.exit === "swipe") { const e = eIn(ex); dx = -260 * e; bx = 26 * e; op = 1 - e; }
-      else { op = 1 - eIn(ex); bx = 0; blk.style.filter = `blur(${(ex * 8).toFixed(1)}px)`; }
-    }
+      else { op = 1 - eIn(ex); bx = 0; blk.style.filter = `blur(${(ex * (it.fx === "cinema" ? 16 : 8)).toFixed(1)}px)`; if (it.fx === "cinema") sc = 1 - 0.04 * ex; }
+    } else if (it.exit !== "swipe") blk.style.filter = "";
     if (it.exit === "swipe" || ex <= 0) mb(bx, 0);
     blk.style.opacity = op;
     blk.style.left = "0px"; blk.style.top = "0px";
     const r = blk.getBoundingClientRect();
-    blk.style.transform = `translate(${(p.x - r.width / 2 + dx).toFixed(1)}px, ${(p.y - r.height / 2 + rise).toFixed(1)}px)`;
+    blk.style.transform = `translate(${(p.x - r.width / 2 + dx).toFixed(1)}px, ${(p.y - r.height / 2 + rise).toFixed(1)}px) scale(${sc.toFixed(3)})`;
   };
+};
+
+// «Караоке»-абзац: вся фраза видна приглушённо, сказанные слова становятся белыми (выравнивание влево/вправо, сбоку от человека)
+MAKE.para = (it) => {
+  const box = el("div", "para shadowed");
+  box.style.textAlign = it.align || "left";
+  const spans = [];
+  it.lines.forEach((ln) => {
+    const d = el("div", "line sz-para", box);
+    if (it.size) d.style.fontSize = it.size + "px";
+    ln.forEach(([w, tw, st], j) => { const sp = el("span", "w" + (st === "b" ? " b" : ""), d, esc(w) + (j < ln.length - 1 ? " " : "")); spans.push({ s: sp, t: tw }); });
+  });
+  return (t) => {
+    if (t < it.t - 0.05 || t > it.end) { box.style.display = "none"; return; }
+    box.style.display = "";
+    for (const { s: sp, t: tw } of spans) { const k = clamp((t - tw) / 0.12); sp.style.opacity = lerp(it.dim ?? 0.32, 1, k); }
+    const a = eOut((t - it.t) / 0.25), ex = clamp((t - (it.end - 0.2)) / 0.2);
+    box.style.opacity = a * (1 - eIn(ex));
+    box.style.filter = `blur(${((1 - a) * 10 + ex * 12).toFixed(1)}px)`;
+    const r = box.getBoundingClientRect();
+    const [x, y] = it.pos || [540, 1000];
+    const ax = (it.align || "left") === "left" ? 0 : (it.align === "right" ? r.width : r.width / 2);
+    box.style.transform = `translate(${(x - ax).toFixed(1)}px, ${(y - r.height / 2).toFixed(1)}px)`;
+  };
+};
+
+// Фирменная подпись-водяной знак внизу: имя + мелкая строка
+MAKE.mark = (it) => {
+  const box = el("div", "mark");
+  box.style.top = (it.y ?? 1585) + "px";
+  if (it.color) box.style.color = it.color;
+  el("div", "n", box, esc(it.name || ""));
+  if (it.sub) el("div", "s", box, esc(it.sub));
+  return (t) => {
+    box.style.display = t < it.t || t > it.end ? "none" : "";
+    box.style.opacity = (it.opacity ?? 0.85) * clamp((t - it.t) / 0.3);
+  };
+};
+
+// Силуэт: человек залит цветом (заставка «тёмная фигура» в первом кадре) — делает compose.py по маске
+MAKE.silhouette = (it) => (t, fx) => {
+  if (t < it.t || t > it.end) return;
+  const f = it.fade ?? 0.12;
+  fx.sil = Math.min(1, (it.end - t) / f, 1);
+  fx.silColor = it.color || "#000000";
+};
+
+// Замена фона за человеком (картинка или видео) — делает compose.py по маске
+MAKE.bg = (it) => (t, fx) => {
+  if (t < it.t || t > it.end) return;
+  const f = it.fade ?? 0.15;
+  fx.bg = { src: it.src, a: Math.min(1, (t - it.t) / f, (it.end - t) / f), t: t - it.t, dim: it.dim ?? 0 };
 };
 
 // Призыв в конце: «ОТПРАВЬ» / «"+"» / прыгающая стрелка вниз
@@ -240,7 +337,25 @@ MAKE.leak = (it) => {
 };
 
 // Вспышка: белый/чёрный экран, текст печатается по буквам (разрядка сжимается, серый -> чёрный/белый)
-MAKE.flash = (it) => {
+MAKE.flash = (it) => it.lines ? flashLines(it) : flashText(it);
+function flashLines(it) {
+  const box = el("div", "flash");
+  box.style.background = it.bg || "#121214";
+  const ink = it.ink || (/^#?(fff|ffffff|f[0-9a-f]{5})$/i.test((it.bg || "").replace("#", "")) ? "#1a1a1a" : "#f2f2f2");
+  const blk = el("div", "block", box);
+  blk.style.alignItems = "center"; blk.style.color = ink;
+  const spans = buildLines(blk, normLines(it.lines.map((L) => ({ ...L, size: L.size || "sp" })), it.t));
+  for (const sp of spans) if (!sp.typed && it.sfx !== false) EV.push({ t: sp.t, s: KEYS[Math.floor(sp.t * 97) % 4], g: 0.16 });
+  for (const sp of spans) if (sp.typed) typeEvents(sp.w, sp.t, sp.step, 0.12);
+  return (t) => {
+    if (t < it.t || t >= it.end) { box.style.display = "none"; return; }
+    box.style.display = "";
+    for (const sp of spans) reveal(sp, t, "cinema");
+    const r = blk.getBoundingClientRect();
+    blk.style.transform = `translate(${(540 - r.width / 2).toFixed(1)}px, ${((it.y ?? 960) - r.height / 2).toFixed(1)}px)`;
+  };
+}
+function flashText(it) {
   const box = el("div", "flash");
   box.style.background = it.bg || "#fff";
   const ink = it.ink || (/^#?(fff|ffffff|white)$/i.test((it.bg || "#fff").replace("#", "")) ? "#111" : "#f2f2f2");
@@ -262,7 +377,8 @@ MAKE.flash = (it) => {
     tx.style.color = ""; chars.forEach((s) => s.style.color = ac > 0 ? mix(ink, it.accent, ac) : ink);
     tx.style.opacity = lerp(0.55, 1, clamp(done));
   };
-};
+}
+
 function mix(a, b, k) {
   const h = (c) => { c = c.replace("#", ""); if (c.length === 3) c = [...c].map((x) => x + x).join(""); return [0, 2, 4].map((i) => parseInt(c.substr(i, 2), 16)); };
   const A = h(a), B = h(b); return `rgb(${A.map((v, i) => Math.round(lerp(v, B[i], k))).join(",")})`;
@@ -453,11 +569,23 @@ MAKE.rain = (it) => {
 function build(data) {
   D = data; EV = []; FILT = 0;
   root = document.getElementById("root"); root.innerHTML = "";
-  ITEMS = data.items.map((it) => ({ it, f: MAKE[it.type](it) }));
+  const top = root;
+  ITEMS = data.items.map((it) => {
+    root = el("div", "abs", top);            // у каждого элемента свой контейнер — для слоёв «за человеком / перед ним»
+    const f = MAKE[it.type](it);
+    const c = root; root = top;
+    return { it, f, c };
+  });
 }
-function render(t) {
-  const fx = { blur: 0, dim: 0, zoom: 1, lens: null, leak: -1, face: face(t) };
-  for (const { f } of ITEMS) f && f(t, fx);
+// layer: undefined — всё; "front" — без элементов behind:true; "back" — только они (их compose.py кладёт ЗА человека)
+function render(t, layer) {
+  const fx = { blur: 0, dim: 0, zoom: 1, lens: null, leak: -1, sil: 0, bg: null, face: face(t) };
+  for (const { it, f, c } of ITEMS) {
+    f && f(t, fx);
+    const show = !layer || (layer === "back" ? !!it.behind : !it.behind);
+    c.style.visibility = show ? "" : "hidden";
+  }
+  fx.hasBack = ITEMS.some(({ it }) => it.behind);
   return fx;
 }
 function events() { return EV.sort((a, b) => a.t - b.t); }

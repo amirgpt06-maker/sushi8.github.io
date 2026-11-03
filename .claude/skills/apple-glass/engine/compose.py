@@ -3,7 +3,9 @@
 Использование: python compose.py source.mp4 overlay_dir out.mp4
 Переменные: SPEED=1.0 (ускорение всего ролика), GRADE=1 (мягкая «эппловская» цветокоррекция), FROM/TO (секунды — кусок для проверки),
             SFX_GAIN=1.0 (общая громкость эффектов), AUDIO_ONLY=1 (пересобрать только звук),
-            LOUDNORM=0 (не нормализовать громкость — для роликов без голоса).
+            LOUDNORM=0 (не нормализовать громкость — для роликов без голоса),
+            GRADE=cinema (кинотонировка: матовые тени в бирюзу, тёплая кожа, приглушённая зелень, лёгкая виньетка),
+            MATTE=папка (маска человека от matte.py — для текста «за спиной», силуэта и замены фона).
 Звуки: сначала engine/sfx_local (собирает pack_to_sfx.py из вашего пака), иначе engine/sfx (синтез).
 По кадру: наезд (по лицу) -> размытие+затемнение фона -> цвет -> оверлей -> стеклянная линза (настоящее преломление) -> засветка -> зерно.
 """
@@ -20,7 +22,9 @@ import soundfile as sf
 src, ov_dir, out = sys.argv[1:4]
 ov_dir = Path(ov_dir)
 SPEED = float(os.environ.get("SPEED", "1.0"))
-GRADE = os.environ.get("GRADE", "1") == "1"
+GMODE = os.environ.get("GRADE", "1")
+GRADE = GMODE != "0"
+MATTE = Path(os.environ["MATTE"]) if os.environ.get("MATTE") else None
 SFX_GAIN = float(os.environ.get("SFX_GAIN", "1.0"))
 FX = {int(k): v for k, v in json.load(open(ov_dir / "fx.json")).items()}
 EV = json.load(open(ov_dir / "events.json"))
@@ -43,6 +47,7 @@ work = Path(out).with_suffix(".work")
 work.mkdir(parents=True, exist_ok=True)
 AUDIO_ONLY = os.environ.get("AUDIO_ONLY") == "1" and (work / "v.mp4").exists()
 yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+VIG = (1 - 0.16 * np.clip(((xx - W / 2) / (W / 2)) ** 2 + ((yy - H / 2) / (H / 2)) ** 2, 0, 1.6) ** 1.4)[..., None].astype(np.float32)
 
 
 # мягкая «эппловская» коррекция: лёгкая S-кривая, тёплые тени / холодные света, +4 % насыщенности (всё во float32 — быстро)
@@ -57,6 +62,55 @@ def grade(x):
     x = x * (SH + (HI - SH) * l)
     l = cv2.cvtColor(x, cv2.COLOR_BGR2GRAY)[..., None]
     return np.clip(l + (x - l) * F(1.04), 0, 1)
+
+
+def grade_cinema(x):
+    """Кино: плотный контраст, тени в холодный бирюзовый, света тёплые, зелень приглушена, кожа сохраняется, мягкая виньетка."""
+    s = x * x * (F(3) - F(2) * x)
+    x = x + (s - x) * F(0.32)
+    l = cv2.cvtColor(x, cv2.COLOR_BGR2GRAY)[..., None]
+    x = x * (np.float32([1.07, 1.0, 0.93]) * (1 - l) + np.float32([0.95, 1.0, 1.06]) * l)   # BGR: тени синее, света теплее
+    hsv = cv2.cvtColor(x, cv2.COLOR_BGR2HSV)
+    h = hsv[..., 0]
+    green = np.exp(-((h - 110) / 35) ** 2)                 # зелень (OpenCV float: H 0..360)
+    hsv[..., 1] *= (1 - 0.45 * green) * F(0.9)
+    x = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+    x = x * F(0.96) + F(0.012)                              # матовые тени
+    return np.clip(x * VIG, 0, 1)
+
+
+def mask_at(i, s, cx, cy):
+    """Маска человека для кадра i, с тем же наездом, что и кадр."""
+    if not MATTE:
+        return None
+    f = MATTE / f"{i:05d}.png"
+    if not f.exists():
+        return None
+    m = cv2.resize(cv2.imread(str(f), cv2.IMREAD_GRAYSCALE), (W, H), interpolation=cv2.INTER_LINEAR).astype(np.float32) * (1 / 255)
+    return zoom(m, s, cx, cy)[..., None]
+
+
+_bgcap = {}
+
+
+def bg_frame(src_, t):
+    """Кадр фона для замены: картинка или видео (зациклено), заполняет кадр по размеру (cover)."""
+    if src_.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+        img = _bgcap.get(src_)
+        if img is None:
+            img = _bgcap[src_] = cv2.imread(src_)
+    else:
+        cap2 = _bgcap.get(src_)
+        if cap2 is None:
+            cap2 = _bgcap[src_] = cv2.VideoCapture(src_)
+        n2 = int(cap2.get(cv2.CAP_PROP_FRAME_COUNT)) or 1
+        cap2.set(cv2.CAP_PROP_POS_FRAMES, int(t * (cap2.get(cv2.CAP_PROP_FPS) or 30)) % n2)
+        ok2, img = cap2.read()
+    h0, w0 = img.shape[:2]
+    k = max(W / w0, H / h0)
+    img = cv2.resize(img, (int(w0 * k + 1), int(h0 * k + 1)))
+    y0, x0 = (img.shape[0] - H) // 2, (img.shape[1] - W) // 2
+    return img[y0:y0 + H, x0:x0 + W].astype(np.float32) * (1 / 255)
 
 
 def zoom(img, s, cx, cy):
@@ -134,6 +188,14 @@ if enc:
         fx_, fy_ = f["face"][0], f["face"][1]
         b = f["blur"]
         s = f["zoom"] * (1 + 0.05 * b)
+        need_m = f.get("back") or f.get("sil", 0) > 0 or f.get("bg")
+        m = mask_at(i, s, fx_, fy_) if need_m else None
+        if f.get("bg") and f["bg"]["a"] > 0:          # замена фона: человек остаётся, всё вокруг — из другого кадра
+            raw_m = mask_at(i, 1.0, fx_, fy_)
+            if raw_m is not None:
+                bgf = bg_frame(f["bg"]["src"], f["bg"]["t"]) * (1 - f["bg"].get("dim", 0))
+                a_ = F(f["bg"]["a"])
+                x = x * (1 - a_ * (1 - raw_m)) + bgf * a_ * (1 - raw_m)
         x = zoom(x, s, fx_, fy_)
         if b > 0.01:                               # сильное размытие считаем на 1/4 размера — тот же вид, в разы быстрее
             sg = 0.5 + 26 * b
@@ -144,7 +206,22 @@ if enc:
                 x = cv2.GaussianBlur(x, (0, 0), sg)
         x = x * (1 - f["dim"])
         if GRADE:
-            x = grade(x)
+            x = grade_cinema(x) if GMODE == "cinema" else grade(x)
+        if m is not None and f.get("sil", 0) > 0:      # силуэт: человек залит цветом
+            c = np.float32([int(f.get("silColor", "#000000")[k:k + 2], 16) / 255 for k in (5, 3, 1)])
+            x = x * (1 - m * F(f["sil"])) + c * m * F(f["sil"])
+        bkf = ov_dir / "back" / f"{i:05d}.png"
+        if m is not None and bkf.exists():             # текст «за спиной»: кладём слой, потом возвращаем человека поверх
+            person = x
+            bk = cv2.imread(str(bkf), cv2.IMREAD_UNCHANGED).astype(np.float32) / 255
+            if bk.shape[2] == 4:
+                ab = bk[..., 3:4]
+                x = x * (1 - ab) + bk[..., :3] * ab
+                x = x * (1 - m) + person * m
+        elif bkf.exists():                              # маски нет — слой «за спиной» ложится как обычный
+            bk = cv2.imread(str(bkf), cv2.IMREAD_UNCHANGED).astype(np.float32) / 255
+            if bk.shape[2] == 4:
+                x = x * (1 - bk[..., 3:4]) + bk[..., :3] * bk[..., 3:4]
         ovf = ov_dir / f"{i:05d}.png"
         if ovf.exists():
             ov = cv2.imread(str(ovf), cv2.IMREAD_UNCHANGED).astype(np.float32) / 255

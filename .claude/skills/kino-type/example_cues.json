@@ -1,0 +1,30 @@
+{
+ "fps": 30, "duration": 9.5, "anchor": null,
+ "items": [
+  {"type":"silhouette","t":0.0,"end":0.40,"color":"#000000","fade":0.1},
+  {"type":"mark","t":0.0,"end":9.5,"name":"sushi8","sub":"кино · типографика · демо"},
+  {"type":"words","fx":"cinema","t":0.45,"end":2.60,"lines":[
+     {"size":"sp","words":[["давно",0.45]]},
+     {"size":"hb","words":[["хотели",0.70]]},
+     {"size":"it","words":[["красивый",1.05]]},
+     {"size":"sp","words":[["монтаж?",1.45]]}]},
+  {"type":"zoom","t":2.6,"end":4.9,"scale":1.10,"ramp":0.5},
+  {"type":"title","t":2.75,"end":4.75,"text":"КИНО","size":300,"y":640,"behind":true,"label":"это","labelT":3.30},
+  {"type":"para","t":4.85,"end":6.45,"align":"left","pos":[90,1240],"lines":[
+     [["Монтаж",4.95],["—",5.15],["это",5.25]],
+     [["совокупность",5.45],["всех",5.85]],
+     [["мелочей",6.05]]]},
+  {"type":"flash","t":6.45,"end":7.15,"bg":"#121214","lines":[
+     {"size":"m","text":"Будь это","t":6.50},
+     {"size":"sp","text":"текст","t":6.70},
+     {"size":"sp","text":"звук","t":6.82},
+     {"size":"sp","text":"свет","t":6.94}]},
+  {"type":"flash","t":7.15,"end":7.70,"bg":"#f2eee7","lines":[{"size":"sp","text":"зависит","t":7.20}]},
+  {"type":"flash","t":7.70,"end":8.30,"bg":"#c79ea4","ink":"#5b1d2a","lines":[
+     {"size":"hb","text":"всё","t":7.74},
+     {"size":"sub","text":"в одном кадре","t":7.95}]},
+  {"type":"words","fx":"cinema","t":8.32,"end":9.45,"lines":[
+     {"size":"hb","words":[[">что реально<",8.34]]},
+     {"size":"sub","type":true,"step":0.04,"words":[["должен делать монтажёр",8.55]]}]}
+ ]
+}
