@@ -1,5 +1,7 @@
 {
- "fps": 30,
+ "fps": 60,
+ "mblur": 6,
+ "shutter": 0.5,
  "duration": 18.0,
  "anchor": null,
  "items": [
@@ -10,78 +12,129 @@
   },
   {
    "type": "wave",
-   "t": 0.05,
+   "t": 0.0,
    "end": 3.05,
-   "rise": 0.85,
+   "rise": 1.0,
    "fall": 0.3,
-   "h": 560
+   "h": 540
   },
   {
    "type": "handle",
-   "t": 0.15,
+   "t": 0.25,
    "end": 2.85,
    "text": "sushi8",
-   "icon": "🎬",
    "y": 70
   },
   {
+   "type": "group",
+   "id": "intro",
+   "t": 0,
+   "end": 2.95,
+   "origin": [
+    540,
+    820
+   ],
+   "keys": [
+    [
+     0.0,
+     {
+      "s": 0.1
+     }
+    ],
+    [
+     0.75,
+     {
+      "s": 1
+     }
+    ]
+   ]
+  },
+  {
    "type": "tile",
-   "t": 0.2,
-   "end": 2.9,
-   "emoji": "🎬",
-   "w": 150,
-   "esize": 86,
+   "g": "intro",
+   "t": 0.0,
+   "end": 2.95,
+   "img": "@local/ui/icon_shortcuts.png",
+   "fit": "full",
+   "w": 170,
    "pos": [
     540,
-    650
+    640
    ],
-   "exit": "cut"
+   "exit": "cut",
+   "sfx": false
   },
   {
    "type": "btext",
-   "t": 0.3,
-   "end": 2.9,
-   "y": 770,
+   "g": "intro",
+   "t": 0.05,
+   "end": 2.95,
+   "y": 745,
    "exit": "cut",
    "lines": [
     {
      "text": "Наш стиль",
-     "size": 112,
-     "weight": 800,
-     "t": 0.3,
-     "step": 0.06
-    },
-    {
-     "text": "всего 3 правила",
-     "size": 62,
-     "weight": 400,
-     "mode": "slide",
-     "t": 1.05,
-     "y": 200
+     "size": 124,
+     "weight": 700,
+     "ls": -0.04,
+     "t": 0.05,
+     "step": 0.05
     }
    ]
   },
   {
    "type": "pill",
-   "t": 0.85,
-   "end": 2.9,
+   "g": "intro",
+   "t": 0.15,
+   "end": 2.95,
    "text": "монтаж",
+   "size": 40,
    "pos": [
     540,
-    890
+    880
    ],
    "exit": "cut"
   },
   {
-   "type": "ball",
-   "t": 1.55,
+   "type": "btext",
+   "g": "intro",
+   "t": 0.5,
    "end": 2.95,
-   "x0": 960,
-   "x1": 520,
-   "y": 840,
+   "y": 955,
+   "exit": "cut",
+   "lines": [
+    {
+     "text": "всего 3 правила",
+     "size": 62,
+     "weight": 400,
+     "mode": "word",
+     "words": [
+      [
+       "всего",
+       0.55
+      ],
+      [
+       "3",
+       0.8
+      ],
+      [
+       "правила",
+       0.95
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "type": "ball",
+   "t": 1.6,
+   "end": 2.95,
+   "x0": 980,
+   "x1": 540,
+   "y": 820,
    "r0": 150,
-   "r1": 980,
-   "frostAt": 2.2
+   "r1": 1000,
+   "frostAt": 2.25
   },
   {
    "type": "circle",
@@ -91,25 +144,27 @@
     540,
     2100
    ],
-   "dur": 0.5
+   "dur": 0.55
   },
   {
    "type": "btext",
    "t": 3.05,
-   "end": 6.45,
+   "end": 6.5,
    "y": 830,
    "move": [
     [
      3.95,
-     300
+     300,
+     0.8
     ]
    ],
-   "exit": "up",
+   "exit": "blur",
    "lines": [
     {
      "text": "Правило 1.",
-     "size": 104,
-     "weight": 800,
+     "size": 110,
+     "weight": 700,
+     "ls": -0.04,
      "t": 3.05
     },
     {
@@ -117,69 +172,72 @@
      "size": 70,
      "weight": 400,
      "mode": "slide",
-     "t": 3.55,
-     "y": 96
+     "t": 3.5,
+     "y": 100
     }
    ]
   },
   {
    "type": "pill",
-   "t": 4.1,
-   "end": 6.45,
+   "t": 4.15,
+   "end": 6.5,
    "text": "по словам",
    "size": 38,
    "pos": [
     540,
-    495
+    505
    ],
-   "exit": "up"
+   "exit": "blur"
   },
   {
    "type": "tile",
-   "t": 4.3,
+   "t": 4.35,
    "end": 6.35,
-   "emoji": "🎙️",
-   "w": 540,
+   "img": "@local/ui/TextSelection1.png",
+   "w": 560,
    "pos": [
     540,
-    1030
+    1060
    ],
-   "bg": "linear-gradient(160deg,#ffffff,#dfe7fb 70%,#9bb7f7)",
+   "bg": "linear-gradient(160deg,#ffffff,#e3eafb 65%,#a9c2f8)",
    "swap": [
     [
-     5.25,
+     5.3,
      "@local/ui/Keyboard1.png"
     ]
    ],
-   "exit": "circle"
+   "exit": "circle",
+   "exitDur": 0.45
   },
   {
    "type": "wave",
-   "t": 6.05,
-   "end": 7.25,
-   "from": "top",
-   "rise": 0.35,
-   "fall": 0.5,
-   "h": 420,
+   "t": 5.95,
+   "end": 7.3,
+   "rise": 0.5,
+   "fall": 0.6,
+   "h": 480,
    "sfx": false
   },
   {
    "type": "btext",
    "t": 6.6,
-   "end": 9.85,
+   "end": 10.0,
    "y": 830,
    "move": [
     [
      7.5,
-     300
+     300,
+     0.8
     ]
    ],
-   "exit": "up",
+   "exit": "drop",
+   "exitDur": 0.5,
    "lines": [
     {
      "text": "Правило 2.",
-     "size": 104,
-     "weight": 800,
+     "size": 110,
+     "weight": 700,
+     "ls": -0.04,
      "t": 6.6
     },
     {
@@ -187,120 +245,130 @@
      "size": 70,
      "weight": 400,
      "mode": "slide",
-     "t": 7.1,
-     "y": 96
+     "t": 7.05,
+     "y": 100
     }
    ]
   },
   {
    "type": "pill",
-   "t": 7.65,
-   "end": 9.85,
+   "t": 7.7,
+   "end": 10.0,
    "text": "в такт",
    "size": 38,
    "pos": [
     540,
-    495
+    505
    ],
-   "exit": "up"
+   "exit": "drop",
+   "exitDur": 0.5
   },
   {
    "type": "tile",
-   "t": 7.85,
-   "end": 9.75,
-   "emoji": "🔊",
-   "w": 540,
+   "t": 7.9,
+   "end": 10.0,
+   "img": "@local/ui/Volume.jpg",
+   "w": 560,
    "pos": [
     540,
-    1030
+    1060
    ],
-   "bg": "linear-gradient(160deg,#ffffff,#ece6fb 70%,#c3b5f3)",
+   "bg": "linear-gradient(160deg,#ffffff,#ece6fb 65%,#c7b9f4)",
    "swap": [
     [
-     8.75,
-     "@local/ui/Volume.jpg"
+     8.85,
+     "@local/ui/MusicPlayer.jpg"
     ]
    ],
-   "exit": "circle"
+   "exit": "drop",
+   "exitDur": 0.5
+  },
+  {
+   "type": "wave",
+   "t": 9.6,
+   "end": 10.9,
+   "from": "top",
+   "rise": 0.45,
+   "fall": 0.6,
+   "h": 440,
+   "sfx": true
   },
   {
    "type": "btext",
-   "t": 10.0,
-   "end": 13.0,
+   "t": 10.15,
+   "end": 13.2,
    "y": 830,
+   "enter": "tilt",
    "move": [
     [
-     10.9,
-     300
+     11.0,
+     300,
+     0.8
     ]
    ],
    "exit": "up",
+   "exitDur": 0.45,
    "lines": [
     {
      "text": "Правило 3.",
-     "size": 104,
-     "weight": 800,
-     "t": 10.0
+     "size": 110,
+     "weight": 700,
+     "ls": -0.04,
+     "t": 10.15,
+     "mode": "none"
     },
     {
      "text": "Bounce-анимация",
      "size": 70,
      "weight": 400,
-     "mode": "slide",
-     "t": 10.5,
-     "y": 96
+     "mode": "bounce",
+     "step": 0.04,
+     "t": 10.55,
+     "y": 100
     }
    ]
   },
   {
    "type": "pill",
-   "t": 11.05,
-   "end": 13.0,
+   "t": 11.15,
+   "end": 13.2,
    "text": "bounce it!",
    "size": 38,
    "pos": [
     540,
-    495
+    505
    ],
-   "exit": "up"
+   "exit": "up",
+   "exitDur": 0.45
   },
   {
    "type": "tile",
-   "t": 11.25,
-   "end": 12.9,
+   "t": 11.35,
+   "end": 13.1,
    "img": "@local/ui/FaceID3.png",
-   "w": 540,
+   "w": 560,
    "pos": [
     540,
-    1030
+    1060
    ],
-   "bg": "linear-gradient(160deg,#ffffff,#e9e6ee 60%,#cfc8da)",
+   "bg": "linear-gradient(160deg,#ffffff,#ecebef 60%,#d3cddd)",
    "swap": [
     [
-     11.85,
+     11.95,
      "@local/ui/On.png"
     ],
     [
-     12.35,
+     12.5,
      "@local/ui/Battery10.png"
     ]
    ],
-   "exit": "up"
-  },
-  {
-   "type": "wave",
-   "t": 12.75,
-   "end": 13.75,
-   "from": "top",
-   "rise": 0.3,
-   "fall": 0.45,
-   "h": 420,
-   "sfx": false
+   "exit": "up",
+   "exitDur": 0.45
   },
   {
    "type": "select",
-   "t": 13.2,
-   "end": 16.0,
+   "t": 13.35,
+   "end": 16.1,
    "text": "что внутри?",
    "size": 80,
    "pos": [
@@ -311,8 +379,8 @@
   },
   {
    "type": "list",
-   "t": 13.8,
-   "end": 16.0,
+   "t": 13.95,
+   "end": 16.1,
    "pos": [
     330,
     860
@@ -321,22 +389,22 @@
    "items": [
     [
      "текст по речи",
-     13.8
+     13.95
     ],
     [
      "звуки пака",
-     14.45
+     14.6
     ],
     [
      "анимации",
-     15.05
+     15.2
     ]
    ],
    "exit": "blur"
   },
   {
    "type": "dock",
-   "t": 15.5,
+   "t": 15.6,
    "end": 18.0,
    "text": "Наш стиль",
    "pos": [
@@ -345,30 +413,39 @@
    ],
    "move": [
     [
-     16.05,
-     1000
+     16.15,
+     1000,
+     0.8
     ]
    ],
    "swap": [
-    16.95,
+    17.05,
     "забрать всё!",
     "#1f6ef5"
    ]
   },
   {
    "type": "btext",
-   "t": 16.2,
+   "t": 16.3,
    "end": 18.0,
    "y": 860,
    "exit": "cut",
    "lines": [
     {
-     "text": "пиши “+”",
+     "text": "пиши «+»",
      "size": 66,
      "weight": 700,
-     "mode": "slide",
-     "t": 16.2,
-     "sfx": false
+     "mode": "word",
+     "words": [
+      [
+       "пиши",
+       16.3
+      ],
+      [
+       "«+»",
+       16.55
+      ]
+     ]
     }
    ]
   }

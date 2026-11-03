@@ -32,4 +32,15 @@ for root, _, files in os.walk(src):
             shutil.copy2(p, fonts / f); nf += 1
         elif low.endswith((".png", ".jpg", ".jpeg")):
             shutil.copy2(p, ui / f); ni += 1
+# чистые иконки приложений без подписи: «Logo and Text*.png» = иконка 240x240 сверху + подпись снизу
+try:
+    from PIL import Image
+    names = {"Logo and Text (2).png": "photos", "Logo and Text-1.png": "calendar", "Logo and Text-2.png": "shortcuts",
+             "Logo and Text-3.png": "mail", "Logo and Text-4.png": "podcasts", "Logo and Text-5.png": "appstore", "Logo and Text.png": "facetime"}
+    for f, n in names.items():
+        if (ui / f).exists():
+            im = Image.open(ui / f).convert("RGBA"); w = im.size[0]
+            im.crop((0, 0, w, w)).save(ui / f"icon_{n}.png")
+except ImportError:
+    pass
 print(f"шрифтов: {nf}, картинок: {ni} -> {HERE / 'local'}")

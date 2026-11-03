@@ -163,6 +163,24 @@ def lens(img, x, y, r, a):
     return out_
 
 
+def load_ov(f):
+    """Кадр оверлея; если есть подкадры NNNNN.mJ.png (размытие в движении) — усреднить их с учётом прозрачности."""
+    subs = [f] + sorted(f.parent.glob(f.stem + ".m*.png"))
+    acc = None
+    for g in subs:
+        o = cv2.imread(str(g), cv2.IMREAD_UNCHANGED).astype(np.float32) / 255
+        if o.shape[2] == 3:
+            o = np.dstack([o, np.ones(o.shape[:2], np.float32)])
+        o[..., :3] *= o[..., 3:4]
+        acc = o if acc is None else acc + o
+    acc /= len(subs)
+    if len(subs) == 1 and acc[..., 3].min() > 0.999:
+        return acc[..., :3]
+    a = acc[..., 3:4]
+    rgb = np.where(a > 1e-4, acc[..., :3] / np.maximum(a, 1e-4), 0)
+    return np.dstack([rgb, a[..., 0]])
+
+
 def ball(img, x, y, r, a, frost):
     """Стеклянный шар: как настоящая линза-сфера — переворачивает и увеличивает то, что за ним, края загибаются;
     frost 0..1 — шар мутнеет до лавандового матового стекла."""
@@ -264,7 +282,7 @@ if enc:
                 x = x * (1 - bk[..., 3:4]) + bk[..., :3] * bk[..., 3:4]
         ovf = ov_dir / f"{i:05d}.png"
         if ovf.exists():
-            ov = cv2.imread(str(ovf), cv2.IMREAD_UNCHANGED).astype(np.float32) / 255
+            ov = load_ov(ovf)
             if ov.shape[2] == 3:                       # полностью непрозрачный кадр (вспышка) сохраняется без альфы
                 x = ov
             else:

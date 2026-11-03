@@ -625,7 +625,8 @@ MAKE.rain = (it) => {
 // плашки-теги, плитки-виджеты с баунсом, iOS-выделение текста, печать списка, тёмная кнопка с папкой,
 // стеклянный шар (делает compose.py по fx.ball), белый круг-шторка.
 const WB_ORANGE = "#f06b4e";
-const bounce = (k) => { k = clamp(k); return 1 - Math.exp(-7 * k) * Math.cos(9.5 * k); };          // пружина с заметным перелётом
+const bounce = (k) => { k = clamp(k); return 1 - Math.exp(-7 * k) * Math.cos(6 * k); };            // мягкая пружина Apple: перелёт ~2.5 %
+const springL = (k) => { k = clamp(k); return 1 - Math.exp(-6 * k) * Math.cos(6.5 * k); };         // буквы: перелёт ~5 %
 const exitK = (t, it, d = 0.3) => clamp((t - (it.end - d)) / d);
 function wbExit(node, t, it, baseTf = "") {
   const d = it.exitDur ?? 0.32, k = exitK(t, it, d);
@@ -633,10 +634,32 @@ function wbExit(node, t, it, baseTf = "") {
   const e = eIn(k);
   if (it.exit === "up") { node.style.transform = baseTf + ` translateY(${(-700 * e).toFixed(1)}px)`; node.style.filter = `blur(${(e * 14).toFixed(1)}px)`; }
   else if (it.exit === "down") { node.style.transform = baseTf + ` translateY(${(700 * e).toFixed(1)}px)`; node.style.filter = `blur(${(e * 14).toFixed(1)}px)`; }
+  else if (it.exit === "drop") { node.style.transform = baseTf + ` translateY(${(1000 * e).toFixed(1)}px) rotate(${(5 * e).toFixed(2)}deg)`; node.style.filter = `blur(${(e * 10).toFixed(1)}px)`; }
   else if (it.exit === "circle") { node.style.clipPath = `circle(${(75 * (1 - e)).toFixed(1)}% at 50% 50%)`; node.style.transform = baseTf + ` scale(${(1 - 0.35 * e).toFixed(3)})`; }
   else if (it.exit !== "cut") { node.style.opacity = 1 - e; node.style.filter = `blur(${(e * 12).toFixed(1)}px)`; }
   return true;
 }
+
+MAKE.group = (it) => {
+  const box = el("div", "abs"); box.style.width = "1080px"; box.style.height = "1920px";
+  const [ox, oy] = it.origin || [540, 900]; box.style.transformOrigin = `${ox}px ${oy}px`;
+  GROUPS[it.id] = box;
+  const K = it.keys.map(([kt, v]) => [kt, { s: 1, x: 0, y: 0, r: 0, b: 0, o: 1, e: "spring", ...v }]);
+  return (t) => {
+    if (t < it.t || t > it.end) { box.style.display = "none"; return; }
+    box.style.display = "";
+    let v = { ...K[0][1] };
+    for (let i = 1; i < K.length; i++) {
+      const [t0] = K[i - 1], [t1, b] = K[i];
+      if (t <= t0) break;
+      const raw = clamp((t - t0) / Math.max(0.01, t1 - t0));
+      const k = b.e === "in" ? eIn(raw) : b.e === "io" ? eIO(raw) : b.e === "out" ? eOut(raw) : bounce(raw);
+      const a = { ...v }; for (const q of ["s", "x", "y", "r", "b", "o"]) v[q] = lerp(a[q], b[q], k);
+    }
+    box.style.transform = `translate(${v.x.toFixed(1)}px, ${v.y.toFixed(1)}px) rotate(${v.r.toFixed(2)}deg) scale(${v.s.toFixed(4)})`;
+    box.style.filter = v.b > 0.2 ? `blur(${v.b.toFixed(1)}px)` : ""; box.style.opacity = v.o;
+  };
+};
 
 // белый фон экрана (непрозрачный: видео под ним не видно)
 MAKE.wb = (it) => {
@@ -648,14 +671,14 @@ MAKE.wb = (it) => {
 MAKE.wave = (it) => {
   const box = el("div", "abs"); box.style.width = "1080px"; box.style.height = "1920px"; box.style.overflow = "hidden";
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("width", "1080"); svg.setAttribute("height", "1920"); svg.style.filter = `blur(${it.blur ?? 26}px)`;
+  svg.setAttribute("width", "1080"); svg.setAttribute("height", "1920"); svg.style.filter = `blur(${it.blur ?? 42}px)`;
   const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
   path.setAttribute("fill", it.color || WB_ORANGE); svg.appendChild(path); box.appendChild(svg);
   const top = it.from === "top", H0 = it.h ?? 560;
   const R = rng(it.seed ?? 5);
   // неровный «рваный» край, как в референсе: несколько крупных волн + мелкие частые бугры
-  const ph = [...Array.from({ length: 3 }, () => [R() * 6.28, 0.6 + R() * 1.4, 0.004 + R() * 0.006, 55]),
-              ...Array.from({ length: 5 }, () => [R() * 6.28, 1.5 + R() * 2.5, 0.018 + R() * 0.03, 26])];
+  const ph = [...Array.from({ length: 3 }, () => [R() * 6.28, 0.35 + R() * 0.6, 0.004 + R() * 0.005, 60]),
+              ...Array.from({ length: 4 }, () => [R() * 6.28, 0.6 + R() * 0.9, 0.012 + R() * 0.012, 24])];
   if (it.sfx !== false) EV.push({ t: it.t, s: "wbwhoosh", g: 0.9, v: 1 });
   return (t) => {
     if (t < it.t || t > it.end) { box.style.display = "none"; return; }
@@ -683,11 +706,14 @@ MAKE.btext = (it) => {
     if (L.color) d.style.color = L.color;
     const mode = L.mode || "bounce", step = L.step ?? (mode === "type" ? 0.05 : 0.045);
     let parts;
-    if (mode === "slide") parts = L.text.split(" ").map((w, i, a) => ({ s: el("span", "wbw", d, esc(w) + (i < a.length - 1 ? " " : "")), t: L.t + i * (L.wstep ?? 0.28) }));
+    if (mode === "slide" || mode === "word") parts = (L.words || L.text.split(" ").map((w, i) => [w, L.t + i * (L.wstep ?? 0.24)])).map(([w, wt], i, a) => ({ s: el("span", "wbw", d, esc(w) + (i < a.length - 1 ? " " : "")), t: wt }));
+    else if (mode === "none") parts = [{ s: el("span", "wbw", d, esc(L.text)), t: L.t }];
     else parts = [...L.text].map((c, i) => ({ s: el("span", "wbch", d, esc(c)), t: L.t + i * step }));
     lines.push({ L, d, mode, parts, y: L.y ?? 0 });
     if (it.sfx !== false && L.sfx !== false) {
       if (mode === "slide") parts.forEach((p, i) => EV.push({ t: p.t, s: i ? "wbslide" : "wbwhoosh", g: i ? 0.7 : 0.6, v: 1 }));
+      else if (mode === "word") parts.forEach((p) => EV.push({ t: p.t, s: "aplkey1", g: 0.6, v: 1 }));
+      else if (mode === "none") EV.push({ t: L.t, s: "wbwhoosh", g: 0.5, v: 1 });
       else parts.forEach((p, i) => { if (p.s.textContent.trim()) EV.push({ t: p.t, s: "aplkey" + (1 + (i % 4)), g: mode === "type" ? 0.55 : 0.75, v: 1 }); });
     }
   }
@@ -695,22 +721,31 @@ MAKE.btext = (it) => {
     if (t < it.t - 0.02 || t > it.end) { box.style.display = "none"; return; }
     box.style.display = ""; box.style.opacity = 1; box.style.filter = ""; box.style.clipPath = "";
     let y0 = it.y ?? 820;
-    for (const [mt, my, md] of it.move || []) y0 = lerp(y0, my, bounce((t - mt) / (md ?? 0.55)));
+    for (const [mt, my, md] of it.move || []) y0 = lerp(y0, my, bounce((t - mt) / (md ?? 0.7)));
+    let enterTf = "";
+    if (it.enter === "tilt") { const k = bounce((t - it.t) / 0.6); enterTf = `translate(${((1 - k) * -60).toFixed(1)}px, ${((1 - k) * -260).toFixed(1)}px) rotate(${((1 - k) * -9).toFixed(2)}deg) scale(${lerp(0.9, 1, k).toFixed(3)})`;
+      box.style.filter = k < 1 ? `blur(${((1 - clamp(k * 1.3)) * 14).toFixed(1)}px)` : ""; box.style.opacity = clamp((t - it.t) / 0.15); }
+    box.style.transformOrigin = `540px ${y0}px`; box.style.transform = enterTf;
     for (const { L, d, mode, parts, y } of lines) {
       d.style.top = (y0 + y) + "px";
       for (const p of parts) {
-        const k = (t - p.t) / (mode === "slide" ? 0.45 : 0.42);
+        const k = (t - p.t) / (mode === "slide" ? 0.5 : mode === "word" ? 0.5 : 0.42);
         if (k <= 0) { p.s.style.opacity = 0; continue; }
-        if (mode === "bounce") {
-          const b = bounce(k);
-          p.s.style.opacity = clamp(k * 4);
-          p.s.style.transform = `translateY(${((1 - b) * 26).toFixed(1)}px) scale(${lerp(0.35, 1, b).toFixed(3)})`;
-          p.s.style.marginRight = `${((1 - eOut(clamp(k * 1.4))) * 0.32).toFixed(3)}em`;       // буквы сначала врозь
-          p.s.style.filter = k < 0.25 ? `blur(${((0.25 - k) * 16).toFixed(1)}px)` : "";
+        if (mode === "bounce" || mode === "word") {
+          // как в референсе: буква/слово рождается маленьким (≈22 %) у линии шрифта на своём месте и дорастает пружиной;
+          // ширина строки не меняется — строка не дёргается
+          const b = springL(k * 0.95);
+          p.s.style.opacity = clamp(k * 5);
+          p.s.style.transformOrigin = "50% 85%";
+          p.s.style.transform = `translateY(${((1 - b) * 0.18 * (L.size ?? 104)).toFixed(1)}px) scale(${lerp(0.22, 1, b).toFixed(3)})`;
+          p.s.style.color = mix("#8e8e93", L.color || "#0b0b0d", clamp(k * 2.2));
+          p.s.style.filter = "";
+        } else if (mode === "none") {
+          p.s.style.opacity = 1; p.s.style.transform = ""; p.s.style.filter = "";
         } else if (mode === "slide") {
           const e = eOut(clamp(k));
           p.s.style.opacity = clamp(k * 3);
-          p.s.style.transform = `translateX(${((1 - e) * -120).toFixed(1)}px)`;
+          p.s.style.transform = `translateX(${((1 - e) * -90).toFixed(1)}px)`;
           p.s.style.filter = e < 1 ? `blur(${((1 - e) * 12).toFixed(1)}px)` : "";
           p.s.style.color = mix("#9a9aa0", L.color || "#0b0b0d", e);
         } else {
@@ -720,7 +755,7 @@ MAKE.btext = (it) => {
         }
       }
     }
-    wbExit(box, t, it);
+    wbExit(box, t, it, enterTf);
   };
 };
 
@@ -732,11 +767,11 @@ MAKE.pill = (it) => {
   return (t) => {
     if (t < it.t || t > it.end) { p.style.display = "none"; return; }
     p.style.display = ""; p.style.opacity = 1; p.style.filter = ""; p.style.clipPath = "";
-    const b = bounce((t - it.t) / 0.5);
+    const b = bounce((t - it.t) / 0.6);
     const r = p.getBoundingClientRect();
     let [x, y] = it.pos || [540, 920];
-    for (const [mt, my, md] of it.move || []) y = lerp(y, my, bounce((t - mt) / (md ?? 0.55)));
-    const tf = `translate(${(x - r.width / 2 + (1 - b) * -160).toFixed(1)}px, ${(y + (1 - b) * 120).toFixed(1)}px) rotate(${((1 - b) * -14 + (it.rot ?? -2)).toFixed(2)}deg) scale(${lerp(0.5, 1, b).toFixed(3)})`;
+    for (const [mt, my, md] of it.move || []) y = lerp(y, my, bounce((t - mt) / (md ?? 0.7)));
+    const tf = `translate(${(x - r.width / 2 + (1 - b) * -70).toFixed(1)}px, ${(y + (1 - b) * 50).toFixed(1)}px) rotate(${((1 - b) * -10 + (it.rot ?? -2)).toFixed(2)}deg) scale(${lerp(0.4, 1, b).toFixed(3)})`;
     p.style.left = "0px"; p.style.top = "0px"; p.style.transform = tf;
     p.style.opacity = clamp((t - it.t) / 0.08);
     wbExit(p, t, it, tf);
@@ -748,11 +783,12 @@ MAKE.pill = (it) => {
 MAKE.tile = (it) => {
   const w = it.w ?? 560, h = it.h ?? w;
   const tl = el("div", "tile"); tl.style.width = w + "px"; tl.style.height = h + "px";
+  if (it.fit === "full") { tl.style.borderRadius = (w * 0.225) + "px"; tl.style.boxShadow = "0 18px 40px rgba(30,30,60,.18), 0 4px 10px rgba(30,30,60,.08)"; }
   tl.style.background = it.bg || "linear-gradient(160deg, #ffffff, #eeeef3)";
   const contents = [[it.t, it.img, it.emoji, it.html], ...(it.swap || []).map(([st, v]) => [st, /\.(png|jpe?g|webp)$/i.test(v) ? v : null, /\.(png|jpe?g|webp)$/i.test(v) ? null : v, null])];
   const ins = contents.map(([st, img, emo, html]) => {
     const d = el("div", "in", tl);
-    if (img) el("img", "", d).src = img;
+    if (img) { const im = el("img", "", d); im.src = img; if (it.fit === "full") { im.style.maxWidth = "100%"; im.style.maxHeight = "100%"; im.style.width = "100%"; } }
     else if (html) d.innerHTML = html;
     else { const e = el("div", "emo", d, emo || "✨"); e.style.fontSize = (it.esize ?? Math.round(w * 0.42)) + "px"; }
     return { d, st };
@@ -762,13 +798,13 @@ MAKE.tile = (it) => {
     if (t < it.t || t > it.end) { tl.style.display = "none"; return; }
     tl.style.display = ""; tl.style.opacity = 1; tl.style.filter = ""; tl.style.clipPath = "";
     let [x, y] = it.pos || [540, 1120];
-    for (const [mt, my, md] of it.move || []) y = lerp(y, my, bounce((t - mt) / (md ?? 0.55)));
-    let s = lerp(0.55, 1, bounce((t - it.t) / 0.6));
+    for (const [mt, my, md] of it.move || []) y = lerp(y, my, bounce((t - mt) / (md ?? 0.7)));
+    let s = lerp(0.6, 1, bounce((t - it.t) / 0.7));
     let cur = 0; ins.forEach((c, i) => { if (t >= c.st) cur = i; });
     ins.forEach((c, i) => {
       const k = i === cur ? clamp((t - c.st) / 0.3) : 0;
       c.d.style.opacity = i === cur ? 1 : 0;
-      c.d.style.transform = i === cur && i > 0 ? `scale(${lerp(0.6, 1, bounce((t - c.st) / 0.45)).toFixed(3)})` : "";
+      c.d.style.transform = i === cur && i > 0 ? `scale(${lerp(0.7, 1, bounce((t - c.st) / 0.55)).toFixed(3)})` : "";
       if (i === cur && i > 0) s *= 1 - 0.06 * Math.sin(Math.PI * k);
     });
     const tf = `translate(${(x - w / 2).toFixed(1)}px, ${(y - h / 2).toFixed(1)}px) scale(${s.toFixed(4)})`;
@@ -793,7 +829,7 @@ MAKE.select = (it) => {
     const full = tx.getBoundingClientRect().width;
     let shown = 0; chars.forEach((c) => { if (+c.style.opacity > 0) shown = c.offsetLeft + c.offsetWidth; });
     let [x, y] = it.pos || [540, 820];
-    for (const [mt, my, md] of it.move || []) y = lerp(y, my, bounce((t - mt) / (md ?? 0.55)));
+    for (const [mt, my, md] of it.move || []) y = lerp(y, my, bounce((t - mt) / (md ?? 0.7)));
     const x0 = x - full / 2 - 18, hgt = (it.size ?? 76) * 1.25;
     const wsel = Math.max(clamp((t - it.t) / 0.25) * 70, shown + 36);
     tx.style.left = (x - full / 2) + "px"; tx.style.top = (y - hgt / 2 + hgt * 0.12) + "px";
@@ -818,7 +854,7 @@ MAKE.list = (it) => {
     if (t < it.t || t > it.end) { box.style.display = "none"; return; }
     box.style.display = ""; box.style.opacity = 1; box.style.filter = ""; box.style.clipPath = "";
     let [x, y] = it.pos || [300, 940];
-    for (const [mt, my, md] of it.move || []) y = lerp(y, my, bounce((t - mt) / (md ?? 0.55)));
+    for (const [mt, my, md] of it.move || []) y = lerp(y, my, bounce((t - mt) / (md ?? 0.7)));
     for (const { r, dot, cs, t0, j } of rows) {
       r.style.left = x + "px"; r.style.top = (y + j * (it.size ?? 66) * 1.18) + "px";
       dot.style.opacity = clamp((t - t0) / 0.1);
@@ -837,8 +873,8 @@ MAKE.dock = (it) => {
     if (t < it.t || t > it.end) { d.style.display = "none"; return; }
     d.style.display = ""; d.style.opacity = 1; d.style.filter = ""; d.style.clipPath = "";
     let [x, y] = it.pos || [540, 1160];
-    for (const [mt, my, md] of it.move || []) y = lerp(y, my, bounce((t - mt) / (md ?? 0.6)));
-    let s = lerp(0.4, 1, bounce((t - it.t) / 0.6));
+    for (const [mt, my, md] of it.move || []) y = lerp(y, my, bounce((t - mt) / (md ?? 0.7)));
+    let s = lerp(0.6, 1, bounce((t - it.t) / 0.7));
     if (it.swap && t >= it.swap[0]) {
       const k = clamp((t - it.swap[0]) / 0.35);
       lab.textContent = it.swap[1]; lab.style.background = it.swap[2] || "#1f6ef5"; lab.style.color = "#fff";
@@ -881,7 +917,9 @@ MAKE.circle = (it) => {
 // значок/аватар-ник сверху (как «@ник» в пилюле)
 MAKE.handle = (it) => {
   const d = el("div", "abs wbf"); d.style.cssText += "border:2px solid #cfcfd4;border-radius:999px;padding:6px 22px 6px 8px;font-size:26px;display:flex;align-items:center;gap:10px;background:#fff;color:#333;";
-  el("span", "emo", d, it.icon || "🙂").style.fontSize = "30px"; el("span", "", d, esc(it.text || "@nick"));
+  if (it.img) { const im = el("img", "", d); im.src = it.img; im.style.cssText = "width:34px;height:34px;border-radius:50%;object-fit:cover"; }
+  else { const c = el("span", "", d, esc((it.text || "n")[0].toUpperCase())); c.style.cssText = "width:34px;height:34px;border-radius:50%;background:#0b0b0d;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700"; }
+  el("span", "", d, esc(it.text || "@nick"));
   return (t) => {
     if (t < it.t || t > it.end) { d.style.display = "none"; return; }
     d.style.display = ""; const b = bounce((t - it.t) / 0.5); const r = d.getBoundingClientRect();
@@ -890,8 +928,9 @@ MAKE.handle = (it) => {
   };
 };
 
+let GROUPS = {};
 function build(data) {
-  D = data; EV = []; FILT = 0;
+  D = data; EV = []; FILT = 0; GROUPS = {};
   root = document.getElementById("root"); root.innerHTML = "";
   if (data.textShadow) {                   // светлое видео (небо, день): тень у текста плотнее — читается на любом фоне
     const st = document.createElement("style");
@@ -900,7 +939,7 @@ function build(data) {
   }
   const top = root;
   ITEMS = data.items.map((it) => {
-    root = el("div", "abs", top);            // у каждого элемента свой контейнер — для слоёв «за человеком / перед ним»
+    root = el("div", "abs", it.g && GROUPS[it.g] ? GROUPS[it.g] : top);   // свой контейнер у каждого элемента (слои); "g" — внутри группы-«камеры»
     if (it.sound) {                          // любой звук на появление элемента; роли «кино» — относительно голоса
       const rel = ["blockpop", "linepop", "typeone", "tagpop", "cardclick"].includes(it.sound);
       EV.push({ t: it.t + (it.soundAt || 0), s: it.sound, g: it.soundGain ?? (rel ? 1.4 : 0.26), v: rel ? 1 : 0 });
