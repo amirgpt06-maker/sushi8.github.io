@@ -14,3 +14,4 @@ style-lab/*.mp4
 style-lab/out/
 subs-lab/*.mp4
 subs-lab/*.wav
+.claude/skills/apple-glass/engine/sfx_local/

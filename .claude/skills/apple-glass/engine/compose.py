@@ -4,6 +4,7 @@
 Переменные: SPEED=1.0 (ускорение всего ролика), GRADE=1 (мягкая «эппловская» цветокоррекция), FROM/TO (секунды — кусок для проверки),
             SFX_GAIN=1.0 (общая громкость эффектов), AUDIO_ONLY=1 (пересобрать только звук),
             LOUDNORM=0 (не нормализовать громкость — для роликов без голоса).
+Звуки: сначала engine/sfx_local (собирает pack_to_sfx.py из вашего пака), иначе engine/sfx (синтез).
 По кадру: наезд (по лицу) -> размытие+затемнение фона -> цвет -> оверлей -> стеклянная линза (настоящее преломление) -> засветка -> зерно.
 """
 import json
@@ -23,7 +24,15 @@ GRADE = os.environ.get("GRADE", "1") == "1"
 SFX_GAIN = float(os.environ.get("SFX_GAIN", "1.0"))
 FX = {int(k): v for k, v in json.load(open(ov_dir / "fx.json")).items()}
 EV = json.load(open(ov_dir / "events.json"))
-SFX = Path(__file__).resolve().parent / "sfx"
+HERE = Path(__file__).resolve().parent
+SFX_DIRS = [d for d in (HERE / "sfx_local", HERE / "sfx") if d.exists()]   # сначала свой пак (sfx_local), потом синтез
+
+
+def sfx_path(role):
+    for d in SFX_DIRS:
+        if (d / f"{role}.wav").exists():
+            return d / f"{role}.wav"
+    raise FileNotFoundError(f"нет звука «{role}» ни в sfx_local, ни в sfx")
 cap = cv2.VideoCapture(src)
 FPS = cap.get(cv2.CAP_PROP_FPS)
 W, H = int(cap.get(3)), int(cap.get(4))
@@ -166,7 +175,7 @@ for e in EV:
     if not (t0 - 1 <= e["t"] < t1):
         continue
     if e["s"] not in cache:
-        cache[e["s"]], _ = sf.read(str(SFX / f"{e['s']}.wav"))
+        cache[e["s"]], _ = sf.read(str(sfx_path(e["s"])))
     sig = cache[e["s"]] * e["g"] * SFX_GAIN
     st = int((e["t"] - t0) * SR)
     if st < 0:
