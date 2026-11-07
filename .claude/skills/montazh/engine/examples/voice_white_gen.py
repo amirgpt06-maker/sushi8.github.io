@@ -53,15 +53,10 @@ sfx(4.68, "aplkey1", 0.6); sfx(6.80, "wbbounce", 0.7); sfx(7.16, "wbclick", 0.7)
 # ---------- 3. «Вот эта анимация — ИИ» — формы слетаются и собираются в объект ----------
 add({"type": "btext", "t": T(10.43), "end": T(13.03), "y": 760, "move": [[T(10.55), 330, 0.5]], "exit": "drop", "exitDur": 0.45, "sfx": False, "lines": [
     {"words": W(("Вот", 10.43), ("эта", 10.67), ("анимация", 10.99)), "size": 100, "weight": 700, "ls": -0.04, "step": 0.04}]})
-add({"type": "assemble", "t": T(10.95), "end": T(13.03), "pos": [540, 920], "w": 600, "pulseT": T(12.12), "bg": "radial-gradient(circle at 50% 52%, rgba(47,123,255,.45) 0, rgba(47,123,255,.14) 34%, #ffffff 64%), #fff", "exit": "drop", "exitDur": 0.45, "shapes": [
-    {"t": T(11.05), "w": 340, "h": 124, "r": 62, "bg": "#0c0c0e", "from": [-560, 80, -35, 0.6], "to": [0, 0]},
-    {"t": T(11.30), "w": 92, "bg": "#2f7bff", "from": [-110, -470, 0, 0.4], "to": [-102, 0], "css": "box-shadow:0 0 30px rgba(47,123,255,.7)"},
-    {"t": T(11.48), "w": 40, "bg": "#ffffff", "from": [-102, 0, 0, 0], "to": [-102, 0]},
-    {"t": T(11.55), "w": 18, "bg": "#0c0c0e", "from": [-102, 0, 0, 0], "to": [-102, 0]},
-    {"t": T(11.40), "w": 120, "h": 16, "r": 8, "bg": "#ffffff", "from": [520, -60, 25, 0.5], "to": [38, -18]},
-    {"t": T(11.52), "w": 80, "h": 16, "r": 8, "bg": "#8e8e93", "from": [520, 90, -25, 0.5], "to": [18, 20]}]})
+add({"type": "follow", "t": T(10.95), "end": T(13.03), "pos": [540, 920], "w": 600, "avatar": "file://" + D + "/white/thumbs/avatar.png",
+     "name": "saidulaev.vibe", "sub": "Амирхан | Вайбкодинг", "btnT": T(11.05), "cardT": T(11.40), "pressT": T(12.12), "exit": "drop", "exitDur": 0.45})
 add({"type": "pill", "t": T(12.12), "end": T(13.03), "text": "ИИ", "size": 64, "pos": [540, 1260], "exit": "drop", "exitDur": 0.45, "sfx": False})
-sfx(10.43, "aplkey1", 0.6); sfx(10.95, "wbbounce", 0.6); sfx(12.12, "wbpop", 0.85); sfx(12.58, "wbwhoosh", 0.7)
+sfx(10.43, "aplkey1", 0.6); sfx(10.95, "wbbounce", 0.6); sfx(11.05, "wbpop", 0.5); sfx(11.40, "wbbounce", 0.45); sfx(12.12, "wbclick", 0.9); sfx(12.18, "wbpop", 0.6); sfx(12.58, "wbwhoosh", 0.7)
 
 # ---------- 4. «Этот переход — ИИ» — стеклянный шар прямо на фразе, на «ИИ» он растворяется в «ИИ» ----------
 add({"type": "wave", "t": T(13.24), "end": T(14.66), "from": "top", "rise": 0.5, "fall": 0.01, "h": 420, "sfx": False})
@@ -73,19 +68,18 @@ add({"type": "btext", "t": T(14.69), "end": T(15.38), "y": 690, "exit": "up", "e
 sfx(13.24, "wbslide", 0.55); sfx(13.78, "wbwhoosh", 0.8); sfx(14.27, "wbshimmer", 0.7); sfx(14.69, "wbpop", 0.9); sfx(15.05, "wbslide", 0.55)
 
 # ---------- 5. «Даже звук, который ты сейчас слышишь — это ИИ» — плитка-звук, всплеск ровно на «звук» ----------
-add({"type": "btext", "t": T(15.71), "end": T(20.30), "y": 760, "move": [[T(15.85), 330, 0.55]], "exit": "left", "exitDur": 0.45, "sfx": False, "lines": [
+add({"type": "btext", "t": T(15.71), "end": T(20.30), "y": 760, "move": [[T(17.90), 330, 0.5]], "exit": "left", "exitDur": 0.45, "sfx": False, "lines": [
     {"words": W(("Даже", 15.71), ("звук,", 16.19)), "size": 116, "weight": 700, "ls": -0.04, "step": 0.045},
     {"mode": "word", "words": W(("который", 16.63), ("ты", 17.03), ("сейчас", 17.23), ("слышишь —", 17.63)), "size": 58, "weight": 400, "ls": -0.02, "y": 128}]})
-fast = [(16.63, "fx5", .30), (16.86, "fx1", .30), (17.03, "fx3", .30), (17.23, "fx7", .32), (17.45, "fx1", .28), (17.63, "fx4", .32), (17.85, "fx5", .30),
-        (18.10, "fx2", .55), (18.22, "fx1", .5), (18.32, "fx7", .55), (18.44, "fx5", .5), (18.53, "fx3", .55), (18.64, "fx1", .5), (18.72, "fx6", .55),
-        (18.82, "fx7", .6), (18.90, "fx1", .55), (18.96, "fx5", .6), (19.02, "fx8", .7)]
-add({"type": "eqtile", "t": T(16.19), "end": T(20.30), "pos": [540, 935], "w": 600, "burstT": T(16.19), "exit": "left", "exitDur": 0.45,
-     "bg": "linear-gradient(160deg, #ffffff 10%, #e3ecff 55%, #b9cffb)", "bursts": [[T(t), 0.45 if t < 18.09 else 0.8] for t, _, _ in fast]})
+fast = [(18.10, "fx2", .6), (18.20, "fx1", .5), (18.30, "fx7", .6), (18.40, "fx5", .55), (18.48, "fx3", .6), (18.57, "fx1", .55), (18.65, "fx6", .6),
+        (18.73, "fx7", .65), (18.81, "fx1", .6), (18.88, "fx5", .65), (18.95, "fx3", .65), (19.02, "fx8", .75)]
+add({"type": "eqtile", "t": T(18.09), "end": T(20.30), "pos": [540, 935], "w": 600, "burstT": T(18.10), "exit": "left", "exitDur": 0.45,
+     "bg": "linear-gradient(160deg, #ffffff 10%, #e3ecff 55%, #b9cffb)", "bursts": [[T(t), 0.85] for t, _, _ in fast]})
 for t, s_, g in fast: sfx(t, s_, g)
 add({"type": "btext", "t": T(19.14), "end": T(20.30), "y": 1270, "exit": "left", "exitDur": 0.45, "sfx": False, "lines": [
     {"mode": "word", "words": W(("это", 19.14)), "size": 66, "weight": 400, "ls": -0.02}]})
 add({"type": "pill", "t": T(19.50), "end": T(20.30), "text": "ИИ", "size": 64, "pos": [540, 1360], "exit": "left", "exitDur": 0.45, "sfx": False})
-sfx(15.71, "aplkey1", 0.6); sfx(16.19, "tagpop", 0.8); sfx(19.50, "wbpop", 0.85); sfx(19.85, "wbwhoosh", 0.8)
+sfx(15.71, "aplkey1", 0.6); sfx(16.19, "tagpop", 0.5); sfx(19.50, "wbpop", 0.85); sfx(19.85, "wbwhoosh", 0.8)
 
 # ---------- 6. «Единственное, что здесь моё — голос» — тишина, затем волна точно по голосу ----------
 add({"type": "btext", "t": T(21.00), "end": T(24.49), "y": 330, "exit": "drop", "exitDur": 0.45, "sfx": False, "lines": [

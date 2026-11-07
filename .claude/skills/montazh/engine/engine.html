@@ -1163,6 +1163,37 @@ MAKE.reels = (it) => {
     wbExit(box, t, it, tf);
   };
 };
+
+// подписка (как в референсе «follow»): в плитке появляется кнопка «Подписаться», разворачивается в карточку профиля
+// (аватар, ник, подпись), на pressT нажимается -> «Вы подписаны ✓». {avatar, name, sub, btn, done, btnT, cardT, pressT}
+MAKE.follow = (it) => {
+  const w = it.w ?? 600, h = it.h ?? w, acc = it.color || "#2f6df2";
+  const tl = tileShell(it, w, h, it.bg || "linear-gradient(150deg, #ffffff 8%, #d8e3fc 50%, #8fb0f7)");
+  const cw = it.cw ?? 440, chh = it.ch ?? 440;
+  const card = el("div", "abs wbf", tl); card.style.cssText += `left:${(w - cw) / 2}px;top:${(h - chh) / 2}px;width:${cw}px;height:${chh}px;border-radius:48px;background:#fff;box-shadow:0 20px 50px rgba(30,50,110,.18);`;
+  const av = el("img", "abs", card); av.src = it.avatar; av.style.cssText += `left:${cw / 2 - 66}px;top:40px;width:132px;height:132px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 5px #fff,0 0 0 9px ${acc}33;`;
+  const nm = el("div", "abs", card, esc(it.name || "")); nm.style.cssText += `left:0;width:${cw}px;top:196px;text-align:center;font-size:40px;font-weight:700;letter-spacing:-0.02em;color:#0b0b0d;`;
+  const sb = el("div", "abs", card, esc(it.sub || "")); sb.style.cssText += `left:0;width:${cw}px;top:248px;text-align:center;font-size:28px;font-weight:400;color:#8e8e93;`;
+  const bw = cw - 80, bh = 76;
+  const btn = el("div", "abs wbf", tl); btn.style.cssText += `width:${bw}px;height:${bh}px;border-radius:22px;background:${acc};color:#fff;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:600;white-space:nowrap;box-shadow:0 10px 24px ${acc}55;`;
+  const bt = el("span", "", btn, esc(it.btn || "Подписаться"));
+  return (t) => {
+    if (t < it.t || t > it.end) { tl.style.display = "none"; return; }
+    const pressed = it.pressT != null && t >= it.pressT, kp = pressed ? clamp((t - it.pressT) / 0.35) : 0;
+    const tf = tilePlace(tl, it, t, w, h, 1 + 0.04 * Math.sin(Math.PI * kp));
+    // кнопка: сначала одна в центре плитки, потом встаёт в низ карточки
+    const kb = (t - (it.btnT ?? it.t)) / 0.6, b = bounce(kb), kc = (t - (it.cardT ?? it.t)) / 0.7, c = bounce(kc), mv = moveE(kc / 0.9);
+    const by = lerp(h / 2 - bh / 2, (h - chh) / 2 + chh - bh - 40, mv);
+    btn.style.left = (w - bw) / 2 + "px"; btn.style.top = by.toFixed(1) + "px";
+    btn.style.opacity = kb <= 0 ? 0 : clamp(kb * 4);
+    btn.style.transform = `scale(${(lerp(0.3, 1, b) * (1 - 0.08 * Math.sin(Math.PI * kp))).toFixed(3)})`;
+    card.style.opacity = kc <= 0 ? 0 : clamp(kc * 3); card.style.transform = `scale(${lerp(0.5, 1, c).toFixed(3)})`; card.style.transformOrigin = "50% 70%";
+    for (const [n, d] of [[av, 0.1], [nm, 0.2], [sb, 0.28]]) { const k = clamp((kc - d) * 2.5); n.style.opacity = k; n.style.transform = `translateY(${((1 - eOut(k)) * 18).toFixed(1)}px)`; }
+    if (pressed) { btn.style.background = "#eeeef3"; btn.style.color = "#0b0b0d"; btn.style.boxShadow = "none"; bt.innerHTML = esc(it.done || "Вы подписаны") + ` <span style="color:${acc}">✓</span>`; }
+    else { btn.style.background = acc; btn.style.color = "#fff"; bt.textContent = it.btn || "Подписаться"; }
+    wbExit(tl, t, it, tf);
+  };
+};
 let GROUPS = {};
 function build(data) {
   D = data; EV = []; FILT = 0; GROUPS = {};
