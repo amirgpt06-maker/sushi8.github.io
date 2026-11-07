@@ -921,18 +921,31 @@ MAKE.dock = (it) => {
 MAKE.ball = (it) => {
   if (it.sfx !== false) { EV.push({ t: it.t, s: "wbwhoosh", g: 0.8, v: 1 }); if (it.frostAt) EV.push({ t: it.frostAt, s: "wbshimmer", g: 0.7, v: 1 }); }
   if (it.pop) return (t, fx) => {
-    // режим референса: шар вырастает прямо на фразе (пружина), дышит, мутнеет до голубо-сиреневого,
-    // белеет, раздувается и растворяется — новая сцена проявляется внутри него
+    // капля как в референсе: выныривает точкой чуть ниже центра фразы, с пружиной надувается и всплывает к центру;
+    // форма живая (резина/желе): сплющивается-вытягивается, по краю волнится, донышко приплюснуто как у капли на стекле;
+    // с frostAt мутнеет до голубо-сиреневого и вытягивается в наклонённое «яйцо»; с whiteAt белеет, раздувается, тянется и тает
     if (t < it.t || t > it.end) return;
-    const u = t - it.t, [x, y] = it.pos || [540, 820], R = it.r ?? 240;
-    let r = R * (1 - Math.exp(-7 * u) * Math.cos(11 * u));
-    const sq = 0.08 * Math.exp(-5 * u) * Math.sin(14 * u) + 0.018 * Math.sin(2 * Math.PI * 1.4 * u);
+    const u = t - it.t, [x0, y0] = it.pos || [540, 820], R = it.r ?? 240, J = it.jelly ?? 1, S = Math.sin, TAU = 2 * Math.PI;
     const wAt = it.whiteAt ?? it.end - 0.35, fAt = it.frostAt ?? wAt - 0.3;
     const f = eIO((t - fAt) / (wAt - fAt)), w = clamp((t - wAt) / (it.end - wAt));
-    r *= 1 - 0.12 * f;
-    r = lerp(r, it.grow ?? 560, eIn(Math.min(1, w * 1.15)) );
-    const fo = it.fadeOut ?? 0.25, a = 1 - eIO((t - (it.end - fo)) / fo);
-    fx.ball = [x, y - 10 * f, Math.max(0, r), a, f, sq, eIO(w * 1.4)];
+    let r = R * (1 - Math.exp(-6.5 * u) * Math.cos(10 * u));
+    r *= 1 - 0.10 * f;
+    r = lerp(r, it.grow ?? 560, eIO(Math.min(1, w * 1.25)));
+    // мода 2 — сплющивание: сильный перелёт при появлении + постоянное «дыхание»; в запотевании — яйцо вверх; в белой — тянется
+    let sq = J * (0.22 * Math.exp(-4 * u) * S(12 * u + 0.6) + 0.05 * S(TAU * 2.1 * u) + 0.02 * S(TAU * 3.3 * u + 1));
+    sq = lerp(sq, -0.14 + 0.035 * S(TAU * 1.8 * u), f);
+    sq = lerp(sq, -0.08 + 0.10 * S(TAU * 1.1 * u + 0.5), w);
+    let rot = 0.35 * S(TAU * 0.55 * u);
+    rot = lerp(rot, it.tilt ?? -0.35, f);
+    rot = lerp(rot, (it.tilt ?? -0.35) * 1.8, w);
+    // моды 3 и 4 — волна по краю (резина), медленно бегут по кругу
+    const m3 = J * (0.07 * Math.exp(-3.5 * u) * S(9 * u + 1.2) + 0.024 * S(TAU * 1.6 * u)) * (1 - 0.4 * w);
+    const m4 = J * (0.04 * Math.exp(-3.5 * u) * S(11 * u + 0.4) + 0.015 * S(TAU * 2.7 * u + 2)) * (1 - 0.4 * w);
+    const flat = 0.13 * (1 - f) * clamp(u / 0.25);            // капля на стекле — плоское донышко
+    const egg = 0.08 * f * (1 - 0.5 * w);                      // низ шире верха
+    const x = x0 + 14 * f + 30 * w, y = y0 + (it.rise ?? 70) * (1 - eIO(u / 0.45)) - 20 * f - 36 * w;
+    const fo = it.fadeOut ?? 0.25, a = clamp(u / 0.05) * (1 - eIO((t - (it.end - fo)) / fo));
+    fx.ball = [x, y, Math.max(0, r), a, f, sq, eIO(w * 1.4), rot, m3, 0.9 * u, m4, -0.7 * u, flat, egg];
   };
   return (t, fx) => {
     if (t < it.t || t > it.end) return;

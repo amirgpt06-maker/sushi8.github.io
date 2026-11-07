@@ -218,49 +218,59 @@ def load_ov(f):
     return np.dstack([rgb, a[..., 0]])
 
 
-def ball(img, x, y, r, a, frost, sq=0.0, white=0.0):
-    """Стеклянный шар как в референсе: сфера увеличивает то, что под ней, а у края «стягивает» и закручивает
-    (сильное преломление, цветная кайма); sq — сплющивание (дыхание), frost 0..1 — мутнеет до голубо-сиреневого
-    матового стекла, white 0..1 — белеет и мягко растворяет край (из него проявляется новая сцена)."""
+def ball(img, x, y, r, a, frost, sq=0.0, white=0.0, rot=0.0, m3=0.0, p3=0.0, m4=0.0, p4=0.0, flat=0.0, egg=0.0):
+    """Стеклянная капля как в референсе: увеличивает то, что под ней, у края «стягивает» текст дугой (сильное
+    преломление, цветная кайма). Форма живая, как резина: sq — сплющивание вдоль оси rot, m3/m4 — волна по краю
+    (фазы p3/p4), flat — плоское донышко капли на стекле, egg — низ шире верха. frost 0..1 — мутнеет до
+    голубо-сиреневого матового стекла, white 0..1 — белеет и мягко растворяет край (из него проявляется новая сцена)."""
     if a <= 0.01 or r < 4:
         return img
-    sx, sy = 1 + sq, 1 / (1 + sq)
-    p = int(r * max(sx, sy) + 30 + 60 * white)
+    A, B = 1 + sq, 1 / (1 + sq)
+    p = int(r * max(A, B) * (1 + abs(m3) + abs(m4) + abs(egg)) + 30 + 60 * white)
     x0, x1, y0, y1 = int(max(0, x - p)), int(min(W, x + p)), int(max(0, y - p)), int(min(H, y + p))
     if x1 - x0 < 8 or y1 - y0 < 8:
         return img
     gx, gy = xx[y0:y1, x0:x1] - x, yy[y0:y1, x0:x1] - y
-    ex, ey = gx / (r * sx), gy / (r * sy)
-    d = np.sqrt(ex * ex + ey * ey)
+    rho = np.sqrt(gx * gx + gy * gy)
+    th = np.arctan2(gy, gx)
+    c, s_ = np.cos(th - rot), np.sin(th - rot)
+    shape = 1 / np.sqrt((c / A) ** 2 + (s_ / B) ** 2)                       # эллипс
+    shape = shape * (1 + m3 * np.cos(3 * (th - p3)) + m4 * np.cos(4 * (th - p4)) + egg * np.sin(th))
+    shape = shape * (1 - flat * np.clip(np.sin(th), 0, 1) ** 4)             # sin>0 — низ кадра
+    Rth = r * shape
+    d = rho / Rth
+    ex, ey = gx / Rth, gy / Rth                                             # координаты внутри капли (единичный круг)
     dd = np.clip(d, 0, 0.999)
-    z = np.sqrt(1 - dd * dd)                                   # «выпуклость» сферы
-    k = 0.56 + 0.70 * (1 - z) ** 2                             # центр ×1.8, у самого края резкий рост -> текст тянется дугой
+    z = np.sqrt(1 - dd * dd)                                                # «выпуклость»
+    k = 0.56 + 0.70 * (1 - z) ** 2                                          # центр ×1.8, у края резкий рост -> текст тянется дугой
     chans = []
-    for c, ca in enumerate((1.035, 1.0, 0.965)):               # B G R: лёгкая хроматическая кайма у края
+    for ci, ca in enumerate((1.035, 1.0, 0.965)):                           # B G R: лёгкая хроматическая кайма у края
         kc = k * (1 + (ca - 1) * (1 - z))
         mx, my = (x + gx * kc).astype(np.float32), (y + gy * kc).astype(np.float32)
-        chans.append(cv2.remap(np.ascontiguousarray(img[..., c]), mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT))
+        chans.append(cv2.remap(np.ascontiguousarray(img[..., ci]), mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT))
     ref = np.dstack(chans)
     bl = 0.5 + 16 * frost + 14 * white
     if bl > 0.6:
         ref = cv2.GaussianBlur(ref, (0, 0), bl)
-    # матовое стекло: сверху остаётся размытое содержимое, книзу — голубо-сиреневый
-    lav = np.float32([0.95, 0.74, 0.74])                       # BGR
+    # матовое стекло: сверху остаётся размытое содержимое, книзу — голубо-сиреневый, по нижнему краю светится
+    lav = np.float32([0.95, 0.74, 0.74])                                    # BGR
     vg = np.clip(0.35 + 0.65 * (ey + 0.6) / 1.6, 0, 1)[..., None]
     tint = frost * (0.25 + 0.6 * vg) * (1 - white)
     ref = ref * (1 - tint) + lav * (0.92 + 0.08 * z[..., None]) * tint
+    glow = np.exp(-((d - 0.92) * Rth / 12) ** 2) * np.clip(ey + 0.2, 0, 1) * 0.22 * frost * (1 - white)
+    ref = ref + glow[..., None] * np.float32([1.0, 0.92, 0.9])
     hl = np.exp(-(((ex + 0.36) / 0.40) ** 2 + ((ey + 0.48) / 0.26) ** 2)) * (0.10 + 0.06 * frost) * (1 - white)
     ref = ref + hl[..., None] - (np.clip(ey, 0, 1) ** 2 * 0.05 * frost * (1 - white))[..., None]
     # тело стекла на белом: френелевский край (чуть темнее, холодный) + тонкая дуга-блик сверху-слева
     fres = ((1 - z) ** 3)[..., None] * (1 - white)
     ref = ref * (1 - 0.16 * fres) + np.float32([0.55, 0.45, 0.40]) * 0.16 * fres * 0.25
-    arc = np.exp(-((d - 0.88) * r / 4.0) ** 2) * np.clip(-(ex + 1.3 * ey) / 1.2, 0, 1) ** 2 * 0.55 * (1 - frost) * (1 - white)
+    arc = np.exp(-((d - 0.88) * Rth / 4.0) ** 2) * np.clip(-(ex + 1.3 * ey) / 1.2, 0, 1) ** 2 * 0.55 * (1 - frost) * (1 - white)
     ref = ref + arc[..., None]
     ref = ref * (1 - white) + np.float32([0.985, 0.985, 0.985]) * white
-    rim = np.exp(-((d - 1) * r / 2.2) ** 2) * (0.10 + 0.12 * frost) * (1 - white)
+    rim = np.exp(-((d - 1) * Rth / 2.2) ** 2) * (0.10 + 0.12 * frost) * (1 - white)
     ang = np.clip(0.6 - 0.5 * (ex + ey) / 1.4142, 0.2, 1)
-    m = np.clip((1 - d) * r / (1.5 + 70 * white), 0, 1)[..., None]
-    sh = (np.exp(-(np.clip(d - 1, 0, None) * r / 18) ** 2) * (d > 1) * 0.03 * frost * (1 - white))[..., None]
+    m = np.clip((1 - d) * Rth / (1.5 + 70 * white), 0, 1)[..., None]
+    sh = (np.exp(-(np.clip(d - 1, 0, None) * Rth / 18) ** 2) * (d > 1) * 0.03 * frost * (1 - white))[..., None]
     roi = img[y0:y1, x0:x1]
     res = roi * (1 - sh) * (1 - m) + np.clip(ref + (rim * ang)[..., None], 0, 1) * m
     out_ = img.copy()
