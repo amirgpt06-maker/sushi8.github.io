@@ -405,5 +405,5 @@ af = ",".join(([f"atempo={SPEED}"] if SPEED != 1 else []) + (["loudnorm=I=-14:TP
 subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(work / "v.mp4"), "-i", str(work / "mix.wav"),
                 "-filter:v", vf, "-af", af, "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p",
                 "-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709", "-color_range", "tv",   # явно SDR: телефон не примет за HDR
-                "-c:a", "aac", "-b:a", "192k", "-shortest", "-map_metadata", "-1", "-movflags", "+faststart", out], check=True)
+                "-c:a", "aac", "-b:a", "256k", "-ar", "48000", "-shortest", "-map_metadata", "-1", "-movflags", "+faststart", out], check=True)
 print("готово:", out)

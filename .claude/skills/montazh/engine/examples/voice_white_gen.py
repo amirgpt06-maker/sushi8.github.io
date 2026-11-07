@@ -82,8 +82,8 @@ add({"type": "btext", "t": T(15.71), "end": T(20.30), "y": 760, "move": [[T(17.9
 # -> короткая тишина -> «это ИИ»
 def sfxm(t, s_, g): add({"type": "sfx", "t": round(t, 3), "s": s_, "g": g})
 P0 = T(18.05)                                        # конец «слышишь»
-groove = [(0.22, "fx2", 0, .85), (0.33, "fx1", 4, .75), (0.44, "fx7", 8, .85), (0.66, "fx5", 2, .8), (0.77, "fx3", 6, .8),
-          (0.88, "fx6", 1, .8), (0.99, "fx8", 3, .7), (1.10, "chime2", 5, .75)]
+groove = [(0.22, "fx2", 0, 1.7), (0.33, "fx1", 4, 1.5), (0.44, "fx7", 8, 1.7), (0.66, "fx5", 2, 1.6), (0.77, "fx3", 6, 1.6),
+          (0.88, "fx6", 1, 1.6), (0.99, "fx8", 3, 1.4), (1.10, "chime2", 5, 1.5)]   # в паузе без голоса — громче (иначе не цепляет)
 roll, tt, dt = [], 1.22, 0.14
 order = [0, 1, 2, 5, 8, 7, 6, 3, 4, 0, 2, 8, 6, 4]
 while tt < 2.30:
@@ -92,11 +92,11 @@ IMP = P0 + 2.38
 hits = [[round(P0 + a, 3), i_, 1] for a, _, i_, _ in groove] + [[round(P0 + a, 3), order[k % len(order)], 0.8] for k, a in enumerate(roll)] + [[round(IMP, 3), -1, 1]]
 add({"type": "pads", "t": round(P0 + 0.01, 3), "end": T(20.30), "pos": [540, 930], "w": 600, "exit": "left", "exitDur": 0.45,
      "rise": [round(P0 + 1.15, 3), round(IMP, 3)], "hits": hits})
-sfxm(P0 + 0.01, "wbpop", 0.8)
+sfxm(P0 + 0.01, "wbpop", 1.1)
 for a, s_, _, g in groove: sfxm(P0 + a, s_, g)
-sfxm(P0 + 1.12, "riser", 0.75)
-for k, a in enumerate(roll): sfxm(P0 + a, "tick" if k % 2 else "fx1", round(0.35 + 0.35 * k / max(1, len(roll) - 1), 2))
-sfxm(IMP, "flash", 0.95); sfxm(IMP, "chime5", 0.6); sfxm(IMP + 0.02, "wbbounce", 0.5)
+sfxm(P0 + 1.12, "riser", 1.05)
+for k, a in enumerate(roll): sfxm(P0 + a, "tick" if k % 2 else "fx1", round(0.55 + 0.55 * k / max(1, len(roll) - 1), 2))
+sfxm(IMP, "flash", 1.35); sfxm(IMP, "chime5", 0.85); sfxm(IMP + 0.02, "wbbounce", 0.5)
 add({"type": "btext", "t": T(19.14), "end": T(20.30), "y": 1270, "exit": "left", "exitDur": 0.45, "sfx": False, "lines": [
     {"mode": "word", "words": W(("это", 19.14)), "size": 66, "weight": 400, "ls": -0.02}]})
 add({"type": "pill", "t": T(19.50), "end": T(20.30), "text": "ИИ", "size": 64, "pos": [540, 1360], "exit": "left", "exitDur": 0.45, "sfx": False})
