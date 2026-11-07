@@ -920,6 +920,20 @@ MAKE.dock = (it) => {
 // стеклянный шар: проезжает (x0 -> x1), преломляя то, что под ним; с frostAt мутнеет до лавандового и растёт до r1 (стирает экран)
 MAKE.ball = (it) => {
   if (it.sfx !== false) { EV.push({ t: it.t, s: "wbwhoosh", g: 0.8, v: 1 }); if (it.frostAt) EV.push({ t: it.frostAt, s: "wbshimmer", g: 0.7, v: 1 }); }
+  if (it.pop) return (t, fx) => {
+    // режим референса: шар вырастает прямо на фразе (пружина), дышит, мутнеет до голубо-сиреневого,
+    // белеет, раздувается и растворяется — новая сцена проявляется внутри него
+    if (t < it.t || t > it.end) return;
+    const u = t - it.t, [x, y] = it.pos || [540, 820], R = it.r ?? 240;
+    let r = R * (1 - Math.exp(-7 * u) * Math.cos(11 * u));
+    const sq = 0.08 * Math.exp(-5 * u) * Math.sin(14 * u) + 0.018 * Math.sin(2 * Math.PI * 1.4 * u);
+    const wAt = it.whiteAt ?? it.end - 0.35, fAt = it.frostAt ?? wAt - 0.3;
+    const f = eIO((t - fAt) / (wAt - fAt)), w = clamp((t - wAt) / (it.end - wAt));
+    r *= 1 - 0.12 * f;
+    r = lerp(r, it.grow ?? 560, eIn(Math.min(1, w * 1.15)) );
+    const fo = it.fadeOut ?? 0.25, a = 1 - eIO((t - (it.end - fo)) / fo);
+    fx.ball = [x, y - 10 * f, Math.max(0, r), a, f, sq, eIO(w * 1.4)];
+  };
   return (t, fx) => {
     if (t < it.t || t > it.end) return;
     const fo = it.fadeOut ?? 0, full = it.end - fo;

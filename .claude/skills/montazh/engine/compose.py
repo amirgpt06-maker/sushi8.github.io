@@ -218,33 +218,51 @@ def load_ov(f):
     return np.dstack([rgb, a[..., 0]])
 
 
-def ball(img, x, y, r, a, frost):
-    """Стеклянный шар: как настоящая линза-сфера — переворачивает и увеличивает то, что за ним, края загибаются;
-    frost 0..1 — шар мутнеет до лавандового матового стекла."""
+def ball(img, x, y, r, a, frost, sq=0.0, white=0.0):
+    """Стеклянный шар как в референсе: сфера увеличивает то, что под ней, а у края «стягивает» и закручивает
+    (сильное преломление, цветная кайма); sq — сплющивание (дыхание), frost 0..1 — мутнеет до голубо-сиреневого
+    матового стекла, white 0..1 — белеет и мягко растворяет край (из него проявляется новая сцена)."""
     if a <= 0.01 or r < 4:
         return img
-    p = int(r + 30)
+    sx, sy = 1 + sq, 1 / (1 + sq)
+    p = int(r * max(sx, sy) + 30 + 60 * white)
     x0, x1, y0, y1 = int(max(0, x - p)), int(min(W, x + p)), int(max(0, y - p)), int(min(H, y + p))
     if x1 - x0 < 8 or y1 - y0 < 8:
         return img
     gx, gy = xx[y0:y1, x0:x1] - x, yy[y0:y1, x0:x1] - y
-    d = np.sqrt(gx * gx + gy * gy) / r
+    ex, ey = gx / (r * sx), gy / (r * sy)
+    d = np.sqrt(ex * ex + ey * ey)
     dd = np.clip(d, 0, 0.999)
     z = np.sqrt(1 - dd * dd)                                   # «выпуклость» сферы
-    k = -0.75 * (1 - 0.55 * (1 - z))                           # переворот + сжатие к краю
-    mx, my = (x + gx * k).astype(np.float32), (y + gy * k).astype(np.float32)
-    ref = cv2.remap(img, mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
-    ref = cv2.GaussianBlur(ref, (0, 0), 1.2 + 10 * frost)
-    lav = np.float32([0.97, 0.80, 0.78])                       # BGR лаванда
-    tint = (0.10 + 0.75 * frost)
-    ref = ref * (1 - tint) + (lav * (0.9 + 0.1 * z[..., None])) * tint
-    hl = np.exp(-(((gx + 0.38 * r) / (0.42 * r)) ** 2 + ((gy + 0.45 * r) / (0.3 * r)) ** 2)) * (0.35 - 0.2 * frost)
-    ref = ref + hl[..., None] - (np.clip(gy / r, 0, 1) ** 2 * 0.10)[..., None]
-    edge = np.exp(-((d - 1) * r / 2.0) ** 2) * 0.35
-    m = np.clip((1 - d) * r / 1.5, 0, 1)[..., None]
-    sh = (np.exp(-(np.clip(d - 1, 0, None) * r / 16) ** 2) * (d > 1) * 0.10)[..., None]
+    k = 0.56 + 0.70 * (1 - z) ** 2                             # центр ×1.8, у самого края резкий рост -> текст тянется дугой
+    chans = []
+    for c, ca in enumerate((1.035, 1.0, 0.965)):               # B G R: лёгкая хроматическая кайма у края
+        kc = k * (1 + (ca - 1) * (1 - z))
+        mx, my = (x + gx * kc).astype(np.float32), (y + gy * kc).astype(np.float32)
+        chans.append(cv2.remap(np.ascontiguousarray(img[..., c]), mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT))
+    ref = np.dstack(chans)
+    bl = 0.5 + 16 * frost + 14 * white
+    if bl > 0.6:
+        ref = cv2.GaussianBlur(ref, (0, 0), bl)
+    # матовое стекло: сверху остаётся размытое содержимое, книзу — голубо-сиреневый
+    lav = np.float32([0.95, 0.74, 0.74])                       # BGR
+    vg = np.clip(0.35 + 0.65 * (ey + 0.6) / 1.6, 0, 1)[..., None]
+    tint = frost * (0.25 + 0.6 * vg) * (1 - white)
+    ref = ref * (1 - tint) + lav * (0.92 + 0.08 * z[..., None]) * tint
+    hl = np.exp(-(((ex + 0.36) / 0.40) ** 2 + ((ey + 0.48) / 0.26) ** 2)) * (0.10 + 0.06 * frost) * (1 - white)
+    ref = ref + hl[..., None] - (np.clip(ey, 0, 1) ** 2 * 0.05 * frost * (1 - white))[..., None]
+    # тело стекла на белом: френелевский край (чуть темнее, холодный) + тонкая дуга-блик сверху-слева
+    fres = ((1 - z) ** 3)[..., None] * (1 - white)
+    ref = ref * (1 - 0.16 * fres) + np.float32([0.55, 0.45, 0.40]) * 0.16 * fres * 0.25
+    arc = np.exp(-((d - 0.88) * r / 4.0) ** 2) * np.clip(-(ex + 1.3 * ey) / 1.2, 0, 1) ** 2 * 0.55 * (1 - frost) * (1 - white)
+    ref = ref + arc[..., None]
+    ref = ref * (1 - white) + np.float32([0.985, 0.985, 0.985]) * white
+    rim = np.exp(-((d - 1) * r / 2.2) ** 2) * (0.10 + 0.12 * frost) * (1 - white)
+    ang = np.clip(0.6 - 0.5 * (ex + ey) / 1.4142, 0.2, 1)
+    m = np.clip((1 - d) * r / (1.5 + 70 * white), 0, 1)[..., None]
+    sh = (np.exp(-(np.clip(d - 1, 0, None) * r / 18) ** 2) * (d > 1) * 0.03 * frost * (1 - white))[..., None]
     roi = img[y0:y1, x0:x1]
-    res = roi * (1 - sh) * (1 - m) + np.clip(ref + edge[..., None], 0, 1) * m
+    res = roi * (1 - sh) * (1 - m) + np.clip(ref + (rim * ang)[..., None], 0, 1) * m
     out_ = img.copy()
     out_[y0:y1, x0:x1] = roi * (1 - a) + res * a
     return out_
