@@ -1,5 +1,5 @@
 {
-  "_about": "Роль -> файл из паков пользователя (Botanica v5 и пак «Apple» со звуками/шрифтами/UI). Схема и громкость сняты с его референсов сопоставлением спектров. start — откуда вырезать кусок в файле-сборнике. Роли без строки берутся из синтеза engine/sfx.",
+  "_about": "Роль -> файл из паков пользователя (Botanica v5 и пак «Apple» со звуками/шрифтами/UI). Схема и громкость сняты с его референсов сопоставлением спектров. start — откуда вырезать кусок в файле-сборнике. Роли без строки берутся из синтеза engine/sfx. fx1..fx11 — быстрые UI/тех-звуки (серия «звук, который ты слышишь»).",
   "blockpop": {
     "file": "эпл печатание.mp3",
     "start": 1.09,
@@ -114,5 +114,49 @@
     "file": "Резкие вуши.mp3",
     "start": 2.45,
     "max_s": 0.45
+  },
+  "fx1": {
+    "file": "MA_BANT_Modern_Clicks_And_Beeps_1.wav",
+    "max_s": 0.3
+  },
+  "fx2": {
+    "file": "MA_BANT_Modern_Clicks_And_Beeps_2.wav",
+    "max_s": 0.4
+  },
+  "fx3": {
+    "file": "MA_BANT_Modern_Clicks_And_Beeps_4.wav",
+    "max_s": 0.35
+  },
+  "fx4": {
+    "file": "MA_BANT_Modern_Clicks_And_Beeps_5.wav",
+    "max_s": 0.35
+  },
+  "fx5": {
+    "file": "MA_BANT_Modern_Clicks_And_Beeps_7.wav",
+    "max_s": 0.3
+  },
+  "fx6": {
+    "file": "MA_BANT_Modern_Clicks_And_Beeps_8.wav",
+    "max_s": 0.4
+  },
+  "fx7": {
+    "file": "ES_Pops, Wobble, Bloop, Pops - Epidemic Sound.mp3",
+    "max_s": 0.3
+  },
+  "fx8": {
+    "file": "mixkit-alien-technology-button-3118.wav",
+    "max_s": 0.9
+  },
+  "fx9": {
+    "file": "HUD Screen - 02.wav",
+    "max_s": 1.0
+  },
+  "fx10": {
+    "file": "8. Bleep Bloop.wav",
+    "max_s": 0.7
+  },
+  "fx11": {
+    "file": "ES_Sci Fi Games, UI Menu, Very Short, Open 04 - Epidemic Sound.mp3",
+    "max_s": 0.6
   }
 }

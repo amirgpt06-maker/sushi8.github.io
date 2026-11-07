@@ -23,7 +23,14 @@ add({"type": "wb", "t": 0, "end": DUR + 1})
 # ---------- 1. «Этот ролик смонтировал не человек» — вход «камерой», волна снизу; выход — белый круг ----------
 add({"type": "wave", "t": 0, "end": T(4.63), "rise": 1.0, "fall": 0.01, "h": 520, "sfx": False})
 add({"type": "group", "id": "intro", "t": 0, "end": T(4.63), "origin": [540, 800], "keys": [[0, {"s": 0.12}], [0.75, {"s": 1}]]})
-add({"type": "tile", "g": "intro", "t": 0, "end": T(4.63), "img": UI + "icon_shortcuts.png", "fit": "full", "w": 170, "pos": [540, 600], "exit": "cut", "sfx": False})
+import math
+def spark(size=170, rays=12):
+    c = size / 2; out = []
+    for k in range(rays):
+        a = math.radians(k * 360 / rays + 8); L = size * (0.33 if k % 2 else 0.27) * (1 + 0.06 * math.sin(k * 2.3))
+        out.append(f'<line x1="{c:.1f}" y1="{c:.1f}" x2="{c + L * math.cos(a):.1f}" y2="{c + L * math.sin(a):.1f}" stroke="#fff" stroke-width="{size * 0.075:.1f}" stroke-linecap="round"/>')
+    return f'<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}">' + "".join(out) + "</svg>"
+add({"type": "tile", "g": "intro", "t": 0, "end": T(4.63), "html": spark(), "bg": "#d97757", "fit": "full", "w": 170, "pos": [540, 600], "exit": "cut", "sfx": False})
 add({"type": "btext", "g": "intro", "t": T(2.02), "end": T(4.63), "y": 700, "exit": "cut", "sfx": False, "lines": [
     {"words": W(("Этот", 2.02), ("ролик", 2.38)), "size": 124, "weight": 700, "ls": -0.04, "step": 0.045}]})
 add({"type": "pill", "g": "intro", "t": T(2.74), "end": T(4.63), "text": "смонтировал", "size": 42, "pos": [540, 850], "exit": "cut", "sfx": False})
@@ -37,7 +44,7 @@ add({"type": "btext", "t": T(4.68), "end": T(10.10), "y": 760, "move": [[T(6.25)
     {"words": W(("Монтажёр", 4.68), ("взял", 5.44), ("бы", 5.76)), "size": 104, "weight": 700, "ls": -0.04, "step": 0.04},
     {"mode": "word", "words": W(("за", 5.96), ("такое", 6.12), ("от", 6.60), ("пяти", 6.80), ("тысяч", 7.16)), "size": 60, "weight": 400, "ls": -0.02, "y": 118}]})
 add({"type": "wave", "t": T(6.80), "end": T(10.22), "rise": 0.9, "fall": 0.45, "h": 380, "sfx": False})
-add({"type": "numcard", "t": T(6.80), "end": T(10.22), "pos": [540, 905], "w": 600, "label": "МОНТАЖЁР", "num": "5 000 ₽", "numT": T(6.82), "step": 0.06,
+add({"type": "numcard", "t": T(6.80), "end": T(10.22), "pos": [540, 905], "w": 600, "label": "МОНТАЖЁР", "labelColor": "#2f6df2", "strikeColor": "#2f6df2", "num": "5 000 ₽", "numT": T(6.82), "step": 0.06,
      "strikeT": T(8.45), "strikeDur": 0.45, "swapT": T(9.43), "num2": "0 ₽", "size": 104, "size2": 170, "exit": "circle", "exitDur": 0.45})
 add({"type": "btext", "t": T(8.20), "end": T(10.10), "y": 1265, "exit": "blur", "exitDur": 0.33, "sfx": False, "lines": [
     {"mode": "word", "words": W(("Я", 8.20), ("заплатил", 8.40)), "size": 66, "weight": 400, "ls": -0.02}]})
@@ -46,9 +53,9 @@ sfx(4.68, "aplkey1", 0.6); sfx(6.80, "wbbounce", 0.7); sfx(7.16, "wbclick", 0.7)
 # ---------- 3. «Вот эта анимация — ИИ» — формы слетаются и собираются в объект ----------
 add({"type": "btext", "t": T(10.43), "end": T(13.03), "y": 760, "move": [[T(10.55), 330, 0.5]], "exit": "drop", "exitDur": 0.45, "sfx": False, "lines": [
     {"words": W(("Вот", 10.43), ("эта", 10.67), ("анимация", 10.99)), "size": 100, "weight": 700, "ls": -0.04, "step": 0.04}]})
-add({"type": "assemble", "t": T(10.95), "end": T(13.03), "pos": [540, 920], "w": 600, "pulseT": T(12.12), "exit": "drop", "exitDur": 0.45, "shapes": [
+add({"type": "assemble", "t": T(10.95), "end": T(13.03), "pos": [540, 920], "w": 600, "pulseT": T(12.12), "bg": "radial-gradient(circle at 50% 52%, rgba(47,123,255,.45) 0, rgba(47,123,255,.14) 34%, #ffffff 64%), #fff", "exit": "drop", "exitDur": 0.45, "shapes": [
     {"t": T(11.05), "w": 340, "h": 124, "r": 62, "bg": "#0c0c0e", "from": [-560, 80, -35, 0.6], "to": [0, 0]},
-    {"t": T(11.30), "w": 92, "bg": "#34c759", "from": [-110, -470, 0, 0.4], "to": [-102, 0], "css": "box-shadow:0 0 30px rgba(52,199,89,.7)"},
+    {"t": T(11.30), "w": 92, "bg": "#2f7bff", "from": [-110, -470, 0, 0.4], "to": [-102, 0], "css": "box-shadow:0 0 30px rgba(47,123,255,.7)"},
     {"t": T(11.48), "w": 40, "bg": "#ffffff", "from": [-102, 0, 0, 0], "to": [-102, 0]},
     {"t": T(11.55), "w": 18, "bg": "#0c0c0e", "from": [-102, 0, 0, 0], "to": [-102, 0]},
     {"t": T(11.40), "w": 120, "h": 16, "r": 8, "bg": "#ffffff", "from": [520, -60, 25, 0.5], "to": [38, -18]},
@@ -69,7 +76,12 @@ sfx(13.24, "wbslide", 0.55); sfx(13.78, "wbwhoosh", 0.8); sfx(14.27, "wbshimmer"
 add({"type": "btext", "t": T(15.71), "end": T(20.30), "y": 760, "move": [[T(15.85), 330, 0.55]], "exit": "left", "exitDur": 0.45, "sfx": False, "lines": [
     {"words": W(("Даже", 15.71), ("звук,", 16.19)), "size": 116, "weight": 700, "ls": -0.04, "step": 0.045},
     {"mode": "word", "words": W(("который", 16.63), ("ты", 17.03), ("сейчас", 17.23), ("слышишь —", 17.63)), "size": 58, "weight": 400, "ls": -0.02, "y": 128}]})
-add({"type": "eqtile", "t": T(16.19), "end": T(20.30), "pos": [540, 935], "w": 600, "burstT": T(16.19), "exit": "left", "exitDur": 0.45})
+fast = [(16.63, "fx5", .30), (16.86, "fx1", .30), (17.03, "fx3", .30), (17.23, "fx7", .32), (17.45, "fx1", .28), (17.63, "fx4", .32), (17.85, "fx5", .30),
+        (18.10, "fx2", .55), (18.22, "fx1", .5), (18.32, "fx7", .55), (18.44, "fx5", .5), (18.53, "fx3", .55), (18.64, "fx1", .5), (18.72, "fx6", .55),
+        (18.82, "fx7", .6), (18.90, "fx1", .55), (18.96, "fx5", .6), (19.02, "fx8", .7)]
+add({"type": "eqtile", "t": T(16.19), "end": T(20.30), "pos": [540, 935], "w": 600, "burstT": T(16.19), "exit": "left", "exitDur": 0.45,
+     "bg": "linear-gradient(160deg, #ffffff 10%, #e3ecff 55%, #b9cffb)", "bursts": [[T(t), 0.45 if t < 18.09 else 0.8] for t, _, _ in fast]})
+for t, s_, g in fast: sfx(t, s_, g)
 add({"type": "btext", "t": T(19.14), "end": T(20.30), "y": 1270, "exit": "left", "exitDur": 0.45, "sfx": False, "lines": [
     {"mode": "word", "words": W(("это", 19.14)), "size": 66, "weight": 400, "ls": -0.02}]})
 add({"type": "pill", "t": T(19.50), "end": T(20.30), "text": "ИИ", "size": 64, "pos": [540, 1360], "exit": "left", "exitDur": 0.45, "sfx": False})
@@ -79,29 +91,20 @@ sfx(15.71, "aplkey1", 0.6); sfx(16.19, "tagpop", 0.8); sfx(19.50, "wbpop", 0.85)
 add({"type": "btext", "t": T(21.00), "end": T(24.49), "y": 330, "exit": "drop", "exitDur": 0.45, "sfx": False, "lines": [
     {"words": W(("Единственное,", 21.00)), "size": 100, "weight": 700, "ls": -0.04, "step": 0.035},
     {"mode": "word", "words": W(("что", 22.15), ("здесь", 22.28), ("моё —", 22.68)), "size": 64, "weight": 400, "ls": -0.02, "y": 118}]})
-add({"type": "vcard", "t": T(20.90), "end": T(24.49), "pos": [540, 910], "w": 900, "h": 320, "exit": "drop", "exitDur": 0.45})
+add({"type": "vcard", "t": T(20.90), "end": T(24.49), "pos": [540, 910], "w": 900, "h": 320, "dot": "#2f6df2", "exit": "drop", "exitDur": 0.45})
 add({"type": "select", "t": T(23.46), "end": T(24.49), "text": "голос", "size": 100, "step": 0.06, "pos": [540, 1270], "exit": "drop", "exitDur": 0.45, "sfx": False})
 sfx(21.00, "aplkey1", 0.6); sfx(20.90, "wbbounce", 0.45); sfx(23.46, "wbselect", 0.85); sfx(24.04, "wbwhoosh", 0.75)
 
 # ---------- 7. «Всё это — один промпт…» — смена виджета на каждом ударном слоге ----------
-cuts = [24.80, 25.08, 25.67, 26.13, 27.13, 27.74, 28.34, 29.00, 29.80, 30.10, 30.33, 31.02, 31.85, 32.22]
-pics = [("Weather Large.png", "linear-gradient(160deg,#ffffff,#d8e6ff 55%,#8fb4ff)"),
-        ("icon_photos.png|46", "linear-gradient(160deg,#ffffff,#ffe6ef 55%,#ffc2d6)"),
-        ("Calendar small.png", "linear-gradient(160deg,#ffffff,#ffe8e6 55%,#ffbdb6)"),
-        ("icon_shortcuts.png|46", "linear-gradient(160deg,#ffffff,#e9e4ff 55%,#c2b4ff)"),
-        ("MusicPlayer.jpg", "linear-gradient(160deg,#ffffff,#ece9f6 55%,#cfc6ea)"),
-        ("FaceID3.png", "linear-gradient(160deg,#ffffff,#ecebef 60%,#d3cddd)"),
-        ("On.png", "linear-gradient(160deg,#ffffff,#e3f8e8 55%,#a8e8b8)"),
-        ("Battery10.png", "linear-gradient(160deg,#ffffff,#e3f8e8 55%,#a8e8b8)"),
-        ("icon_appstore.png|46", "linear-gradient(160deg,#ffffff,#dde9ff 55%,#9cc0ff)"),
-        ("Keyboard1.png", "linear-gradient(160deg,#ffffff,#eeeef3 60%,#d4d4dc)"),
-        ("icon_facetime.png|46", "linear-gradient(160deg,#ffffff,#e3f8e8 55%,#a8e8b8)"),
-        ("Photos Large.png", "linear-gradient(160deg,#ffffff,#fff0e0 55%,#ffd2a6)"),
-        ("Volume.jpg", "linear-gradient(160deg,#ffffff,#ffe6ef 55%,#f5c4d4)"),
-        ("icon_calendar.png|46", "linear-gradient(160deg,#ffffff,#ffe8e6 55%,#ffbdb6)")]
-add({"type": "wave", "t": T(24.75), "end": T(33.06), "rise": 0.9, "fall": 0.45, "h": 340, "sfx": False})
-add({"type": "tile", "t": T(cuts[0]), "end": T(33.06), "pos": [540, 985], "w": 600, "img": UI + pics[0][0], "bg": pics[0][1],
-     "swap": [[T(c), UI + p, bg] for c, (p, bg) in zip(cuts[1:], pics[1:])], "exit": "circle", "exitDur": 0.45, "sfx": False})
+add({"type": "wave", "t": T(24.75), "end": T(33.06), "rise": 0.9, "fall": 0.45, "h": 300, "sfx": False})
+add({"type": "prompt", "t": T(24.85), "end": T(29.80), "pos": [540, 840], "w": 900, "h": 300, "size": 44,
+     "text": "Смонтируй ролик под мой голос в стиле Apple: текст по словам, переходы, звуки",
+     "typeT": T(24.95), "typeEnd": T(26.00), "sendT": T(26.04), "exit": "up", "exitDur": 0.35,
+     "chips": [{"text": "голос", "t": T(27.04), "checkT": T(28.40)}, {"text": "стиль", "t": T(27.25), "checkT": T(28.58)},
+               {"text": "звуки", "t": T(27.50), "checkT": T(28.76)}, {"text": "переходы", "t": T(27.75), "checkT": T(28.94)}]})
+TH = "file://" + D + "/white/thumbs/"
+add({"type": "reels", "t": T(29.90), "end": T(33.06), "pos": [540, 1000], "exit": "left", "exitDur": 0.45,
+     "items": [{"img": TH + f"r{i}.jpg", "t": T(t)} for i, t in enumerate([29.94, 30.34, 30.62, 31.02])]})
 add({"type": "btext", "t": T(24.80), "end": T(26.95), "y": 330, "exit": "blur", "exitDur": 0.25, "sfx": False, "lines": [
     {"words": W(("Всё", 24.80), ("это —", 25.12), ("один", 25.64)), "size": 96, "weight": 700, "ls": -0.04, "step": 0.04}]})
 add({"type": "pill", "t": T(26.04), "end": T(26.95), "text": "промпт", "size": 54, "pos": [540, 452], "exit": "blur", "exitDur": 0.25, "sfx": False})
@@ -113,7 +116,12 @@ add({"type": "btext", "t": T(29.45), "end": T(31.70), "y": 300, "exit": "blur", 
     {"words": W(("и", 29.45), ("теперь", 29.54), ("делаю", 29.94), ("так", 30.34)), "size": 84, "weight": 700, "ls": -0.04, "step": 0.035},
     {"words": W(("любые", 30.62), ("ролики.", 31.02)), "size": 84, "weight": 700, "ls": -0.04, "step": 0.035, "y": 100}]})
 add({"type": "select", "t": T(31.70), "end": T(33.06), "text": "Хочешь так же?", "size": 82, "step": 0.045, "pos": [540, 380], "exit": "erase", "eraseDur": 0.4, "sfx": False})
-sfx(24.80, "wbbounce", 0.65); sfx(26.04, "wbpop", 0.85); sfx(31.70, "wbselect", 0.75); sfx(32.61, "wbwhoosh", 0.8)
+sfx(24.85, "wbbounce", 0.65); sfx(26.04, "wbclick", 0.85); sfx(26.10, "wbpop", 0.6)
+for t in (27.04, 27.25, 27.50, 27.75): sfx(t, "fx1", 0.45)
+for t in (28.40, 28.58, 28.76, 28.94): sfx(t, "fx5", 0.5)
+sfx(29.45, "wbslide", 0.5)
+for t in (29.94, 30.34, 30.62, 31.02): sfx(t, "wbbounce", 0.45)
+sfx(31.70, "wbselect", 0.75); sfx(32.61, "wbwhoosh", 0.8)
 
 # ---------- 8. «Напиши ЭППЛ в комментариях — я пришлю тебе, как это повторить» ----------
 add({"type": "btext", "t": T(33.08), "end": T(37.91), "y": 420, "exit": "blur", "exitDur": 0.5, "sfx": False, "lines": [
@@ -126,8 +134,8 @@ add({"type": "dock2", "t": T(35.13), "end": T(37.91), "pos": [540, 1250], "img":
      "swap": {"t": T(36.37), "words": W(("как", 36.37), ("это", 36.65), ("повторить", 36.89)), "color": "#1f6ef5"}, "scale": 1.5, "exit": "blur", "exitDur": 0.5})
 sfx(33.08, "aplkey1", 0.55); sfx(33.56, "tagpop", 0.9); sfx(35.13, "wbbounce", 0.65); sfx(36.37, "wbclick", 0.8); sfx(37.41, "wbslide", 0.5)
 
-pauses = [[T(a), T(b)] for a, b in [(12.58, 13.32), (18.09, 19.14), (19.85, 21.00), (24.04, 24.80), (37.41, OFF + DUR)]]
-cues = {"fps": 60, "mblur": 5, "shutter": 0.5, "duration": round(DUR, 4), "anchor": None, "typeEvery": 99,
+pauses = [[T(a), T(b)] for a, b in [(12.58, 13.32), (19.85, 21.00), (24.04, 24.80), (37.41, OFF + DUR)]]
+cues = {"wbColor": "#3d7ef5", "wbPill": ["#6aa6ff", "#2f6df2"], "fps": 60, "mblur": 5, "shutter": 0.5, "duration": round(DUR, 4), "anchor": None, "typeEvery": 99,
         "env": [round(float(v), 3) for v in env], "envFps": 60, "pauses": pauses, "items": items}
 json.dump(cues, open(f"{D}/white/cues.json", "w"), ensure_ascii=False)
 print(f"длина {DUR:.3f} с, элементов {len(items)}, звуков {sum(1 for i in items if i['type'] == 'sfx')}")

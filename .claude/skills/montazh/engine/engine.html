@@ -635,6 +635,7 @@ MAKE.rain = (it) => {
 // плашки-теги, плитки-виджеты с баунсом, iOS-выделение текста, печать списка, тёмная кнопка с папкой,
 // стеклянный шар (делает compose.py по fx.ball), белый круг-шторка.
 const WB_ORANGE = "#f06b4e";
+const wbColor = () => (D && D.wbColor) || WB_ORANGE;
 const bounce = (k) => { k = clamp(k); return 1 - Math.exp(-7 * k) * Math.cos(6 * k); };            // мягкая пружина Apple: перелёт ~2.5 %
 // сдвиги блоков: плавный разгон и торможение (без рывка в первом кадре — иначе при размытии в движении текст «полосит»)
 const moveE = (k) => { k = clamp(k); return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; };
@@ -686,7 +687,7 @@ MAKE.wave = (it) => {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("width", "1080"); svg.setAttribute("height", "1920"); svg.style.filter = `blur(${it.blur ?? 42}px)`;
   const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute("fill", it.color || WB_ORANGE); svg.appendChild(path); box.appendChild(svg);
+  path.setAttribute("fill", it.color || wbColor()); svg.appendChild(path); box.appendChild(svg);
   const top = it.from === "top", H0 = it.h ?? 560;
   const R = rng(it.seed ?? 5);
   // неровный «рваный» край, как в референсе: несколько крупных волн + мелкие частые бугры
@@ -1030,13 +1031,15 @@ MAKE.assemble = (it) => {
 MAKE.eqtile = (it) => {
   const w = it.w ?? 600, h = it.h ?? w;
   const tl = tileShell(it, w, h, it.bg || "linear-gradient(160deg, #ffffff 10%, #ece9f6 55%, #cfc6ea)");
-  const rings = Array.from({ length: 4 }, () => { const r = el("div", "abs", tl); r.style.cssText += `left:${w / 2}px;top:${h / 2}px;border-radius:50%;border:5px solid ${WB_ORANGE};`; return r; });
+  const rings = Array.from({ length: 4 }, () => { const r = el("div", "abs", tl); r.style.cssText += `left:${w / 2}px;top:${h / 2}px;border-radius:50%;border:5px solid ${wbColor()};`; return r; });
   const bars = el("div", "abs", tl); bars.style.cssText += `left:0;top:${h / 2}px;width:${w}px;height:0;display:flex;justify-content:center;align-items:center;gap:12px;`;
   const N = it.n ?? 13; const bs = Array.from({ length: N }, () => { const b = el("div", "", bars); b.style.cssText = "width:16px;height:16px;border-radius:8px;background:#0b0b0d;flex:none;"; return b; });
   return (t) => {
     if (t < it.t || t > it.end) { tl.style.display = "none"; return; }
-    const burst = it.burstT != null && t >= it.burstT ? Math.exp(-(t - it.burstT) * 3.5) : 0;
-    const tf = tilePlace(tl, it, t, w, h, 1 + 0.05 * burst);
+    let burst = it.burstT != null && t >= it.burstT ? Math.exp(-(t - it.burstT) * 3.5) : 0;
+    for (const [bt, ba] of it.bursts || []) if (t >= bt) burst += (ba ?? 0.7) * Math.exp(-(t - bt) * 7);
+    burst = Math.min(burst, 1.4);
+    const tf = tilePlace(tl, it, t, w, h, 1 + 0.05 * Math.min(burst, 1));
     const quiet = 1 - pauseK(t);
     rings.forEach((r, i) => { const ph = ((t - it.t) * 0.7 + i / rings.length) % 1, rad = 40 + ph * (w * 0.62);
       r.style.width = r.style.height = 2 * rad + "px"; r.style.marginLeft = r.style.marginTop = -rad + "px";
@@ -1050,7 +1053,7 @@ MAKE.eqtile = (it) => {
 MAKE.vcard = (it) => {
   const w = it.w ?? 900, h = it.h ?? 320;
   const tl = tileShell(it, w, h, it.bg || "#ffffff"); tl.style.borderRadius = "64px";
-  const dot = el("div", "abs", tl); dot.style.cssText += "left:46px;top:44px;width:20px;height:20px;border-radius:50%;background:#ff3b30;";
+  const dot = el("div", "abs", tl); dot.style.cssText += `left:46px;top:44px;width:20px;height:20px;border-radius:50%;background:${it.dot || "#ff3b30"};`;
   const tm = el("div", "abs wbf", tl); tm.style.cssText += "left:78px;top:34px;font-size:30px;font-weight:500;color:#8e8e93;";
   const base = el("div", "abs", tl); base.style.cssText += `left:70px;top:${h / 2 + 18}px;width:${w - 140}px;height:2px;background:#e5e5ea;`;
   const wave = el("div", "abs", tl); wave.style.cssText += `left:0;top:${h / 2 - 82}px;width:${w}px;height:200px;`;
@@ -1103,10 +1106,72 @@ MAKE.dock2 = (it) => {
   };
 };
 
+
+// поле ввода промпта: текст печатается, мигает курсор, синяя кнопка «отправить»; ниже чипы [{text, t, checkT}]
+MAKE.prompt = (it) => {
+  const w = it.w ?? 900, h = it.h ?? 300, acc = it.color || "#2f6df2";
+  const box = el("div", "abs");
+  const card = el("div", "abs wbf", box); card.style.cssText += `width:${w}px;height:${h}px;border-radius:52px;background:#fff;box-shadow:0 26px 60px rgba(30,40,80,.14),0 4px 12px rgba(30,40,80,.06);`;
+  const ta = el("div", "abs", card); ta.style.cssText += `left:48px;top:44px;width:${w - 96}px;font-size:${it.size ?? 44}px;font-weight:400;line-height:1.25;letter-spacing:-0.01em;color:#0b0b0d;`;
+  const ph = el("div", "abs", card, esc(it.placeholder || "Опиши ролик…")); ph.style.cssText += `left:48px;top:44px;font-size:${it.size ?? 44}px;color:#b4b4ba;`;
+  const chars = [...it.text].map((c) => el("span", "", ta, c === " " ? " " : esc(c)));
+  const caret = el("span", "", ta, "|"); caret.style.color = acc; caret.style.fontWeight = 300;
+  const send = el("div", "abs", card, `<svg width="44" height="44" viewBox="0 0 44 44"><path d="M22 34 V11 M11 21 L22 10 L33 21" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
+  send.style.cssText += `left:${w - 110}px;top:${h - 108}px;width:80px;height:80px;border-radius:50%;background:${acc};display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px ${acc}55;`;
+  const plus = el("div", "abs", card, `<svg width="36" height="36" viewBox="0 0 36 36"><path d="M18 8 V28 M8 18 H28" stroke="#8e8e93" stroke-width="4" stroke-linecap="round"/></svg>`);
+  plus.style.cssText += `left:30px;top:${h - 106}px;width:76px;height:76px;border-radius:50%;background:#f2f2f7;display:flex;align-items:center;justify-content:center;`;
+  const row = el("div", "abs wbf", box); row.style.cssText += `left:0;top:${h + 40}px;width:${w}px;display:flex;flex-wrap:wrap;justify-content:center;gap:18px;`;
+  const chips = (it.chips || []).map((c) => { const d = el("div", "", row); d.style.cssText = `padding:16px 30px 18px;border-radius:999px;background:#fff;border:2px solid #dbe5fb;font-size:38px;font-weight:600;color:#0b0b0d;white-space:nowrap;box-shadow:0 8px 20px rgba(30,40,80,.08);`;
+    const ck = el("span", "", d, "✓ "); ck.style.color = "#fff"; const tx = el("span", "", d, esc(c.text)); return { d, ck, tx, c }; });
+  return (t) => {
+    if (t < it.t || t > it.end) { box.style.display = "none"; return; }
+    box.style.display = ""; box.style.opacity = 1; box.style.filter = ""; box.style.clipPath = "";
+    let [x, y] = it.pos || [540, 860];
+    for (const [mt, my, md] of it.move || []) y = lerp(y, my, moveE((t - mt) / (md ?? 0.8)));
+    const s = lerp(0.6, 1, bounce((t - it.t) / 0.7));
+    const n = Math.floor(clamp((t - it.typeT) / Math.max(0.01, it.typeEnd - it.typeT)) * chars.length + (t >= it.typeT ? 1 : 0));
+    chars.forEach((c, i) => { c.style.opacity = i < n ? 1 : 0; c.style.display = i < n ? "" : "none"; });
+    ph.style.opacity = n > 0 ? 0 : 1;
+    caret.style.opacity = t < (it.sendT ?? 1e9) && Math.floor(t * 3) % 2 === 0 ? 1 : 0;
+    const ks = it.sendT != null ? clamp((t - it.sendT) / 0.4) : 0;
+    send.style.transform = `scale(${(1 + 0.25 * Math.sin(Math.PI * ks)).toFixed(3)})`;
+    chips.forEach(({ d, ck, tx, c }) => { const k = (t - c.t) / 0.6, b = bounce(k);
+      d.style.opacity = k <= 0 ? 0 : clamp(k * 4); d.style.transform = `translateY(${((1 - b) * 40).toFixed(1)}px) scale(${lerp(0.4, 1, b).toFixed(3)})`;
+      const on = c.checkT != null && t >= c.checkT, kc = on ? clamp((t - c.checkT) / 0.25) : 0;
+      d.style.background = on ? acc : "#fff"; d.style.borderColor = on ? acc : "#dbe5fb"; tx.style.color = on ? "#fff" : "#0b0b0d";
+      ck.style.display = on ? "" : "none"; if (on) d.style.transform += ` scale(${(1 + 0.12 * Math.sin(Math.PI * kc)).toFixed(3)})`; });
+    const tf = `translate(${(x - w / 2).toFixed(1)}px, ${(y - h / 2).toFixed(1)}px) scale(${s.toFixed(4)})`;
+    box.style.left = "0px"; box.style.top = "0px"; box.style.transformOrigin = `${w / 2}px ${h / 2}px`; box.style.transform = tf; box.style.opacity = clamp((t - it.t) / 0.1);
+    wbExit(box, t, it, tf);
+  };
+};
+// ряд «роликов»: вертикальные карточки-превью вылетают снизу по очереди и мягко покачиваются; items [{img, t}]
+MAKE.reels = (it) => {
+  const cw = it.cw ?? 230, ch = it.ch ?? 410, gap = it.gap ?? 26, N = it.items.length, W = N * cw + (N - 1) * gap;
+  const box = el("div", "abs");
+  const cards = it.items.map((c, i) => { const d = el("div", "abs", box); d.style.cssText += `left:${i * (cw + gap)}px;top:0;width:${cw}px;height:${ch}px;border-radius:38px;overflow:hidden;background:#fff;border:7px solid #fff;box-shadow:0 26px 50px rgba(30,40,80,.20);`;
+    const im = el("img", "", d); im.src = c.img; im.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;border-radius:30px;"; return { d, c, i }; });
+  return (t) => {
+    if (t < it.t || t > it.end) { box.style.display = "none"; return; }
+    box.style.display = ""; box.style.opacity = 1; box.style.filter = ""; box.style.clipPath = "";
+    const [x, y] = it.pos || [540, 1000];
+    for (const { d, c, i } of cards) { const k = (t - c.t) / 0.7, b = bounce(k), rot = (i - (N - 1) / 2) * 4;
+      d.style.opacity = k <= 0 ? 0 : clamp(k * 4);
+      d.style.transform = `translateY(${((1 - b) * 320 + Math.sin(t * 1.6 + i) * 8).toFixed(1)}px) rotate(${lerp(rot * 3, rot, b).toFixed(2)}deg) scale(${lerp(0.6, 1, b).toFixed(3)})`; }
+    const tf = `translate(${(x - W / 2).toFixed(1)}px, ${(y - ch / 2).toFixed(1)}px)`;
+    box.style.left = "0px"; box.style.top = "0px"; box.style.transform = tf;
+    wbExit(box, t, it, tf);
+  };
+};
 let GROUPS = {};
 function build(data) {
   D = data; EV = []; FILT = 0; GROUPS = {};
   root = document.getElementById("root"); root.innerHTML = "";
+  if (data.wbPill) {                       // своя гамма плашек (например бело-синяя)
+    const st = document.createElement("style");
+    st.textContent = `.pill { background: linear-gradient(180deg, ${data.wbPill[0]}, ${data.wbPill[1]}); box-shadow: 0 8px 22px ${data.wbPill[1]}55, inset 0 1px 0 rgba(255,255,255,.35); }`;
+    document.head.appendChild(st);
+  }
   if (data.textShadow) {                   // светлое видео (небо, день): тень у текста плотнее — читается на любом фоне
     const st = document.createElement("style");
     st.textContent = `.shadowed { text-shadow: ${data.textShadow === true ? "0 2px 22px rgba(0,0,0,.55), 0 1px 4px rgba(0,0,0,.45)" : data.textShadow}; }`;
