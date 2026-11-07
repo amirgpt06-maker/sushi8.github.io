@@ -923,14 +923,14 @@ MAKE.ball = (it) => {
   if (it.pop) return (t, fx) => {
     // капля как в референсе: выныривает точкой чуть ниже центра фразы, с пружиной надувается и всплывает к центру;
     // форма живая (резина/желе): сплющивается-вытягивается, по краю волнится, донышко приплюснуто как у капли на стекле;
-    // с frostAt мутнеет до голубо-сиреневого и вытягивается в наклонённое «яйцо»; с whiteAt белеет, раздувается, тянется и тает
+    // с frostAt мутнеет до голубо-сиреневого и вытягивается в наклонённое «яйцо»; с whiteAt белеет и раздувается на весь экран (следующая сцена проявляется внутри), тает
     if (t < it.t || t > it.end) return;
     const u = t - it.t, [x0, y0] = it.pos || [540, 820], R = it.r ?? 240, J = it.jelly ?? 1, S = Math.sin, TAU = 2 * Math.PI;
     const wAt = it.whiteAt ?? it.end - 0.35, fAt = it.frostAt ?? wAt - 0.3;
     const f = eIO((t - fAt) / (wAt - fAt)), w = clamp((t - wAt) / (it.end - wAt));
     let r = R * (1 - Math.exp(-6.5 * u) * Math.cos(10 * u));
     r *= 1 - 0.10 * f;
-    r = lerp(r, it.grow ?? 560, eIO(Math.min(1, w * 1.25)));
+    r = lerp(r, it.grow ?? 1550, eIO(Math.min(1, w * 1.25)));   // в конце раздувается на весь экран
     // мода 2 — сплющивание: сильный перелёт при появлении + постоянное «дыхание»; в запотевании — яйцо вверх; в белой — тянется
     let sq = J * (0.22 * Math.exp(-4 * u) * S(12 * u + 0.6) + 0.05 * S(TAU * 2.1 * u) + 0.02 * S(TAU * 3.3 * u + 1));
     sq = lerp(sq, -0.14 + 0.035 * S(TAU * 1.8 * u), f);
@@ -945,7 +945,7 @@ MAKE.ball = (it) => {
     const egg = 0.08 * f * (1 - 0.5 * w);                      // низ шире верха
     const x = x0 + 14 * f + 30 * w, y = y0 + (it.rise ?? 70) * (1 - eIO(u / 0.45)) - 20 * f - 36 * w;
     const fo = it.fadeOut ?? 0.25, a = clamp(u / 0.05) * (1 - eIO((t - (it.end - fo)) / fo));
-    fx.ball = [x, y, Math.max(0, r), a, f, sq, eIO(w * 1.4), rot, m3, 0.9 * u, m4, -0.7 * u, flat, egg];
+    fx.ball = [x, y, Math.max(0, r), a, f, sq, (it.whiteMax ?? 0.8) * eIO(w * 1.4), rot, m3, 0.9 * u, m4, -0.7 * u, flat, egg];
   };
   return (t, fx) => {
     if (t < it.t || t > it.end) return;
