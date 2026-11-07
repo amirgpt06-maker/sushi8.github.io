@@ -53,7 +53,7 @@ sfx(4.68, "aplkey1", 0.6); sfx(6.80, "wbbounce", 0.7); sfx(7.16, "wbclick", 0.7)
 # ---------- 3. «Вот эта анимация — ИИ» — формы слетаются и собираются в объект ----------
 add({"type": "btext", "t": T(10.43), "end": T(13.03), "y": 760, "move": [[T(10.55), 330, 0.5]], "exit": "drop", "exitDur": 0.45, "sfx": False, "lines": [
     {"words": W(("Вот", 10.43), ("эта", 10.67), ("анимация", 10.99)), "size": 100, "weight": 700, "ls": -0.04, "step": 0.04}]})
-add({"type": "follow", "t": T(10.95), "end": T(13.03), "pos": [540, 920], "w": 600, "avatar": "file://" + D + "/white/thumbs/avatar.png",
+add({"type": "follow", "t": T(10.95), "end": T(13.03), "pos": [540, 920], "w": 600, "avatarEmoji": "👤",
      "name": "saidulaev.vibe", "sub": "Амирхан | Вайбкодинг", "btnT": T(11.05), "cardT": T(11.40), "pressT": T(12.12), "exit": "drop", "exitDur": 0.45})
 add({"type": "pill", "t": T(12.12), "end": T(13.03), "text": "ИИ", "size": 64, "pos": [540, 1260], "exit": "drop", "exitDur": 0.45, "sfx": False})
 sfx(10.43, "aplkey1", 0.6); sfx(10.95, "wbbounce", 0.6); sfx(11.05, "wbpop", 0.5); sfx(11.40, "wbbounce", 0.45); sfx(12.12, "wbclick", 0.9); sfx(12.18, "wbpop", 0.6); sfx(12.58, "wbwhoosh", 0.7)
