@@ -646,6 +646,7 @@ function wbExit(node, t, it, baseTf = "") {
   const e = eIn(k);
   if (it.exit === "up") { node.style.transform = baseTf + ` translateY(${(-700 * e).toFixed(1)}px)`; node.style.filter = `blur(${(e * 14).toFixed(1)}px)`; }
   else if (it.exit === "down") { node.style.transform = baseTf + ` translateY(${(700 * e).toFixed(1)}px)`; node.style.filter = `blur(${(e * 14).toFixed(1)}px)`; }
+  else if (it.exit === "left") { node.style.transform = baseTf + ` translateX(${(-1250 * e).toFixed(1)}px)`; node.style.filter = `blur(${(e * 12).toFixed(1)}px)`; }
   else if (it.exit === "drop") { node.style.transform = baseTf + ` translateY(${(1000 * e).toFixed(1)}px) rotate(${(5 * e).toFixed(2)}deg)`; node.style.filter = `blur(${(e * 10).toFixed(1)}px)`; }
   else if (it.exit === "circle") { node.style.clipPath = `circle(${(75 * (1 - e)).toFixed(1)}% at 50% 50%)`; node.style.transform = baseTf + ` scale(${(1 - 0.35 * e).toFixed(3)})`; }
   else if (it.exit !== "cut") { node.style.opacity = 1 - e; node.style.filter = `blur(${(e * 12).toFixed(1)}px)`; }
@@ -720,12 +721,20 @@ MAKE.btext = (it) => {
     let parts;
     if (mode === "slide" || mode === "word") parts = (L.words || L.text.split(" ").map((w, i) => [w, L.t + i * (L.wstep ?? 0.24)])).map(([w, wt], i, a) => ({ s: el("span", "wbw", d, esc(w) + (i < a.length - 1 ? " " : "")), t: wt }));
     else if (mode === "none") parts = [{ s: el("span", "wbw", d, esc(L.text)), t: L.t }];
+    else if (L.words) {                      // bounce по словам: [[слово, время], …]
+      parts = [];
+      L.words.forEach(([w, wt], wi, a) => {
+        [...w].forEach((c, j) => parts.push({ s: el("span", "wbch", d, esc(c)), t: wt + j * step, wi, j }));
+        if (wi < a.length - 1) parts.push({ s: el("span", "wbch", d, "&nbsp;"), t: wt, space: true });
+      });
+    }
     else parts = [...L.text].map((c, i) => ({ s: el("span", "wbch", d, esc(c)), t: L.t + i * step }));
     lines.push({ L, d, mode, parts, y: L.y ?? 0 });
     if (it.sfx !== false && L.sfx !== false) {
       if (mode === "slide") parts.forEach((p, i) => EV.push({ t: p.t, s: i ? "wbslide" : "wbwhoosh", g: i ? 0.7 : 0.6, v: 1 }));
       else if (mode === "word") parts.forEach((p) => EV.push({ t: p.t, s: "aplkey1", g: 0.6, v: 1 }));
       else if (mode === "none") EV.push({ t: L.t, s: "wbwhoosh", g: 0.5, v: 1 });
+      else if (L.words) parts.forEach((p) => { if (!p.space && p.j % (D.typeEvery ?? 3) === 0) EV.push({ t: p.t, s: "aplkey" + (1 + (p.j % 4)), g: 0.8, v: 1 }); });
       else parts.forEach((p, i) => { if (typeHit(L.text, i)) EV.push({ t: p.t, s: "aplkey" + (1 + (i % 4)), g: mode === "type" ? 0.6 : 0.8, v: 1 }); });
     }
   }
@@ -797,13 +806,16 @@ MAKE.tile = (it) => {
   const tl = el("div", "tile"); tl.style.width = w + "px"; tl.style.height = h + "px";
   if (it.fit === "full") { tl.style.borderRadius = (w * 0.225) + "px"; tl.style.boxShadow = "0 18px 40px rgba(30,30,60,.18), 0 4px 10px rgba(30,30,60,.08)"; }
   tl.style.background = it.bg || "linear-gradient(160deg, #ffffff, #eeeef3)";
-  const contents = [[it.t, it.img, it.emoji, it.html], ...(it.swap || []).map(([st, v]) => [st, /\.(png|jpe?g|webp)$/i.test(v) ? v : null, /\.(png|jpe?g|webp)$/i.test(v) ? null : v, null])];
-  const ins = contents.map(([st, img, emo, html]) => {
+  const isImg = (v) => /\.(png|jpe?g|webp)(\|\d+)?$/i.test(String(v || ""));
+  const contents = [[it.t, it.img, it.emoji, it.html, it.bg], ...(it.swap || []).map(([st, v, bg]) => [st, isImg(v) ? v : null, !isImg(v) && !String(v).startsWith("<") ? v : null, String(v).startsWith("<") ? v : null, bg])];
+  const ins = contents.map(([st, img, emo, html, bg]) => {
     const d = el("div", "in", tl);
-    if (img) { const im = el("img", "", d); im.src = img; if (it.fit === "full") { im.style.maxWidth = "100%"; im.style.maxHeight = "100%"; im.style.width = "100%"; } }
+    if (img) { const [src, pct] = String(img).split("|"); const im = el("img", "", d); im.src = src;
+      if (pct) { im.style.maxWidth = pct + "%"; im.style.maxHeight = pct + "%"; im.style.borderRadius = "22%"; im.style.boxShadow = "0 14px 34px rgba(30,30,60,.18)"; }
+      if (it.fit === "full") { im.style.maxWidth = "100%"; im.style.maxHeight = "100%"; im.style.width = "100%"; } }
     else if (html) d.innerHTML = html;
     else { const e = el("div", "emo", d, emo || "✨"); e.style.fontSize = (it.esize ?? Math.round(w * 0.42)) + "px"; }
-    return { d, st };
+    return { d, st, bg };
   });
   if (it.sfx !== false) { EV.push({ t: it.t, s: "wbbounce", g: 0.8, v: 1 }); for (const { st } of ins.slice(1)) EV.push({ t: st, s: "wbclick", g: 0.7, v: 1 }); }
   return (t) => {
@@ -813,6 +825,7 @@ MAKE.tile = (it) => {
     for (const [mt, my, md] of it.move || []) y = lerp(y, my, moveE((t - mt) / (md ?? 0.8)));
     let s = lerp(0.6, 1, bounce((t - it.t) / 0.7));
     let cur = 0; ins.forEach((c, i) => { if (t >= c.st) cur = i; });
+    if (ins[cur].bg) tl.style.background = ins[cur].bg;
     ins.forEach((c, i) => {
       const k = i === cur ? clamp((t - c.st) / 0.3) : 0;
       c.d.style.opacity = i === cur ? 1 : 0;
@@ -837,7 +850,9 @@ MAKE.select = (it) => {
   return (t) => {
     if (t < it.t || t > it.end) { box.style.display = "none"; return; }
     box.style.display = ""; box.style.opacity = 1; box.style.filter = ""; box.style.clipPath = "";
-    chars.forEach((c, i) => { const k = clamp((t - it.t - 0.1 - i * step) / 0.25); c.style.opacity = k; c.style.transform = `scale(${lerp(0.5, 1, bounce(k)).toFixed(3)})`; });
+    const ed = it.eraseDur ?? 0.35, ke = it.exit === "erase" ? clamp((t - (it.end - ed)) / ed) : 0;
+    const keep = Math.ceil(chars.length * (1 - ke));
+    chars.forEach((c, i) => { const k = clamp((t - it.t - 0.1 - i * step) / 0.25) * (i < keep ? 1 : 0); c.style.opacity = k; c.style.transform = `scale(${lerp(0.5, 1, bounce(k)).toFixed(3)})`; });
     const full = tx.getBoundingClientRect().width;
     let shown = 0; chars.forEach((c) => { if (+c.style.opacity > 0) shown = c.offsetLeft + c.offsetWidth; });
     let [x, y] = it.pos || [540, 820];
@@ -848,6 +863,7 @@ MAKE.select = (it) => {
     sel.style.left = x0 + "px"; sel.style.top = (y - hgt / 2) + "px"; sel.style.width = wsel + "px"; sel.style.height = hgt + "px";
     ha.style.left = (x0 - 2) + "px"; ha.style.top = (y - hgt / 2) + "px"; ha.style.height = hgt + "px";
     hb.style.left = (x0 + wsel - 2) + "px"; hb.style.top = (y - hgt / 2) + "px"; hb.style.height = hgt + "px";
+    if (it.exit === "erase") { box.style.opacity = keep > 0 ? 1 : 1 - clamp((t - (it.end - 0.06)) / 0.06); return; }
     wbExit(box, t, it);
   };
 };
@@ -905,11 +921,12 @@ MAKE.ball = (it) => {
   if (it.sfx !== false) { EV.push({ t: it.t, s: "wbwhoosh", g: 0.8, v: 1 }); if (it.frostAt) EV.push({ t: it.frostAt, s: "wbshimmer", g: 0.7, v: 1 }); }
   return (t, fx) => {
     if (t < it.t || t > it.end) return;
-    const k = eIO((t - it.t) / ((it.frostAt ?? it.end) - it.t));
+    const fo = it.fadeOut ?? 0, full = it.end - fo;
+    const k = eIO((t - it.t) / ((it.frostAt ?? full) - it.t));
     const x = lerp(it.x0 ?? 900, it.x1 ?? 520, k), y = it.y ?? 820;
-    const f = it.frostAt ? clamp((t - it.frostAt) / (it.end - it.frostAt)) : 0;
-    const r = lerp(it.r0 ?? 150, it.r1 ?? 900, eIn(f));
-    const a = clamp((t - it.t) / 0.12);
+    const f = it.frostAt ? clamp((t - it.frostAt) / (full - it.frostAt)) : 0;
+    const r = lerp(it.r0 ?? 150, it.r1 ?? 900, fo ? eIO(f) : eIn(f));
+    const a = clamp((t - it.t) / 0.12) * (fo ? 1 - eIO((t - full) / fo) : 1);
     fx.ball = [x, y, r, a, clamp(f * 1.6)];
   };
 };
@@ -937,6 +954,152 @@ MAKE.handle = (it) => {
     d.style.display = ""; const b = bounce((t - it.t) / 0.5); const r = d.getBoundingClientRect();
     d.style.transform = `translate(${(540 - r.width / 2).toFixed(1)}px, ${(lerp(-80, it.y ?? 70, b)).toFixed(1)}px)`;
     d.style.opacity = 1 - exitK(t, it, 0.25);
+  };
+};
+
+// ===================== белый режим: элементы для роликов «под голос» =====================
+// огибающая голоса (cues: env, envFps) и длинные паузы (cues: pauses) — для волн и «визуальной паузы»
+function venv(t) { const E = D.env || []; const i = Math.round(t * (D.envFps || 60)); return E[Math.max(0, Math.min(E.length - 1, i))] || 0; }
+function pauseK(t) { for (const [a, b] of D.pauses || []) if (t > a && t < b) return clamp(Math.min(t - a, b - t) / 0.25); return 0; }
+// звук в точное время (роль из пака): {"type":"sfx","t":1.2,"s":"wbpop","g":0.8} — громкость относительно голоса
+MAKE.sfx = (it) => { EV.push({ t: it.t, s: it.s, g: it.g ?? 0.7, v: 1 }); return null; };
+function tileShell(it, w, h, bg) {
+  const tl = el("div", "tile"); tl.style.width = w + "px"; tl.style.height = h + "px"; tl.style.background = bg; return tl;
+}
+function tilePlace(tl, it, t, w, h, extraScale = 1) {
+  tl.style.display = ""; tl.style.opacity = 1; tl.style.filter = ""; tl.style.clipPath = "";
+  let [x, y] = it.pos || [540, 940];
+  for (const [mt, my, md] of it.move || []) y = lerp(y, my, moveE((t - mt) / (md ?? 0.8)));
+  const s = lerp(0.6, 1, bounce((t - it.t) / 0.7)) * extraScale;
+  const tf = `translate(${(x - w / 2).toFixed(1)}px, ${(y - h / 2).toFixed(1)}px) scale(${s.toFixed(4)})`;
+  tl.style.left = "0px"; tl.style.top = "0px"; tl.style.transform = tf; tl.style.opacity = clamp((t - it.t) / 0.1);
+  return tf;
+}
+// виджет с цифрой (как «2026 ЛИЧНЫЙ БРЕНД» в референсе): цифры печатаются, линия зачёркивает, число сменяется другим с пружиной
+MAKE.numcard = (it) => {
+  const w = it.w ?? 600, h = it.h ?? w;
+  const tl = tileShell(it, w, h, it.bg || "linear-gradient(150deg, #ffffff 8%, #d8e3fc 50%, #8fb0f7)");
+  const cw = Math.round(w * 0.76), ch = Math.round(h * 0.6);
+  const card = el("div", "abs", tl);
+  card.style.cssText += `left:${(w - cw) / 2}px;top:${(h - ch) / 2}px;width:${cw}px;height:${ch}px;border-radius:52px;background:#fff;box-shadow:0 18px 44px rgba(40,60,120,.16);`;
+  const lab = el("div", "abs wbf", card, esc(it.label || ""));
+  lab.style.cssText += `left:0;width:${cw}px;top:${Math.round(ch * 0.16)}px;text-align:center;font-size:${it.lsize ?? 30}px;font-weight:700;letter-spacing:.05em;color:${it.labelColor || "#e5483d"};`;
+  const mkNum = (txt, size) => { const n = el("div", "abs wbf", card); n.style.cssText += `left:0;width:${cw}px;top:${Math.round(ch * 0.56 - size * 0.5)}px;text-align:center;font-size:${size}px;font-weight:300;letter-spacing:-0.035em;white-space:nowrap;line-height:1;`;
+    return { n, cs: [...txt].map((c) => el("span", "wbch", n, c === " " ? "&nbsp;" : esc(c))) }; };
+  const A = mkNum(it.num, it.size ?? 104), B = it.num2 ? mkNum(it.num2, it.size2 ?? 160) : null;
+  const strike = el("div", "abs", card);
+  strike.style.cssText += `left:${cw * 0.09}px;width:${cw * 0.82}px;top:${Math.round(ch * 0.56 - 4)}px;height:9px;border-radius:5px;background:${it.strikeColor || "#e5483d"};transform-origin:0 50%;`;
+  const step = it.step ?? 0.06;
+  return (t) => {
+    if (t < it.t || t > it.end) { tl.style.display = "none"; return; }
+    const tf = tilePlace(tl, it, t, w, h);
+    const ks = it.swapT != null ? clamp((t - it.swapT) / 0.28) : 0;
+    A.cs.forEach((c, i) => { const k = (t - (it.numT ?? it.t) - i * step) / 0.42; const b = springL(clamp(k) * 0.95);
+      c.style.opacity = k <= 0 ? 0 : clamp(k * 5); c.style.transformOrigin = "50% 85%";
+      c.style.transform = `translateY(${((1 - b) * 18).toFixed(1)}px) scale(${lerp(0.22, 1, b).toFixed(3)})`; c.style.color = mix("#8e8e93", "#0b0b0d", clamp(k * 2.2)); });
+    A.n.style.opacity = (1 - ks).toFixed(3); A.n.style.filter = ks > 0 ? `blur(${(ks * 14).toFixed(1)}px)` : ""; A.n.style.transform = `scale(${lerp(1, 0.8, eIn(ks)).toFixed(3)})`;
+    const kst = it.strikeT != null ? eIO((t - it.strikeT) / (it.strikeDur ?? 0.45)) : 0;
+    strike.style.transform = `scaleX(${kst.toFixed(4)})`; strike.style.opacity = ((kst > 0 ? 1 : 0) * (1 - ks)).toFixed(3);
+    if (B) { const k = (t - it.swapT) / 0.6; const b = springL(clamp(k) * 0.95);
+      B.n.style.opacity = k <= 0 ? 0 : clamp(k * 4).toFixed(3); B.n.style.transformOrigin = "50% 60%"; B.n.style.transform = `scale(${lerp(0.3, 1, b).toFixed(3)})`;
+      B.n.style.filter = k > 0 && k < 0.3 ? `blur(${((0.3 - k) * 30).toFixed(1)}px)` : ""; }
+    wbExit(tl, t, it, tf);
+  };
+};
+// геометрические формы слетаются в плитку и собираются в объект: shapes [{t, w, h, r, bg, from:[x,y,rot,scale], to:[x,y], rot, dur}]
+MAKE.assemble = (it) => {
+  const w = it.w ?? 600, h = it.h ?? w;
+  const tl = tileShell(it, w, h, it.bg || "radial-gradient(circle at 50% 52%, rgba(52,199,89,.5) 0, rgba(52,199,89,.16) 34%, #ffffff 64%), #fff");
+  const shapes = (it.shapes || []).map((sp) => { const d = el("div", "abs", tl); const sh = sp.h ?? sp.w;
+    d.style.cssText += `left:${w / 2}px;top:${h / 2}px;width:${sp.w}px;height:${sh}px;margin-left:${-sp.w / 2}px;margin-top:${-sh / 2}px;border-radius:${sp.r ?? 999}px;background:${sp.bg || "#0b0b0d"};${sp.css || ""}`; return { d, sp }; });
+  return (t) => {
+    if (t < it.t || t > it.end) { tl.style.display = "none"; return; }
+    const pulse = it.pulseT != null ? 1 + 0.06 * Math.sin(Math.PI * clamp((t - it.pulseT) / 0.45)) : 1;
+    const tf = tilePlace(tl, it, t, w, h, pulse);
+    for (const { d, sp } of shapes) {
+      const k = (t - sp.t) / (sp.dur ?? 0.8), b = bounce(k);
+      const [fx_, fy_, fr, fs] = sp.from || [0, 0, 0, 0.3], [tx, ty] = sp.to || [0, 0];
+      d.style.opacity = k <= 0 ? 0 : clamp(k * 4).toFixed(3);
+      d.style.transform = `translate(${lerp(fx_, tx, b).toFixed(1)}px, ${lerp(fy_, ty, b).toFixed(1)}px) rotate(${lerp(fr, sp.rot ?? 0, b).toFixed(2)}deg) scale(${lerp(fs, 1, b).toFixed(3)})`;
+      d.style.filter = k > 0 && k < 0.35 ? `blur(${((0.35 - k) * 18).toFixed(1)}px)` : "";
+    }
+    wbExit(tl, t, it, tf);
+  };
+};
+// плитка «звук»: чёрные столбики эквалайзера по голосу + оранжевые круги-волны; burstT — всплеск на ключевом слове
+MAKE.eqtile = (it) => {
+  const w = it.w ?? 600, h = it.h ?? w;
+  const tl = tileShell(it, w, h, it.bg || "linear-gradient(160deg, #ffffff 10%, #ece9f6 55%, #cfc6ea)");
+  const rings = Array.from({ length: 4 }, () => { const r = el("div", "abs", tl); r.style.cssText += `left:${w / 2}px;top:${h / 2}px;border-radius:50%;border:5px solid ${WB_ORANGE};`; return r; });
+  const bars = el("div", "abs", tl); bars.style.cssText += `left:0;top:${h / 2}px;width:${w}px;height:0;display:flex;justify-content:center;align-items:center;gap:12px;`;
+  const N = it.n ?? 13; const bs = Array.from({ length: N }, () => { const b = el("div", "", bars); b.style.cssText = "width:16px;height:16px;border-radius:8px;background:#0b0b0d;flex:none;"; return b; });
+  return (t) => {
+    if (t < it.t || t > it.end) { tl.style.display = "none"; return; }
+    const burst = it.burstT != null && t >= it.burstT ? Math.exp(-(t - it.burstT) * 3.5) : 0;
+    const tf = tilePlace(tl, it, t, w, h, 1 + 0.05 * burst);
+    const quiet = 1 - pauseK(t);
+    rings.forEach((r, i) => { const ph = ((t - it.t) * 0.7 + i / rings.length) % 1, rad = 40 + ph * (w * 0.62);
+      r.style.width = r.style.height = 2 * rad + "px"; r.style.marginLeft = r.style.marginTop = -rad + "px";
+      r.style.opacity = ((1 - ph) * (0.12 + 0.7 * venv(t) + 0.8 * burst) * quiet).toFixed(3); });
+    bs.forEach((b, i) => { const c = Math.abs(i - (N - 1) / 2) / ((N - 1) / 2), wob = 0.55 + 0.45 * Math.sin(t * 11 + i * 1.9);
+      b.style.height = (16 + (1 - 0.65 * c) * (venv(t - c * 0.1) * 300 * wob * quiet + burst * 180)).toFixed(1) + "px"; });
+    wbExit(tl, t, it, tf);
+  };
+};
+// карточка «голос»: тонкая чёрная волна строго по громкости голоса, красная точка записи и таймер
+MAKE.vcard = (it) => {
+  const w = it.w ?? 900, h = it.h ?? 320;
+  const tl = tileShell(it, w, h, it.bg || "#ffffff"); tl.style.borderRadius = "64px";
+  const dot = el("div", "abs", tl); dot.style.cssText += "left:46px;top:44px;width:20px;height:20px;border-radius:50%;background:#ff3b30;";
+  const tm = el("div", "abs wbf", tl); tm.style.cssText += "left:78px;top:34px;font-size:30px;font-weight:500;color:#8e8e93;";
+  const base = el("div", "abs", tl); base.style.cssText += `left:70px;top:${h / 2 + 18}px;width:${w - 140}px;height:2px;background:#e5e5ea;`;
+  const wave = el("div", "abs", tl); wave.style.cssText += `left:0;top:${h / 2 - 82}px;width:${w}px;height:200px;`;
+  return (t) => {
+    if (t < it.t || t > it.end) { tl.style.display = "none"; return; }
+    const tf = tilePlace(tl, it, t, w, h);
+    dot.style.opacity = (0.55 + 0.45 * Math.sin(t * 5)).toFixed(3);
+    const sec = Math.max(0, Math.floor(t - it.t)); tm.textContent = `0:${String(sec).padStart(2, "0")}`;
+    const P = 200, pts = [];
+    for (let i = 0; i <= P; i++) { const u = i / P, x = 70 + (w - 140) * u, win = Math.sin(Math.PI * u);
+      const a = venv(t - (1 - u) * 0.5) * 95 * win; pts.push(`${x.toFixed(1)},${(100 + a * Math.sin(u * 52 + t * 15) * (0.6 + 0.4 * Math.sin(u * 9 - t * 5))).toFixed(1)}`); }
+    wave.innerHTML = `<svg width="${w}" height="200"><polyline points="${pts.join(" ")}" fill="none" stroke="#0b0b0d" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+    wbExit(tl, t, it, tf);
+  };
+};
+// стрелка вниз: появляется пружиной и мягко подпрыгивает
+MAKE.arrow = (it) => {
+  const a = el("div", "abs", null, `<svg width="110" height="140" viewBox="0 0 110 140"><path d="M55 10 V116 M18 80 L55 118 L92 80" fill="none" stroke="${it.color || "#0b0b0d"}" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
+  return (t) => {
+    if (t < it.t || t > it.end) { a.style.display = "none"; return; }
+    a.style.display = ""; a.style.filter = ""; a.style.clipPath = "";
+    const [x, y] = it.pos || [540, 1000], k = (t - it.t) / 0.55, b = bounce(k);
+    const tf = `translate(${x - 55}px, ${(y - 70 + Math.sin(Math.max(0, t - it.t - 0.45) * Math.PI * 2 / 1.0) * 16 + (1 - b) * -40).toFixed(1)}px) scale(${lerp(0.5, 1, b).toFixed(3)})`;
+    a.style.opacity = clamp(k * 3).toFixed(3); a.style.transform = tf;
+    wbExit(a, t, it, tf);
+  };
+};
+// кнопка-док с подписью по словам: {img, words:[[w,t]…], swap:{t, words, color}} — подпись меняется на цветную кнопку
+MAKE.dock2 = (it) => {
+  const d = el("div", "dock wbf");
+  if (it.img) { const im = el("img", "", d); im.src = it.img; im.style.cssText = "width:96px;height:96px;object-fit:contain;flex:none;"; } else el("div", "fold", d, it.icon || "📁");
+  const lab = el("div", "lab", d), lab2 = it.swap ? el("div", "lab", d) : null;
+  const mk = (box, words) => words.map(([w, wt], i, a) => ({ s: el("span", "wbw", box, esc(w) + (i < a.length - 1 ? " " : "")), t: wt }));
+  const A = mk(lab, it.words || [[it.text || "", it.t]]), B = lab2 ? mk(lab2, it.swap.words) : [];
+  if (lab2) { lab2.style.background = it.swap.color || "#1f6ef5"; lab2.style.color = "#fff"; }
+  const show = (S, t, to) => S.forEach(({ s, t: wt }) => { const k = (t - wt) / 0.45, b = springL(clamp(k) * 0.95);
+    s.style.opacity = k <= 0 ? 0 : clamp(k * 5); s.style.transformOrigin = "50% 85%"; s.style.transform = `scale(${lerp(0.3, 1, b).toFixed(3)})`; s.style.color = mix("#9a9aa0", to, clamp(k * 2.2)); });
+  return (t) => {
+    if (t < it.t || t > it.end) { d.style.display = "none"; return; }
+    d.style.display = ""; d.style.opacity = 1; d.style.filter = ""; d.style.clipPath = "";
+    let [x, y] = it.pos || [540, 1200];
+    let s = lerp(0.6, 1, bounce((t - it.t) / 0.7)) * (it.scale ?? 1);
+    const sw = it.swap && t >= it.swap.t;
+    lab.style.display = sw ? "none" : ""; if (lab2) lab2.style.display = sw ? "" : "none";
+    if (sw) { const k = clamp((t - it.swap.t) / 0.35); s *= 1 + 0.08 * Math.sin(Math.PI * k) * (1 - k); show(B, t, "#ffffff"); } else show(A, t, "#0b0b0d");
+    const r = d.getBoundingClientRect(), wd = r.width / Math.max(s, 0.01);
+    const tf = `translate(${(x - wd / 2).toFixed(1)}px, ${(y - 64).toFixed(1)}px) scale(${s.toFixed(4)})`;
+    d.style.left = "0px"; d.style.top = "0px"; d.style.transformOrigin = "50% 50%"; d.style.transform = tf; d.style.opacity = clamp((t - it.t) / 0.1);
+    wbExit(d, t, it, tf);
   };
 };
 

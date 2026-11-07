@@ -12,8 +12,10 @@ const base = path.dirname(path.resolve(cuesF));
 const res = (v) => (v.startsWith("@local/") ? "file://" + path.join(__dirname, v.slice(1)) : "file://" + path.resolve(base, v));
 const fps = data.fps || 30;
 for (const it of data.items) {
-  for (const k of ["img", "src2"]) if (it[k] && !/^(file|https?|data):/.test(it[k])) it[k] = res(it[k]);
-  if (it.swap && it.type === "tile") it.swap = it.swap.map(([st, v]) => [st, /\.(png|jpe?g|webp)$/i.test(v) && !/^(file|https?|data):/.test(v) ? res(v) : v]);
+  for (const k of ["img", "src2"]) if (it[k] && !/^(file|https?|data):/.test(it[k])) { const [pth, sz] = String(it[k]).split("|"); it[k] = res(pth) + (sz ? "|" + sz : ""); }
+  if (it.swap && it.type === "tile") it.swap = it.swap.map(([st, v, ...rest]) => { const [pth, sz] = String(v).split("|");
+    return [st, /\.(png|jpe?g|webp)$/i.test(pth) && !/^(file|https?|data):/.test(pth) ? res(pth) + (sz ? "|" + sz : "") : v, ...rest]; });
+  if (it.img && String(it.img).includes("|")) { /* уже обработано выше */ }
   if (it.src) it.src = path.resolve(base, it.src);       // фон для замены (bg) — путь для compose.py
 }
 if (typeof data.anchor === "string") data.anchor = JSON.parse(fs.readFileSync(path.resolve(base, data.anchor), "utf8"));
