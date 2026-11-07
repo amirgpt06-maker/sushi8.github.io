@@ -59,10 +59,13 @@ add({"type": "pill", "t": T(12.12), "end": T(13.03), "text": "ИИ", "size": 64,
 sfx(10.43, "aplkey1", 0.6); sfx(10.95, "wbbounce", 0.6); sfx(11.05, "wbpop", 0.5); sfx(11.40, "wbbounce", 0.45); sfx(12.12, "wbclick", 0.9); sfx(12.18, "wbpop", 0.6); sfx(12.58, "wbwhoosh", 0.7)
 
 # ---------- 4. «Этот переход — ИИ» — стеклянный шар прямо на фразе, на «ИИ» он растворяется в «ИИ» ----------
-add({"type": "wave", "t": T(13.24), "end": T(14.66), "from": "top", "rise": 0.5, "fall": 0.01, "h": 420, "sfx": False})
-add({"type": "btext", "t": T(13.32), "end": T(14.66), "y": 760, "enter": "tilt", "exit": "cut", "sfx": False, "lines": [
+add({"type": "wave", "t": T(13.24), "end": T(14.80), "from": "top", "rise": 0.5, "fall": 0.3, "h": 420, "sfx": False})
+add({"type": "btext", "t": T(13.32), "end": T(14.72), "y": 760, "enter": "tilt", "exit": "blur", "exitDur": 0.32, "sfx": False, "lines": [
     {"words": W(("Этот", 13.32), ("переход", 13.68)), "size": 120, "weight": 700, "ls": -0.04, "step": 0.04}]})
-add({"type": "ball", "t": T(13.78), "end": T(14.84), "fadeOut": 0.18, "x0": 1040, "x1": 540, "y": 830, "frostAt": T(14.27), "r0": 150, "r1": 1320, "sfx": False})
+# стеклянный шар как в референсе: небольшой, катится по заголовку и переворачивает буквы внутри, мутнеет до молочного
+# и растворяется; из него расходится белый круг, под тающим шаром выпрыгивает «ИИ»
+add({"type": "ball", "t": T(13.78), "end": T(14.98), "fadeOut": 0.28, "x0": 1060, "x1": 540, "y": 825, "frostAt": T(14.32), "r0": 150, "r1": 190, "sfx": False})
+add({"type": "circle", "t": T(14.50), "end": T(15.40), "pos": [540, 825], "r0": 150, "dur": 0.42, "sfx": False})
 add({"type": "btext", "t": T(14.69), "end": T(15.38), "y": 690, "exit": "up", "exitDur": 0.33, "sfx": False, "lines": [
     {"words": W(("ИИ", 14.69)), "size": 300, "weight": 800, "ls": -0.03, "step": 0.08}]})
 sfx(13.24, "wbslide", 0.55); sfx(13.78, "wbwhoosh", 0.8); sfx(14.27, "wbshimmer", 0.7); sfx(14.69, "wbpop", 0.9); sfx(15.05, "wbslide", 0.55)
