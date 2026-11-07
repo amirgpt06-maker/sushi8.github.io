@@ -1,162 +1,191 @@
 {
-  "_about": "Роль -> файл из паков пользователя (Botanica v5 и пак «Apple» со звуками/шрифтами/UI). Схема и громкость сняты с его референсов сопоставлением спектров. start — откуда вырезать кусок в файле-сборнике. Роли без строки берутся из синтеза engine/sfx. fx1..fx11 — быстрые UI/тех-звуки (серия «звук, который ты слышишь»).",
-  "blockpop": {
-    "file": "эпл печатание.mp3",
-    "start": 1.09,
-    "max_s": 0.3
-  },
-  "pop": {
-    "file": "Pop, Button, Scale, Transform, Ui_9.wav",
-    "max_s": 1.5
-  },
-  "linepop": {
-    "file": "эпл печатание.mp3",
-    "start": 2.41,
-    "max_s": 0.3
-  },
-  "typeone": {
-    "file": "clickbutton.mp3",
-    "start": 32.16,
-    "max_s": 0.3
-  },
-  "key1": {
-    "file": "Type (one)_4.wav",
-    "max_s": 1.5
-  },
-  "key2": {
-    "file": "Type (one) _3.wav",
-    "max_s": 1.5
-  },
-  "key3": {
-    "file": "Type (one) _1.wav",
-    "max_s": 1.5
-  },
-  "key4": {
-    "file": "Type (one) _2.wav",
-    "max_s": 1.5
-  },
-  "tagpop": {
-    "file": "notification3.mp3",
-    "max_s": 1.2
-  },
-  "cardclick": {
-    "file": "App Click 15.wav",
-    "max_s": 0.7
-  },
-  "tink": {
-    "file": "Pop, Button, Scale, Transform, Ui_15.wav",
-    "max_s": 1.5
-  },
-  "click2": {
-    "file": "Pop, Button, Scale, Transform, Ui_8.wav",
-    "max_s": 1.5
-  },
-  "cash": {
-    "file": "Cash, Coin, Paid.wav",
-    "max_s": 1.5
-  },
-  "aplkey1": {
-    "file": "эпл печатание.mp3",
-    "start": 1.09,
-    "max_s": 0.25
-  },
-  "aplkey2": {
-    "file": "эпл печатание.mp3",
-    "start": 2.41,
-    "max_s": 0.25
-  },
-  "aplkey3": {
-    "file": "эпл печатание.mp3",
-    "start": 3.74,
-    "max_s": 0.25
-  },
-  "aplkey4": {
-    "file": "эпл печатание.mp3",
-    "start": 3.9,
-    "max_s": 0.25
-  },
-  "wbwhoosh": {
-    "file": "вуши для разгона.mp3",
-    "start": 3.95,
-    "max_s": 0.7
-  },
-  "wbslide": {
-    "file": "Резкие вуши.mp3",
-    "start": 2.45,
-    "max_s": 0.45
-  },
-  "wbpop": {
-    "file": "ui-pop-up-2-197887.mp3",
-    "max_s": 0.5
-  },
-  "wbbounce": {
-    "file": "трансформация 1.mp3",
-    "max_s": 0.4
-  },
-  "wbclick": {
-    "file": "App Click 15.wav",
-    "max_s": 0.7
-  },
-  "wbselect": {
-    "file": "clickbutton.mp3",
-    "start": 32.16,
-    "max_s": 0.3
-  },
-  "wbshimmer": {
-    "file": "small_whoosh_chimes_1.wav",
-    "max_s": 1.15
-  },
-  "shimmer": {
-    "file": "small_whoosh_chimes_1.wav",
-    "max_s": 1.15
-  },
-  "swoosh": {
-    "file": "Резкие вуши.mp3",
-    "start": 2.45,
-    "max_s": 0.45
-  },
-  "fx1": {
-    "file": "MA_BANT_Modern_Clicks_And_Beeps_1.wav",
-    "max_s": 0.3
-  },
-  "fx2": {
-    "file": "MA_BANT_Modern_Clicks_And_Beeps_2.wav",
-    "max_s": 0.4
-  },
-  "fx3": {
-    "file": "MA_BANT_Modern_Clicks_And_Beeps_4.wav",
-    "max_s": 0.35
-  },
-  "fx4": {
-    "file": "MA_BANT_Modern_Clicks_And_Beeps_5.wav",
-    "max_s": 0.35
-  },
-  "fx5": {
-    "file": "MA_BANT_Modern_Clicks_And_Beeps_7.wav",
-    "max_s": 0.3
-  },
-  "fx6": {
-    "file": "MA_BANT_Modern_Clicks_And_Beeps_8.wav",
-    "max_s": 0.4
-  },
-  "fx7": {
-    "file": "ES_Pops, Wobble, Bloop, Pops - Epidemic Sound.mp3",
-    "max_s": 0.3
-  },
-  "fx8": {
-    "file": "mixkit-alien-technology-button-3118.wav",
-    "max_s": 0.9
-  },
-  "fx9": {
-    "file": "HUD Screen - 02.wav",
-    "max_s": 1.0
-  },
-  "fx10": {
-    "file": "8. Bleep Bloop.wav",
-    "max_s": 0.7
-  },
-  "fx11": {
-    "file": "ES_Sci Fi Games, UI Menu, Very Short, Open 04 - Epidemic Sound.mp3",
-    "max_s": 0.6
-  }
+ "_about": "Роль -> файл из паков пользователя (Botanica v5 и пак «Apple» со звуками/шрифтами/UI). Схема и громкость сняты с его референсов сопоставлением спектров. start — откуда вырезать кусок в файле-сборнике. Роли без строки берутся из синтеза engine/sfx. fx1..fx11 — быстрые UI/тех-звуки (серия «звук, который ты слышишь»).",
+ "blockpop": {
+  "file": "эпл печатание.mp3",
+  "start": 1.09,
+  "max_s": 0.3
+ },
+ "pop": {
+  "file": "Pop, Button, Scale, Transform, Ui_9.wav",
+  "max_s": 1.5
+ },
+ "linepop": {
+  "file": "эпл печатание.mp3",
+  "start": 2.41,
+  "max_s": 0.3
+ },
+ "typeone": {
+  "file": "clickbutton.mp3",
+  "start": 32.16,
+  "max_s": 0.3
+ },
+ "key1": {
+  "file": "Type (one)_4.wav",
+  "max_s": 1.5
+ },
+ "key2": {
+  "file": "Type (one) _3.wav",
+  "max_s": 1.5
+ },
+ "key3": {
+  "file": "Type (one) _1.wav",
+  "max_s": 1.5
+ },
+ "key4": {
+  "file": "Type (one) _2.wav",
+  "max_s": 1.5
+ },
+ "tagpop": {
+  "file": "notification3.mp3",
+  "max_s": 1.2
+ },
+ "cardclick": {
+  "file": "App Click 15.wav",
+  "max_s": 0.7
+ },
+ "tink": {
+  "file": "Pop, Button, Scale, Transform, Ui_15.wav",
+  "max_s": 1.5
+ },
+ "click2": {
+  "file": "Pop, Button, Scale, Transform, Ui_8.wav",
+  "max_s": 1.5
+ },
+ "cash": {
+  "file": "Cash, Coin, Paid.wav",
+  "max_s": 1.5
+ },
+ "aplkey1": {
+  "file": "эпл печатание.mp3",
+  "start": 1.09,
+  "max_s": 0.25
+ },
+ "aplkey2": {
+  "file": "эпл печатание.mp3",
+  "start": 2.41,
+  "max_s": 0.25
+ },
+ "aplkey3": {
+  "file": "эпл печатание.mp3",
+  "start": 3.74,
+  "max_s": 0.25
+ },
+ "aplkey4": {
+  "file": "эпл печатание.mp3",
+  "start": 3.9,
+  "max_s": 0.25
+ },
+ "wbwhoosh": {
+  "file": "вуши для разгона.mp3",
+  "start": 3.95,
+  "max_s": 0.7
+ },
+ "wbslide": {
+  "file": "Резкие вуши.mp3",
+  "start": 2.45,
+  "max_s": 0.45
+ },
+ "wbpop": {
+  "file": "ui-pop-up-2-197887.mp3",
+  "max_s": 0.5
+ },
+ "wbbounce": {
+  "file": "трансформация 1.mp3",
+  "max_s": 0.4
+ },
+ "wbclick": {
+  "file": "App Click 15.wav",
+  "max_s": 0.7
+ },
+ "wbselect": {
+  "file": "clickbutton.mp3",
+  "start": 32.16,
+  "max_s": 0.3
+ },
+ "wbshimmer": {
+  "file": "small_whoosh_chimes_1.wav",
+  "max_s": 1.15
+ },
+ "shimmer": {
+  "file": "small_whoosh_chimes_1.wav",
+  "max_s": 1.15
+ },
+ "swoosh": {
+  "file": "Резкие вуши.mp3",
+  "start": 2.45,
+  "max_s": 0.45
+ },
+ "fx1": {
+  "file": "MA_BANT_Modern_Clicks_And_Beeps_1.wav",
+  "max_s": 0.3
+ },
+ "fx2": {
+  "file": "MA_BANT_Modern_Clicks_And_Beeps_2.wav",
+  "max_s": 0.4
+ },
+ "fx3": {
+  "file": "MA_BANT_Modern_Clicks_And_Beeps_4.wav",
+  "max_s": 0.35
+ },
+ "fx4": {
+  "file": "MA_BANT_Modern_Clicks_And_Beeps_5.wav",
+  "max_s": 0.35
+ },
+ "fx5": {
+  "file": "MA_BANT_Modern_Clicks_And_Beeps_7.wav",
+  "max_s": 0.3
+ },
+ "fx6": {
+  "file": "MA_BANT_Modern_Clicks_And_Beeps_8.wav",
+  "max_s": 0.4
+ },
+ "fx7": {
+  "file": "ES_Pops, Wobble, Bloop, Pops - Epidemic Sound.mp3",
+  "max_s": 0.3
+ },
+ "fx8": {
+  "file": "mixkit-alien-technology-button-3118.wav",
+  "max_s": 0.9
+ },
+ "fx9": {
+  "file": "HUD Screen - 02.wav",
+  "max_s": 1.0
+ },
+ "fx10": {
+  "file": "8. Bleep Bloop.wav",
+  "max_s": 0.7
+ },
+ "fx11": {
+  "file": "ES_Sci Fi Games, UI Menu, Very Short, Open 04 - Epidemic Sound.mp3",
+  "max_s": 0.6
+ },
+ "riser": {
+  "file": "Разгон.wav",
+  "start": 1.5,
+  "max_s": 1.4
+ },
+ "flash": {
+  "file": "выспышка.mp3",
+  "max_s": 1.0
+ },
+ "chime2": {
+  "file": "MA_Equilibrio_ModernInterface_02.wav",
+  "max_s": 0.6
+ },
+ "chime5": {
+  "file": "MA_Equilibrio_ModernInterface_05.wav",
+  "max_s": 0.6
+ },
+ "tick": {
+  "file": "MA_BANT_Modern_Clicks_And_Beeps_3.wav",
+  "max_s": 0.3
+ },
+ "build7": {
+  "file": "MA_JoelLoopez_ActionBuild_07.wav",
+  "max_s": 0.9
+ },
+ "bells": {
+  "file": "MA_PashaStriker_BellsOfSuccess_1.wav",
+  "max_s": 1.4
+ }
 }
