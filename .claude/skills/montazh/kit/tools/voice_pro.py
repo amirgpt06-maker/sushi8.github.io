@@ -1,5 +1,6 @@
 """Голос «как с хорошего микрофона» из петлички/телефона.
-Использование: python voice_pro.py вход выход.wav [--strength 1.0] [--max 11] [--air -20] [--report]
+Использование: python voice_pro.py вход выход.wav [--amount 0.3] [--strength …] [--max 11] [--air …] [--report]
+--amount — общая сила эффекта (пользователь: «хороший, но чересчур — сделай 30 %»), по умолчанию 0.3
 (по умолчанию — вариант, утверждённый на петличке пользователя: верх +9…11 дБ к эталону, «воздух» −20 дБ)
 Цепочка: 48 кГц моно -> срез НЧ 70 Гц -> подгоночный эквалайзер (match EQ) к спектру студийного голоса
 (средний спектр речи этой записи сравнивается с эталонной кривой, поправка сглажена по 1/3 октавы, подъём ≤ +11 дБ, спад ≤ −6 дБ)
@@ -10,7 +11,8 @@ import numpy as np, soundfile as sf
 from scipy.signal import firwin2, fftconvolve, butter, sosfiltfilt
 
 src, dst = sys.argv[1], sys.argv[2]
-STRENGTH = float(sys.argv[sys.argv.index("--strength") + 1]) if "--strength" in sys.argv else 1.0
+AMOUNT = float(sys.argv[sys.argv.index("--amount") + 1]) if "--amount" in sys.argv else 0.3   # сила эффекта: 1.0 = полный, 0.3 = утверждённые пользователем 30 %
+STRENGTH = float(sys.argv[sys.argv.index("--strength") + 1]) if "--strength" in sys.argv else 1.0 * AMOUNT
 SR = 48000
 raw = subprocess.run(["ffmpeg", "-v", "error", "-i", src, "-ac", "1", "-ar", str(SR), "-f", "f32le", "-"], capture_output=True, check=True).stdout
 x = np.frombuffer(raw, np.float32).astype(np.float64)
@@ -55,7 +57,7 @@ if top < 15000:
     band = sosfiltfilt(butter(4, [5000, min(10000, top * 0.95)], "bp", fs=SR, output="sos"), y)
     harm = np.abs(band)                                                  # выпрямление -> вторая гармоника (10–20 кГц)
     harm = sosfiltfilt(butter(4, 11000, "hp", fs=SR, output="sos"), harm)
-    AIR = float(sys.argv[sys.argv.index("--air") + 1]) if "--air" in sys.argv else -20
+    AIR = float(sys.argv[sys.argv.index("--air") + 1]) if "--air" in sys.argv else -20 + 20 * np.log10(max(AMOUNT, 0.05))
     g = np.sqrt((y ** 2).mean()) / (np.sqrt((harm ** 2).mean()) + 1e-12) * 10 ** (AIR / 20)
     y = y + harm * g
 
@@ -64,9 +66,10 @@ tmp = tempfile.mkdtemp()
 sf.write(f"{tmp}/a.wav", y.astype(np.float32), SR, subtype="FLOAT")
 # 4–6. де-эссер, двухступенчатая компрессия, лимитер (ffmpeg)
 den = "" if noise_db < -70 else "afftdn=nr=8:nf=-50,"
-chain = (den + "deesser=i=0.35:m=0.5:f=0.55:s=o,"
-         "acompressor=threshold=-22dB:ratio=3:attack=4:release=70:knee=4:makeup=2,"
-         "acompressor=threshold=-16dB:ratio=2:attack=20:release=250:knee=6:makeup=1.5,"
+r1, r2 = 1 + 2 * AMOUNT, 1 + AMOUNT                                   # компрессия тоже по силе: 3:1 и 2:1 при 100 %
+chain = (den + f"deesser=i={0.35 * max(AMOUNT, 0.3):.2f}:m=0.5:f=0.55:s=o,"
+         f"acompressor=threshold=-22dB:ratio={r1:.2f}:attack=4:release=70:knee=4:makeup=1,"
+         f"acompressor=threshold=-16dB:ratio={r2:.2f}:attack=20:release=250:knee=6:makeup=1,"
          "alimiter=limit=0.84:attack=3:release=40:level=disabled,"
          "loudnorm=I=-16:TP=-1.5:LRA=7,aresample=48000")
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", f"{tmp}/a.wav", "-af", chain, "-ac", "1", "-c:a", "pcm_f32le", f"{tmp}/b.wav"], check=True)
