@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Подготовка голоса: 48 кГц моно -> чистка (шумодав, мягкий компрессор) -> срез тишины в начале (за 0.1 с до первого звука)
+# Подготовка голоса: 48 кГц моно -> студийная обработка (tools/voice_pro.py) -> срез тишины в начале (за 0.1 с до первого звука)
 # -> тайминги каждого слова (words.json) -> печать слов и пауз.
 # Использование: bash prep_voice.sh запись.(mp3|m4a|wav|mov|mp4) папка_проекта
 set -euo pipefail
@@ -8,14 +8,18 @@ VENV="${VENV:-$HOME/venv-video}"; MODELS="${MODELS:-$HOME/video-models}"; PY="$V
 IN="$1"; OUT="${2:-project}"
 mkdir -p "$OUT"
 ffmpeg -hide_banner -loglevel error -y -i "$IN" -vn -ac 1 -ar 48000 "$OUT/voice48.wav"
-ffmpeg -hide_banner -loglevel error -y -i "$OUT/voice48.wav" \
-  -af "highpass=f=80:poles=2,arnndn=m=$MODELS/rnnoise/std.rnnn:mix=0.7,acompressor=threshold=-22dB:ratio=2:attack=8:release=120:makeup=1.5" \
-  -ac 1 "$OUT/voice_c.wav"
+# голос «как с хорошего микрофона»: подгоночный эквалайзер к студийному спектру, «воздух», де-эссер, компрессия, −16 LUFS
+# (шумодав включается сам, только если в паузах есть шум; на чистой записи он портит тембр)
+"$PY" -I "$HERE/tools/voice_pro.py" "$OUT/voice48.wav" "$OUT/voice_c.wav" --report
 START=$("$PY" -I - "$OUT/voice_c.wav" <<'PY'
 import sys, numpy as np, soundfile as sf
 x, sr = sf.read(sys.argv[1]); x = x if x.ndim == 1 else x.mean(1)
 h = int(0.02 * sr); db = 20 * np.log10(np.sqrt(np.convolve(x ** 2, np.ones(h) / h, "valid")[::h]) + 1e-9)
-i = int(np.argmax(db > db.max() - 35)); print(max(0.0, i * 0.02 - 0.1))
+loud = db > db.max() - 32
+run = np.convolve(loud.astype(int), np.ones(8, int), "valid")            # речь = ≥ 160 мс звука подряд (щелчки не считаются)
+i = int(np.argmax(run >= 8)) if (run >= 8).any() else 0
+while i > 0 and db[i - 1] > db.max() - 45: i -= 1                         # назад до тихого (атака слова)
+print(max(0.0, i * 0.02 - 0.1))
 PY
 )
 ffmpeg -hide_banner -loglevel error -y -ss "$START" -i "$OUT/voice_c.wav" -c:a pcm_s16le "$OUT/voice.wav"
