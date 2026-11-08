@@ -1130,51 +1130,55 @@ MAKE.pads = (it) => {
 // на двух дорожках; клип звучит, когда его левый край доходит до плейхеда; сверху — название активного звука «в кавычках».
 // {clips:[{ts, d, track, name, bars:[0..1]}], v: px/с, x0: x плейхеда, knobY, trackY:[y0, y1], labelY, labelSize, clipH}
 MAKE.sfxtl = (it) => {
-  const v = it.v ?? 330, x0 = it.x0 ?? 540, knobY = it.knobY ?? 770, TY = it.trackY || [870, 1015], H = it.clipH ?? 100;
-  const [c1, c2] = (D && D.wbPill) || ["#6aa6ff", "#2f6df2"];
+  const v = it.v ?? 600, x0 = it.x0 ?? 540, knobY = it.knobY ?? 770, TY = it.trackY || [870, 1015], H = it.clipH ?? 100;
   const lineBottom = TY[1] + H / 2 + 46;
+  // клип = ровно длительность звука (d·v px): левый край на плейхеде — звук начался, правый — закончился;
+  // столбики волны — настоящая громкость звука по времени (bars — пик в каждом отрезке, без придуманной «текстуры»)
   const clips = (it.clips || []).map((c) => {
-    const w = c.d * v;
+    const w = c.d * v, n = c.bars.length, step = w / n, bw = Math.max(2, Math.min(5, step * 0.62));
     const box = el("div", "abs", null);
-    box.style.cssText += `left:0;top:${TY[c.track] - H / 2}px;width:${w}px;height:${H}px;border-radius:30px;overflow:hidden;
+    box.style.cssText += `left:0;top:${TY[c.track] - H / 2}px;width:${w}px;height:${H}px;border-radius:${Math.min(30, w / 2)}px;overflow:hidden;
       background:linear-gradient(160deg, ${it.clipA || "#4d8dff"}, ${it.clipB || "#1f5fe6"});box-shadow:0 18px 34px rgba(31,95,230,.30), 0 4px 10px rgba(20,40,90,.12), inset 0 2px 0 rgba(255,255,255,.3);`;
-    const n = c.bars.length, bw = 5, gap = (w - 44 - n * bw) / Math.max(1, n - 1);
     box.innerHTML = `<svg class="abs" style="left:0;top:0" width="${w}" height="${H}">` + c.bars.map((b, i) => {
-      const hh = Math.max(6, b * (H - 34)); const x = 22 + i * (bw + gap);
-      return `<rect x="${x.toFixed(1)}" y="${((H - hh) / 2).toFixed(1)}" width="${bw}" height="${hh.toFixed(1)}" rx="2.5" fill="#fff"/>`; }).join("") + "</svg>";
-    const played = el("div", "abs", box); played.style.cssText += `left:0;top:0;height:${H}px;background:rgba(255,255,255,.22);width:0;`;
+      const hh = Math.max(4, b * (H - 26)); const x = (i + 0.5) * step - bw / 2;
+      return `<rect x="${x.toFixed(2)}" y="${((H - hh) / 2).toFixed(1)}" width="${bw.toFixed(2)}" height="${hh.toFixed(1)}" rx="${(bw / 2).toFixed(2)}" fill="#fff"/>`; }).join("") + "</svg>";
+    const played = el("div", "abs", box); played.style.cssText += `left:0;top:0;height:${H}px;background:rgba(255,255,255,.24);width:0;`;
     return { ...c, w, box, played };
   });
   const line = el("div", "abs"); line.style.cssText += `left:${x0 - 4}px;top:${knobY}px;width:8px;height:${lineBottom - knobY}px;border-radius:4px;background:#0b0b0d;`;
   const knob = el("div", "abs"); knob.style.cssText += `left:${x0 - 36}px;top:${knobY - 36}px;width:72px;height:72px;border-radius:50%;background:#0b0b0d;box-shadow:0 8px 20px rgba(0,0,0,.18);`;
-  const lab = el("div", "abs wbf"); lab.style.cssText += `left:0;width:1080px;top:${(it.labelY ?? 640) - (it.labelSize ?? 96) * 0.6}px;text-align:center;font-size:${it.labelSize ?? 96}px;font-weight:800;letter-spacing:-0.04em;white-space:nowrap;`;
-  let cur = -1;
+  const mkLab = () => { const l = el("div", "abs wbf"); l.style.cssText += `left:0;width:1080px;top:${(it.labelY ?? 640) - (it.labelSize ?? 96) * 0.6}px;text-align:center;font-size:${it.labelSize ?? 96}px;font-weight:800;letter-spacing:-0.04em;white-space:nowrap;`; return l; };
+  const labs = clips.map((c) => { const l = mkLab(); l.innerHTML = esc(`“${c.name}”`); return l; });   // у каждого звука своё название — плавный наплыв
   return (t) => {
     const on = t >= it.t && t <= it.end;
-    [line, knob, lab].forEach((e) => (e.style.display = on ? "" : "none"));
-    clips.forEach((c) => (c.box.style.display = "none"));
+    [line, knob].forEach((e) => (e.style.display = on ? "" : "none"));
+    clips.forEach((c) => (c.box.style.display = "none")); labs.forEach((l) => (l.style.display = "none"));
     if (!on) return;
     let act = 0;
-    clips.forEach((c, i) => { if (t >= c.ts) act = i; });
+    clips.forEach((c, i) => { if (t >= c.ts - 0.12) act = i; });          // название меняется чуть раньше звука (успевает проявиться)
     clips.forEach((c, i) => {
       const x = x0 + (c.ts - t) * v;
       if (x > 1180 || x + c.w < -100) return;
       c.box.style.display = "";
-      const live = t >= c.ts && t < c.ts + c.d;
-      const k = live ? Math.exp(-(t - c.ts) * 7) : 0;
-      const sc = 1 + 0.08 * k + (i === act && live ? 0.02 : 0);
-      c.box.style.transform = `translate(${x.toFixed(1)}px, 0px) scale(${sc.toFixed(4)})`;
-      c.box.style.transformOrigin = `${Math.max(0, Math.min(c.w, x0 - x)).toFixed(0)}px 50%`;
-      c.played.style.width = Math.max(0, Math.min(c.w, (t - c.ts) * v)).toFixed(1) + "px";
-      c.box.style.zIndex = i === act ? 3 : 2;
+      c.box.style.transform = `translate(${x.toFixed(2)}px, 0px)`;
+      c.played.style.width = Math.max(0, Math.min(c.w, (t - c.ts) * v)).toFixed(2) + "px";
+      const live = clamp(Math.min((t - c.ts + 0.06) / 0.06, (c.ts + c.d + 0.12 - t) / 0.12));      // звучит сейчас: мягкое свечение
+      c.box.style.boxShadow = `0 18px 34px rgba(31,95,230,${(0.30 + 0.25 * live).toFixed(3)}), 0 0 ${(40 * live).toFixed(1)}px rgba(77,141,255,${(0.55 * live).toFixed(3)}), 0 4px 10px rgba(20,40,90,.12), inset 0 2px 0 rgba(255,255,255,.3)`;
     });
     line.style.zIndex = knob.style.zIndex = 5;
-    if (act !== cur) { cur = act; lab.innerHTML = esc(`“${clips[act].name}”`); }
-    const kk = t < clips[0].ts ? 1 : clamp((t - Math.max(it.t, clips[act].ts)) / 0.35);   // до первого клипа название уже видно
-    const b = springL(kk);
-    lab.style.opacity = clamp(kk * 4).toFixed(3); lab.style.transform = `translateY(${((1 - b) * 22).toFixed(1)}px) scale(${lerp(0.86, 1, b).toFixed(4)})`;
-    const kb = clips.reduce((m, c) => (t >= c.ts && t - c.ts < 0.25 ? Math.max(m, 1 - (t - c.ts) / 0.25) : m), 0);
-    knob.style.transform = `scale(${(1 + 0.12 * kb).toFixed(3)})`;
+    labs.forEach((l, i) => {
+      const tin = i === 0 ? -1e9 : clips[i].ts - 0.12, tout = i + 1 < clips.length ? clips[i + 1].ts - 0.12 : 1e9;
+      if (t < tin - 0.01 || t > tout + 0.22) return;
+      const kin = i === 0 ? 1 : eIO((t - tin) / 0.26), kout = eIO((t - tout) / 0.22);
+      const k = kin * (1 - kout);
+      if (k <= 0.001) return;
+      l.style.display = "";
+      l.style.opacity = k.toFixed(3);
+      l.style.filter = k < 0.999 ? `blur(${((1 - k) * 10).toFixed(1)}px)` : "";
+      l.style.transform = `translateY(${((1 - kin) * 26 - kout * 18).toFixed(1)}px) scale(${(0.94 + 0.06 * kin).toFixed(4)})`;
+    });
+    const kb = clips.reduce((m, c) => Math.max(m, clamp(Math.min((t - c.ts + 0.05) / 0.05, (c.ts + c.d + 0.15 - t) / 0.15))), 0);
+    knob.style.transform = `scale(${(1 + 0.08 * kb).toFixed(4)})`;
   };
 };
 // карточка «голос»: тонкая чёрная волна строго по громкости голоса, красная точка записи и таймер
