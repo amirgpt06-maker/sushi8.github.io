@@ -1126,6 +1126,57 @@ MAKE.pads = (it) => {
     wbExit(tl, t, it, tf);
   };
 };
+// таймлайн монтажки (витрина звуков, как в референсе «Comment SFX»): клипы с волной звука едут справа налево под плейхедом
+// на двух дорожках; клип звучит, когда его левый край доходит до плейхеда; сверху — название активного звука «в кавычках».
+// {clips:[{ts, d, track, name, bars:[0..1]}], v: px/с, x0: x плейхеда, knobY, trackY:[y0, y1], labelY, labelSize, clipH}
+MAKE.sfxtl = (it) => {
+  const v = it.v ?? 330, x0 = it.x0 ?? 540, knobY = it.knobY ?? 770, TY = it.trackY || [870, 1015], H = it.clipH ?? 100;
+  const [c1, c2] = (D && D.wbPill) || ["#6aa6ff", "#2f6df2"];
+  const lineBottom = TY[1] + H / 2 + 46;
+  const clips = (it.clips || []).map((c) => {
+    const w = c.d * v;
+    const box = el("div", "abs", null);
+    box.style.cssText += `left:0;top:${TY[c.track] - H / 2}px;width:${w}px;height:${H}px;border-radius:30px;overflow:hidden;
+      background:linear-gradient(160deg, ${it.clipA || "#4d8dff"}, ${it.clipB || "#1f5fe6"});box-shadow:0 18px 34px rgba(31,95,230,.30), 0 4px 10px rgba(20,40,90,.12), inset 0 2px 0 rgba(255,255,255,.3);`;
+    const n = c.bars.length, bw = 5, gap = (w - 44 - n * bw) / Math.max(1, n - 1);
+    box.innerHTML = `<svg class="abs" style="left:0;top:0" width="${w}" height="${H}">` + c.bars.map((b, i) => {
+      const hh = Math.max(6, b * (H - 34)); const x = 22 + i * (bw + gap);
+      return `<rect x="${x.toFixed(1)}" y="${((H - hh) / 2).toFixed(1)}" width="${bw}" height="${hh.toFixed(1)}" rx="2.5" fill="#fff"/>`; }).join("") + "</svg>";
+    const played = el("div", "abs", box); played.style.cssText += `left:0;top:0;height:${H}px;background:rgba(255,255,255,.22);width:0;`;
+    return { ...c, w, box, played };
+  });
+  const line = el("div", "abs"); line.style.cssText += `left:${x0 - 4}px;top:${knobY}px;width:8px;height:${lineBottom - knobY}px;border-radius:4px;background:#0b0b0d;`;
+  const knob = el("div", "abs"); knob.style.cssText += `left:${x0 - 36}px;top:${knobY - 36}px;width:72px;height:72px;border-radius:50%;background:#0b0b0d;box-shadow:0 8px 20px rgba(0,0,0,.18);`;
+  const lab = el("div", "abs wbf"); lab.style.cssText += `left:0;width:1080px;top:${(it.labelY ?? 640) - (it.labelSize ?? 96) * 0.6}px;text-align:center;font-size:${it.labelSize ?? 96}px;font-weight:800;letter-spacing:-0.04em;white-space:nowrap;`;
+  let cur = -1;
+  return (t) => {
+    const on = t >= it.t && t <= it.end;
+    [line, knob, lab].forEach((e) => (e.style.display = on ? "" : "none"));
+    clips.forEach((c) => (c.box.style.display = "none"));
+    if (!on) return;
+    let act = 0;
+    clips.forEach((c, i) => { if (t >= c.ts) act = i; });
+    clips.forEach((c, i) => {
+      const x = x0 + (c.ts - t) * v;
+      if (x > 1180 || x + c.w < -100) return;
+      c.box.style.display = "";
+      const live = t >= c.ts && t < c.ts + c.d;
+      const k = live ? Math.exp(-(t - c.ts) * 7) : 0;
+      const sc = 1 + 0.08 * k + (i === act && live ? 0.02 : 0);
+      c.box.style.transform = `translate(${x.toFixed(1)}px, 0px) scale(${sc.toFixed(4)})`;
+      c.box.style.transformOrigin = `${Math.max(0, Math.min(c.w, x0 - x)).toFixed(0)}px 50%`;
+      c.played.style.width = Math.max(0, Math.min(c.w, (t - c.ts) * v)).toFixed(1) + "px";
+      c.box.style.zIndex = i === act ? 3 : 2;
+    });
+    line.style.zIndex = knob.style.zIndex = 5;
+    if (act !== cur) { cur = act; lab.innerHTML = esc(`“${clips[act].name}”`); }
+    const kk = t < clips[0].ts ? 1 : clamp((t - Math.max(it.t, clips[act].ts)) / 0.35);   // до первого клипа название уже видно
+    const b = springL(kk);
+    lab.style.opacity = clamp(kk * 4).toFixed(3); lab.style.transform = `translateY(${((1 - b) * 22).toFixed(1)}px) scale(${lerp(0.86, 1, b).toFixed(4)})`;
+    const kb = clips.reduce((m, c) => (t >= c.ts && t - c.ts < 0.25 ? Math.max(m, 1 - (t - c.ts) / 0.25) : m), 0);
+    knob.style.transform = `scale(${(1 + 0.12 * kb).toFixed(3)})`;
+  };
+};
 // карточка «голос»: тонкая чёрная волна строго по громкости голоса, красная точка записи и таймер
 MAKE.vcard = (it) => {
   const w = it.w ?? 900, h = it.h ?? 320;
