@@ -31,7 +31,7 @@ sfx(at("тысяч"), "wbclick", 0.7); sfx(e2 - 0.33, "wbwhoosh", 0.8)
 t_ai1 = at(("ии", "и"), after=at("анимация"))
 e3 = t_ai1 + 0.91
 heading([("Вот", at("вот")), ("эта", at("эта")), ("анимация", at("анимация"))], end=e3, size=100, move=(at("вот") + 0.12, 330), exit="drop", exitDur=0.45)
-scene_follow(at("анимация") - 0.04, e3, t_btn=at("анимация") + 0.06, t_card=at("анимация") + 0.41, t_press=t_ai1, name="saidulaev.vibe", sub="Амирхан | Вайбкодинг")
+scene_follow(at("анимация") - 0.04, e3, t_btn=at("анимация") + 0.06, t_card=at("анимация") + 0.41, t_press=t_ai1, name="saidulaev.ai", sub="Амирхан | Вайбкодинг")
 pill("ИИ", t_ai1, e3, s=None)
 sfx(e3 - 0.45, "wbwhoosh", 0.7)
 
