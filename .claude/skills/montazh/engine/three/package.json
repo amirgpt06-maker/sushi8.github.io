@@ -1,2 +1,9 @@
-{ "name": "montazh-three", "private": true, "description": "3D-титры для монтажа: three.js (WebGL, в headless Chromium через SwiftShader) + opentype.js (контуры букв из SF Pro)",
-  "dependencies": { "three": "0.170.0", "opentype.js": "1.3.4" } }
+{
+ "name": "montazh-three",
+ "private": true,
+ "description": "3D для монтажа: титры (title3d.html) и кино-ролики с нуля по тексту (t2v.py + scenes3d.html: пустыня, знамя, стрелы, угли, ночь, лучи)",
+ "dependencies": {
+  "three": "0.170.0",
+  "opentype.js": "1.3.4"
+ }
+}
