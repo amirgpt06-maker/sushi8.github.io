@@ -1135,12 +1135,12 @@ MAKE.sfxtl = (it) => {
   // клип = ровно длительность звука (d·v px): левый край на плейхеде — звук начался, правый — закончился;
   // столбики волны — настоящая громкость звука по времени (bars — пик в каждом отрезке, без придуманной «текстуры»)
   const clips = (it.clips || []).map((c) => {
-    const w = c.d * v, n = c.bars.length, step = w / n, bw = Math.max(2, Math.min(5, step * 0.62));
+    const w = c.d * v, n = c.bars.length, step = w / n, bw = Math.max(2, Math.min(it.barW ?? 5, step * 0.62));
     const box = el("div", "abs", null);
-    box.style.cssText += `left:0;top:${TY[c.track] - H / 2}px;width:${w}px;height:${H}px;border-radius:${Math.min(30, w / 2)}px;overflow:hidden;
+    box.style.cssText += `left:0;top:${TY[c.track] - H / 2}px;width:${w}px;height:${H}px;border-radius:${Math.min(it.radius ?? 30, w / 2)}px;overflow:hidden;
       background:linear-gradient(160deg, ${it.clipA || "#4d8dff"}, ${it.clipB || "#1f5fe6"});box-shadow:0 18px 34px rgba(31,95,230,.30), 0 4px 10px rgba(20,40,90,.12), inset 0 2px 0 rgba(255,255,255,.3);`;
     box.innerHTML = `<svg class="abs" style="left:0;top:0" width="${w}" height="${H}">` + c.bars.map((b, i) => {
-      const hh = Math.max(4, b * (H - 26)); const x = (i + 0.5) * step - bw / 2;
+      const hh = Math.max(4, b * (H - (it.barPad ?? 26))); const x = (i + 0.5) * step - bw / 2;
       return `<rect x="${x.toFixed(2)}" y="${((H - hh) / 2).toFixed(1)}" width="${bw.toFixed(2)}" height="${hh.toFixed(1)}" rx="${(bw / 2).toFixed(2)}" fill="#fff"/>`; }).join("") + "</svg>";
     const played = el("div", "abs", box); played.style.cssText += `left:0;top:0;height:${H}px;background:rgba(255,255,255,.24);width:0;`;
     return { ...c, w, box, played };

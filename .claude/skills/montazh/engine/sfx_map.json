@@ -187,5 +187,53 @@
  "bells": {
   "file": "MA_PashaStriker_BellsOfSuccess_1.wav",
   "max_s": 1.4
+ },
+ "sc_whoosh": {
+  "file": "saas whoosh.wav",
+  "max_s": 1.2
+ },
+ "sc_ui2": {
+  "file": "MA_Equilibrio_ModernInterface_02.wav",
+  "max_s": 1.3
+ },
+ "sc_whclick": {
+  "file": "вуш с щелчком.wav",
+  "max_s": 1.0
+ },
+ "sc_switch": {
+  "file": "переключатель.mp3",
+  "max_s": 2.0
+ },
+ "sc_chimes": {
+  "file": "small_whoosh_chimes_1.wav",
+  "max_s": 1.3
+ },
+ "sc_counter": {
+  "file": "счетчик.mp3",
+  "max_s": 1.0
+ },
+ "sc_camwhoosh": {
+  "file": "вуш с камерой.wav",
+  "max_s": 1.3
+ },
+ "sc_blurout": {
+  "file": "блюр выход.mp3",
+  "max_s": 1.1
+ },
+ "sc_bleep": {
+  "file": "8. Bleep Bloop.wav",
+  "max_s": 2.1
+ },
+ "sc_flash": {
+  "file": "выспышка.mp3",
+  "max_s": 1.1
+ },
+ "sc_riser": {
+  "file": "1. Riser.mp3",
+  "max_s": 1.3
+ },
+ "sc_hit": {
+  "file": "Wall Hit 3.wav",
+  "max_s": 1.0
  }
 }

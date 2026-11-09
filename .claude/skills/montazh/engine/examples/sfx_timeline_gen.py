@@ -10,10 +10,11 @@ def snd(r):
     if r not in cache:
         x, sr = sf.read(SFX + r + ".wav"); cache[r] = x if x.ndim == 1 else x.mean(1)
     return cache[r]
-V, GAP, T0, G = 600, 0.50, 0.45, 0.9      # скорость ленты px/с, микропауза между звуками, старт, громкость
-CLIPS = [("Печать", "aplkey1"), ("Поп", "wbpop"), ("Тег", "tagpop"), ("Вуш", "wbwhoosh"), ("Свайп", "wbslide"),
-         ("Пружина", "wbbounce"), ("Клик", "wbclick"), ("Выделение", "wbselect"), ("Блеск", "wbshimmer"), ("Капля", "fx7"),
-         ("Бип", "fx2"), ("Интерфейс", "chime2"), ("Разгон", "riser"), ("Удар", "flash")]   # каждый звук — ОДИН раз
+V, GAP, T0, G = 430, 0.5, 0.45, 0.9      # скорость ленты px/с, микропауза, старт, громкость
+# длинные звуки стиля (0.66–1.1 с) — большие баннеры, как в референсе; каждый звук — ОДИН раз
+CLIPS = [("Вуш", "sc_whoosh"), ("Интерфейс", "sc_ui2"), ("Вуш с щелчком", "sc_whclick"), ("Переключатель", "sc_switch"),
+         ("Блеск", "sc_chimes"), ("Счётчик", "sc_counter"), ("Вуш камеры", "sc_camwhoosh"), ("Блюр", "sc_blurout"),
+         ("Бип-блуп", "sc_bleep"), ("Вспышка", "sc_flash"), ("Разгон", "sc_riser"), ("Удар", "sc_hit")]
 def span(x):
     """Где звук реально слышен: начало/конец по порогу −50 дБ от пика (5-мс окна)."""
     h = SR // 200; env = np.array([np.abs(x[i:i + h]).max() for i in range(0, len(x), h)])
@@ -27,9 +28,11 @@ for i, (name, r) in enumerate(CLIPS):
     x = snd(r) * G
     a, b = span(x); d = (b - a) / SR
     items.append({"type": "sfx", "t": round(ts - a / SR, 4), "s": r, "g": G})     # слышимое начало звука = левый край клипа на плейхеде
-    nb = max(3, int(d * V / 9))
+    nb = max(3, int(d * V / 13))
     seg = np.array_split(np.abs(x[a:b]), nb)
-    bars = [round(float(c.max() / peak), 3) if len(c) else 0 for c in seg]       # настоящая громкость (пик в отрезке), без подгонки
+    # настоящая громкость (пик в отрезке) в логарифмической шкале, как «Logarithmic waveform» в Premiere:
+    # 0 дБ (самый громкий пик) = полная высота, −48 дБ = ноль — тихие хвосты видны так, как их слышит ухо
+    bars = [round(float(max(0.0, 1 + 20 * np.log10(c.max() / peak + 1e-9) / 48)), 3) if len(c) else 0 for c in seg]
     clips.append({"ts": round(ts, 4), "d": round(d, 4), "track": i % 2, "name": name, "bars": bars})
     ts += d + GAP
 DUR = round(ts + 0.6, 3)
@@ -38,8 +41,8 @@ items = [{"type": "wb", "t": 0, "end": DUR + 1},
          {"type": "btext", "t": -1, "end": DUR + 1, "y": 300, "sfx": False, "exit": "cut",
           "lines": [{"words": W(("Напиши", -1), ("“ПАК”", -1)), "size": 118, "weight": 800, "ls": -0.04, "step": 0.0},
                     {"mode": "word", "words": W(("пришлю", -1), ("ссылку", -1), ("в", -1), ("директ", -1)), "size": 52, "weight": 400, "ls": -0.02, "y": 118}]},
-         {"type": "sfxtl", "t": -1, "end": DUR + 1, "v": V, "x0": 540, "knobY": 790, "trackY": [885, 1030], "labelY": 640, "labelSize": 98, "clips": clips},
-         {"type": "btext", "t": -1, "end": DUR + 1, "y": 1260, "sfx": False, "exit": "cut",
+         {"type": "sfxtl", "t": -1, "end": DUR + 1, "v": V, "x0": 540, "knobY": 770, "trackY": [880, 1085], "clipH": 160, "barW": 7, "barPad": 40, "radius": 40, "labelY": 630, "labelSize": 98, "clips": clips},
+         {"type": "btext", "t": -1, "end": DUR + 1, "y": 1330, "sfx": False, "exit": "cut",
           "lines": [{"words": W(("saidulaev.ai", -1)), "size": 62, "weight": 800, "ls": 0.0, "step": 0.0},
                     {"mode": "word", "words": W(("—", -1), ("ИИ-МОНТАЖ", -1), ("—", -1)), "size": 22, "weight": 600, "ls": 0.3, "y": 64}]}] + items
 x = np.zeros(int(DUR * SR), np.float32)
