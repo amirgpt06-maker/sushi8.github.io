@@ -64,6 +64,8 @@ html, body { width: 1080px; height: 1920px; background: transparent; overflow: h
 
 .bill { position: absolute; left: 0; top: 0; font-family: "Noto Color Emoji"; line-height: 1; will-change: transform; }
 /* ===== «Белый Apple-экран» (white board): SF Pro из пака пользователя (engine/local/fonts), иначе Inter ===== */
+@font-face { font-family: "Amiri"; src: url("local/fonts/Amiri-Regular.ttf"); font-weight: 400; }
+@font-face { font-family: "Amiri"; src: url("local/fonts/Amiri-Bold.ttf"); font-weight: 700; }
 @font-face { font-family: "SF"; src: url("local/fonts/SF-Pro-Display-Light.otf"); font-weight: 300; }
 @font-face { font-family: "SF"; src: url("local/fonts/SF-Pro-Display-Regular.otf"); font-weight: 400; }
 @font-face { font-family: "SF"; src: url("local/fonts/SF-Pro-Display-Medium.otf"); font-weight: 500; }
@@ -1204,6 +1206,26 @@ MAKE.sfxtl = (it) => {
     });
     const kb = clips.reduce((m, c) => Math.max(m, clamp(Math.min((t - c.ts + 0.05) / 0.05, (c.ts + c.d + 0.15 - t) / 0.15))), 0);
     knob.style.transform = `scale(${(1 + 0.08 * kb).toFixed(4)})`;
+  };
+};
+// цельная строка/абзац (для арабского и любого текста, который нельзя дробить на буквы): проявляется из размытия
+// {html, pos:[x,y] (центр), w, size, font, weight, color, dir:"rtl", lh, inDur, exitDur}
+MAKE.htext = (it) => {
+  const d = el("div", "abs");
+  d.style.cssText += `left:${(it.pos?.[0] ?? 540) - (it.w ?? 960) / 2}px;width:${it.w ?? 960}px;text-align:center;font-size:${it.size ?? 60}px;` +
+    `font-family:${it.font || "SF, Inter, sans-serif"};font-weight:${it.weight ?? 500};color:${it.color || "#0b0b0d"};line-height:${it.lh ?? 1.35};` +
+    `direction:${it.dir || "ltr"};letter-spacing:${it.ls ?? 0}em;`;
+  d.innerHTML = it.html;
+  return (t) => {
+    if (t < it.t || t > it.end) { d.style.display = "none"; return; }
+    d.style.display = "";
+    const h = d.getBoundingClientRect().height;
+    const k = eIO((t - it.t) / (it.inDur ?? 0.6)), ko = it.exitDur ? eIO((t - (it.end - it.exitDur)) / it.exitDur) : 0;
+    const a = k * (1 - ko);
+    d.style.top = ((it.pos?.[1] ?? 960) - h / 2) + "px";
+    d.style.opacity = a.toFixed(3);
+    d.style.filter = a < 0.999 ? `blur(${((1 - a) * 14).toFixed(1)}px)` : "";
+    d.style.transform = `translateY(${((1 - k) * 18 - ko * 12).toFixed(1)}px) scale(${(0.97 + 0.03 * k).toFixed(4)})`;
   };
 };
 // карточка «голос»: тонкая чёрная волна строго по громкости голоса, красная точка записи и таймер
