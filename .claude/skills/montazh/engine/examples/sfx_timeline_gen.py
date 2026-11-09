@@ -36,7 +36,15 @@ for i, (name, r) in enumerate(CLIPS):
     bars = [round(float(max(0.0, 1 + 20 * np.log10(c.max() / peak + 1e-9) / 48)), 3) if len(c) else 0 for c in seg]
     clips.append({"ts": round(ts, 4), "d": round(d, 4), "track": i % 2, "name": name, "bars": bars})
     ts += d + GAP
-DUR = round(ts + 0.6, 3)
+# ---- бесшовный цикл: конец ролика = его начало ----
+# длина ролика — целое число кадров; пауза «Удар» -> (склейка) -> «Вуш» та же, что между остальными звуками
+last = clips[-1]
+DUR = round(round((last["ts"] + last["d"] + GAP - T0) * 60) / 60, 6)
+g_loop = DUR + T0 - (last["ts"] + last["d"])
+ghost_first = dict(clips[0], ts=round(DUR + T0, 6), ghost=True)          # «Вуш» снова подъезжает к концу (без звука — он прозвучит в начале повтора)
+ghost_second = dict(clips[1], ts=round(DUR + clips[1]["ts"], 6), ghost=True)
+ghost_last = dict(last, ts=round(T0 - g_loop - last["d"], 6), ghost=True)   # в первом кадре слева уходит «Удар», как в последнем
+clips = [ghost_last] + clips + [ghost_first, ghost_second]
 W = lambda *ws: [[w, t] for w, t in ws]
 items = [{"type": "wb", "t": 0, "end": DUR + 1},
          {"type": "btext", "t": -1, "end": DUR + 1, "y": 300, "sfx": False, "exit": "cut",
