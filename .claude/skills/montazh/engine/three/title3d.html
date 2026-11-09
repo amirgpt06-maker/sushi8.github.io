@@ -1,0 +1,28 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#fbfbfb}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script></head><body>
+<script src="./node_modules/opentype.js/dist/opentype.min.js"></script>
+<script type="module">
+import * as THREE from "three";
+import { SVGLoader } from "three/addons/loaders/SVGLoader.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+const W = 1080, H = 1920;
+const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+r.setSize(W, H); r.setPixelRatio(1); r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(r.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xfbfbfb);
+const pm = new THREE.PMREMGenerator(r); scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+const cam = new THREE.PerspectiveCamera(30, W / H, 0.1, 100); cam.position.set(0, 0, 14);
+const font = await new Promise((res, rej) => opentype.load("../local/fonts/SF-Pro-Display-Heavy.otf", (e, f) => e ? rej(e) : res(f)));
+const path = font.getPath("ИИ", 0, 0, 200);
+const data = new SVGLoader().parse(`<svg xmlns="http://www.w3.org/2000/svg"><path d="${path.toPathData(2)}"/></svg>`);
+const shapes = data.paths.flatMap((p) => SVGLoader.createShapes(p));
+const geo = new THREE.ExtrudeGeometry(shapes, { depth: 46, bevelEnabled: true, bevelThickness: 7, bevelSize: 4, bevelSegments: 8, curveSegments: 12 });
+geo.rotateX(Math.PI); geo.center(); geo.scale(0.0115, 0.0115, 0.0115);
+const mat = new THREE.MeshPhysicalMaterial({ color: new THREE.Color('#2f6df2'), metalness: 0.0, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.06 });
+const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(-3, 5, 6); scene.add(key);
+const mesh = new THREE.Mesh(geo, mat); scene.add(mesh);
+const sh = new THREE.Mesh(new THREE.CircleGeometry(3.2, 64), new THREE.MeshBasicMaterial({ color: 0x0b1a40, transparent: true, opacity: 0.08 }));
+sh.rotation.x = -Math.PI / 2; sh.position.y = -1.6; sh.scale.set(0.8, 0.8, 0.8); scene.add(sh);
+window.renderAt = (t) => { mesh.rotation.y = Math.sin(t * 1.2) * 0.6; mesh.rotation.x = 0.12; mesh.position.y = Math.sin(t * 2) * 0.08; r.render(scene, cam); return true; };
+window.ready = true;
+</script></body></html>
