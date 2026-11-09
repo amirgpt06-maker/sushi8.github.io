@@ -10,10 +10,11 @@ def snd(r):
     if r not in cache:
         x, sr = sf.read(SFX + r + ".wav"); cache[r] = x if x.ndim == 1 else x.mean(1)
     return cache[r]
-V, GAP, T0, G = 430, 0.5, 0.45, 0.9      # скорость ленты px/с, микропауза, старт, громкость
-# длинные звуки стиля (0.66–1.1 с) — большие баннеры, как в референсе; каждый звук — ОДИН раз
-CLIPS = [("Вуш", "sc_whoosh"), ("Интерфейс", "sc_ui2"), ("Вуш с щелчком", "sc_whclick"), ("Переключатель", "sc_switch"),
-         ("Блеск", "sc_chimes"), ("Счётчик", "sc_counter"), ("Вуш камеры", "sc_camwhoosh"), ("Блюр", "sc_blurout"),
+V, GAP, T0, G = 430, 0.5, 0.45, 0.9      # (V — только для старого режима), микропауза, старт, громкость
+WB = 460                                   # ширина КАЖДОГО баннера: скорость ленты подстраивается под длину звука
+# каждый звук — ОДИН раз; щелчки короче 0.25 с не берём (большой баннер пролетел бы за 3–6 кадров)
+CLIPS = [("Вуш", "sc_whoosh"), ("Пружина", "wbbounce"), ("Интерфейс", "sc_ui2"), ("Свайп", "wbslide"), ("Вуш с щелчком", "sc_whclick"),
+         ("Бип", "fx2"), ("Переключатель", "sc_switch"), ("Блеск", "sc_chimes"), ("Вуш камеры", "sc_camwhoosh"), ("Блюр", "sc_blurout"),
          ("Бип-блуп", "sc_bleep"), ("Вспышка", "sc_flash"), ("Разгон", "sc_riser"), ("Удар", "sc_hit")]
 def span(x):
     """Где звук реально слышен: начало/конец по порогу −50 дБ от пика (5-мс окна)."""
@@ -28,7 +29,7 @@ for i, (name, r) in enumerate(CLIPS):
     x = snd(r) * G
     a, b = span(x); d = (b - a) / SR
     items.append({"type": "sfx", "t": round(ts - a / SR, 4), "s": r, "g": G})     # слышимое начало звука = левый край клипа на плейхеде
-    nb = max(3, int(d * V / 13))
+    nb = int(WB / 13)
     seg = np.array_split(np.abs(x[a:b]), nb)
     # настоящая громкость (пик в отрезке) в логарифмической шкале, как «Logarithmic waveform» в Premiere:
     # 0 дБ (самый громкий пик) = полная высота, −48 дБ = ноль — тихие хвосты видны так, как их слышит ухо
@@ -41,7 +42,7 @@ items = [{"type": "wb", "t": 0, "end": DUR + 1},
          {"type": "btext", "t": -1, "end": DUR + 1, "y": 300, "sfx": False, "exit": "cut",
           "lines": [{"words": W(("Напиши", -1), ("“ПАК”", -1)), "size": 118, "weight": 800, "ls": -0.04, "step": 0.0},
                     {"mode": "word", "words": W(("пришлю", -1), ("ссылку", -1), ("в", -1), ("директ", -1)), "size": 52, "weight": 400, "ls": -0.02, "y": 118}]},
-         {"type": "sfxtl", "t": -1, "end": DUR + 1, "v": V, "x0": 540, "knobY": 770, "trackY": [880, 1085], "clipH": 160, "barW": 7, "barPad": 40, "radius": 40, "labelY": 630, "labelSize": 98, "clips": clips},
+         {"type": "sfxtl", "t": -1, "end": DUR + 1, "v": V, "W": WB, "x0": 540, "knobY": 770, "trackY": [880, 1085], "clipH": 160, "barW": 7, "barPad": 40, "radius": 40, "labelY": 630, "labelSize": 98, "clips": clips},
          {"type": "btext", "t": -1, "end": DUR + 1, "y": 1330, "sfx": False, "exit": "cut",
           "lines": [{"words": W(("saidulaev.ai", -1)), "size": 62, "weight": 800, "ls": 0.0, "step": 0.0},
                     {"mode": "word", "words": W(("—", -1), ("ИИ-МОНТАЖ", -1), ("—", -1)), "size": 22, "weight": 600, "ls": 0.3, "y": 64}]}] + items

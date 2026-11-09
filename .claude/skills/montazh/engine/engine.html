@@ -1135,7 +1135,7 @@ MAKE.sfxtl = (it) => {
   // клип = ровно длительность звука (d·v px): левый край на плейхеде — звук начался, правый — закончился;
   // столбики волны — настоящая громкость звука по времени (bars — пик в каждом отрезке, без придуманной «текстуры»)
   const clips = (it.clips || []).map((c) => {
-    const w = c.d * v, n = c.bars.length, step = w / n, bw = Math.max(2, Math.min(it.barW ?? 5, step * 0.62));
+    const w = it.W ? it.W : c.d * v, n = c.bars.length, step = w / n, bw = Math.max(2, Math.min(it.barW ?? 5, step * 0.62));
     const box = el("div", "abs", null);
     box.style.cssText += `left:0;top:${TY[c.track] - H / 2}px;width:${w}px;height:${H}px;border-radius:${Math.min(it.radius ?? 30, w / 2)}px;overflow:hidden;
       background:linear-gradient(160deg, ${it.clipA || "#4d8dff"}, ${it.clipB || "#1f5fe6"});box-shadow:0 18px 34px rgba(31,95,230,.30), 0 4px 10px rgba(20,40,90,.12), inset 0 2px 0 rgba(255,255,255,.3);`;
@@ -1145,6 +1145,31 @@ MAKE.sfxtl = (it) => {
     const played = el("div", "abs", box); played.style.cssText += `left:0;top:0;height:${H}px;background:rgba(255,255,255,.24);width:0;`;
     return { ...c, w, box, played };
   });
+  // переменная скорость (it.W): внутри звука лента едет ровно W px за его длительность (край клипа = начало/конец звука),
+  // в паузах скорость плавно перетекает к скорости следующего звука (кубический Эрмит, без рывков)
+  const S = [];
+  if (it.W) {
+    let pos = 0;
+    clips.forEach((c, i) => {
+      S.push(pos); const vi = it.W / c.d;
+      if (i + 1 < clips.length) { const g = clips[i + 1].ts - (c.ts + c.d), vn = it.W / clips[i + 1].d; c.gpx = g * (vi + vn) / 2; pos += it.W + c.gpx; }
+    });
+  }
+  const tape = (t) => {                                   // где на ленте стоит плейхед в момент t
+    if (!it.W) return t * v;
+    const n = clips.length, v0 = it.W / clips[0].d;
+    if (t <= clips[0].ts) return S[0] - (clips[0].ts - t) * v0;
+    for (let i = 0; i < n; i++) {
+      const c = clips[i], vi = it.W / c.d;
+      if (t <= c.ts + c.d) return S[i] + (t - c.ts) * vi;
+      if (i + 1 < n && t < clips[i + 1].ts) {
+        const g = clips[i + 1].ts - (c.ts + c.d), u = (t - c.ts - c.d) / g, vn = it.W / clips[i + 1].d;
+        const h10 = u * u * u - 2 * u * u + u, h01 = -2 * u * u * u + 3 * u * u, h11 = u * u * u - u * u;
+        return S[i] + it.W + h10 * vi * g + h01 * c.gpx + h11 * vn * g;
+      }
+    }
+    const c = clips[n - 1]; return S[n - 1] + it.W + (t - c.ts - c.d) * (it.W / c.d);
+  };
   const line = el("div", "abs"); line.style.cssText += `left:${x0 - 4}px;top:${knobY}px;width:8px;height:${lineBottom - knobY}px;border-radius:4px;background:#0b0b0d;`;
   const knob = el("div", "abs"); knob.style.cssText += `left:${x0 - 36}px;top:${knobY - 36}px;width:72px;height:72px;border-radius:50%;background:#0b0b0d;box-shadow:0 8px 20px rgba(0,0,0,.18);`;
   const mkLab = () => { const l = el("div", "abs wbf"); l.style.cssText += `left:0;width:1080px;top:${(it.labelY ?? 640) - (it.labelSize ?? 96) * 0.6}px;text-align:center;font-size:${it.labelSize ?? 96}px;font-weight:800;letter-spacing:-0.04em;white-space:nowrap;`; return l; };
@@ -1157,11 +1182,11 @@ MAKE.sfxtl = (it) => {
     let act = 0;
     clips.forEach((c, i) => { if (t >= c.ts - 0.12) act = i; });          // название меняется чуть раньше звука (успевает проявиться)
     clips.forEach((c, i) => {
-      const x = x0 + (c.ts - t) * v;
+      const x = it.W ? x0 + S[i] - tape(t) : x0 + (c.ts - t) * v;
       if (x > 1180 || x + c.w < -100) return;
       c.box.style.display = "";
       c.box.style.transform = `translate(${x.toFixed(2)}px, 0px)`;
-      c.played.style.width = Math.max(0, Math.min(c.w, (t - c.ts) * v)).toFixed(2) + "px";
+      c.played.style.width = Math.max(0, Math.min(c.w, x0 - x)).toFixed(2) + "px";
       const live = clamp(Math.min((t - c.ts + 0.06) / 0.06, (c.ts + c.d + 0.12 - t) / 0.12));      // звучит сейчас: мягкое свечение
       c.box.style.boxShadow = `0 18px 34px rgba(31,95,230,${(0.30 + 0.25 * live).toFixed(3)}), 0 0 ${(40 * live).toFixed(1)}px rgba(77,141,255,${(0.55 * live).toFixed(3)}), 0 4px 10px rgba(20,40,90,.12), inset 0 2px 0 rgba(255,255,255,.3)`;
     });
