@@ -28,7 +28,8 @@ description: Разбор чужого рилса из Instagram по ссылк
 В облачной сессии своего Chrome нет: если без входа не качается, попросить пользователя выгрузить cookies.txt
 (расширение «Get cookies.txt LOCALLY» в Chrome, вкладка instagram.com) и передать файл: `--cookies reels/cookies.txt`
 (файл с cookies не коммитить, никому не показывать). Видео лежит на CDN Instagram — если загрузка падает с 403 от прокси,
-нужный хост (из ошибки) добавить в разрешённые в сети окружения.
+нужный хост (из ошибки) добавить в разрешённые в сети окружения. Уже разрешены: `www.instagram.com`, `scontent.cdninstagram.com`,
+`scontent-ord5-1.cdninstagram.com`, `scontent-ord5-2.cdninstagram.com`; узнать хост нового рилса: `yt-dlp -g <ссылка>`.
 
 ## Шаг 2 — посмотреть
 Прочитать (Read) `hook.jpg`, все `sheet_*.jpg`, `transcript.txt`, `data.json`; при сомнении — отдельные кадры из `frames/`.
