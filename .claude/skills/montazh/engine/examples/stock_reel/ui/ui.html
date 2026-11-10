@@ -1,0 +1,481 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:SF;src:url(fonts/SF-Pro-Display-Thin.otf);font-weight:100}
+@font-face{font-family:SF;src:url(fonts/SF-Pro-Display-Light.otf);font-weight:300}
+@font-face{font-family:SF;src:url(fonts/SF-Pro-Display-Regular.otf);font-weight:400}
+@font-face{font-family:SF;src:url(fonts/SF-Pro-Display-Medium.otf);font-weight:500}
+@font-face{font-family:SF;src:url(fonts/SF-Pro-Display-Semibold.otf);font-weight:600}
+@font-face{font-family:SF;src:url(fonts/SF-Pro-Display-Bold.otf);font-weight:700}
+@font-face{font-family:SF;src:url(fonts/SF-Pro-Display-Heavy.otf);font-weight:800}
+@font-face{font-family:SF;src:url(fonts/SF-Pro-Display-Black.otf);font-weight:900}
+@font-face{font-family:PF;src:url(fonts/PlayfairDisplay.ttf)}
+html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:transparent}
+#root{position:absolute;left:0;top:0;width:1080px;height:1920px;font-family:SF;overflow:hidden;-webkit-font-smoothing:antialiased}
+.abs{position:absolute}
+</style></head><body><div id="root"></div>
+<script>
+const R = document.getElementById('root');
+const cl = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lin = (t, a, b) => cl((t - a) / (b - a));
+const ss = x => x * x * (3 - 2 * x);
+const eo = x => 1 - Math.pow(1 - cl(x), 3);
+const eo5 = x => 1 - Math.pow(1 - cl(x), 5);
+const eio = x => (x = cl(x), x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const spr = x => x <= 0 ? 0 : 1 - Math.exp(-6.5 * x) * Math.cos(9.5 * x);
+const mix = (a, b, k) => a + (b - a) * k;
+function rng(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647, (s - 1) / 2147483646); }
+function el(tag, css, parent, html) { const e = document.createElement(tag); e.style.cssText = css; if (html !== undefined) e.innerHTML = html; (parent || R).appendChild(e); return e; }
+const IMG = {};
+function img(n) { if (!IMG[n]) { IMG[n] = new Image(); IMG[n].src = 'img/' + n + '.jpg'; } return IMG[n]; }
+
+// ---------- phone ----------
+function phone(parent, w = 860, h = 1780, light = false) {
+  const cam = el('div', `position:absolute;left:0;top:0;width:1080px;height:1920px;transform-style:preserve-3d`, parent);
+  const wrap = el('div', `position:absolute;left:${(1080 - w) / 2}px;top:${(1920 - h) / 2}px;width:${w}px;height:${h}px;border-radius:118px;background:linear-gradient(145deg,#3a3b40,#121214 40%,#26272b);box-shadow:0 70px 140px rgba(0,0,0,.6),0 20px 40px rgba(0,0,0,.35)`, cam);
+  el('div', `position:absolute;inset:6px;border-radius:112px;background:#050506`, wrap);
+  const scr = el('div', `position:absolute;left:24px;top:24px;right:24px;bottom:24px;border-radius:96px;overflow:hidden;background:${light ? '#f6f4f1' : '#000'}`, wrap);
+  el('div', `position:absolute;left:50%;top:30px;width:210px;height:62px;margin-left:-105px;border-radius:32px;background:#000;z-index:60`, scr);
+  const glare = el('div', `position:absolute;inset:0;z-index:70;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.10) 45%,rgba(255,255,255,0) 60%);mix-blend-mode:screen`, scr);
+  return { cam, wrap, scr, glare, W: w - 48, H: h - 48 };
+}
+function camSet(c, o) {   // o: {x,y,z,rx,ry,rz,s}
+  c.cam.style.transform = `perspective(2600px) translate3d(${o.x || 0}px,${o.y || 0}px,${o.z || 0}px) rotateX(${o.rx || 0}deg) rotateY(${o.ry || 0}deg) rotateZ(${o.rz || 0}deg) scale(${o.s || 1})`;
+  if (c.glare) c.glare.style.backgroundPosition = '0 0', c.glare.style.transform = `translateX(${(o.ry || 0) * 18}px)`;
+}
+
+// ---------- map ----------
+let MAP; const buildMap = () => {
+  const S = 3200, cv = document.createElement('canvas'); cv.width = S; cv.height = S; const g = cv.getContext('2d');
+  const r = rng(7); const O = S / 2;
+  g.fillStyle = '#1c1f25'; g.fillRect(0, 0, S, S);
+  const vx = [], hy = []; for (let x = 60; x < S; x += 150 + r() * 70) vx.push(x); for (let y = 60; y < S; y += 140 + r() * 80) hy.push(y);
+  // кварталы: здания
+  for (let i = 0; i < vx.length - 1; i++) for (let j = 0; j < hy.length - 1; j++) {
+    const x0 = vx[i] + 14, x1 = vx[i + 1] - 14, y0 = hy[j] + 14, y1 = hy[j + 1] - 14; const k = r();
+    if (k < .07) { g.fillStyle = '#1d2b23'; g.fillRect(x0 - 6, y0 - 6, x1 - x0 + 12, y1 - y0 + 12); continue; }
+    g.fillStyle = '#23272f'; g.fillRect(x0, y0, x1 - x0, y1 - y0);
+    g.fillStyle = '#2a2f38';
+    for (let n = 0; n < 4; n++) { const bx = x0 + r() * (x1 - x0) * .6, by = y0 + r() * (y1 - y0) * .6; g.fillRect(bx, by, 20 + r() * (x1 - bx - 20), 20 + r() * (y1 - by - 20)); }
+  }
+  // река
+  g.strokeStyle = '#14263c'; g.lineWidth = 120; g.beginPath(); for (let x = 0; x <= S; x += 40) { const y = 520 + Math.sin(x / 420) * 140 + x * .12; x ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
+  const road = (w, c) => { g.strokeStyle = c; g.lineWidth = w; g.lineCap = 'round'; };
+  vx.forEach((x, i) => { road(i % 3 ? 10 : 20, i % 3 ? '#30353e' : '#3d434e'); g.beginPath(); g.moveTo(x, 0); g.lineTo(x, S); g.stroke(); });
+  hy.forEach((y, i) => { road(i % 3 ? 10 : 20, i % 3 ? '#30353e' : '#3d434e'); g.beginPath(); g.moveTo(0, y); g.lineTo(S, y); g.stroke(); });
+  road(26, '#46404a'); g.beginPath(); g.moveTo(0, S * .9); g.lineTo(S, S * .15); g.stroke();
+  road(14, '#4a4237'); g.beginPath(); g.moveTo(S * .1, 0); g.lineTo(S * .75, S); g.stroke();
+  g.fillStyle = 'rgba(160,166,178,.55)'; g.font = '500 22px SF';
+  const names = ['Тверская', 'Садовая', 'Арбат', 'Пресня', 'Мира', 'Лесная', 'Неглинная', 'Петровка', 'Покровка', 'Маросейка'];
+  hy.forEach((y, i) => { if (i % 3 == 0) for (let x = 200 + (i * 97) % 300; x < S; x += 900) g.fillText(names[(i + x) % names.length], x, y - 16); });
+  return { cv, vx, hy, S };
+};
+function nearest(arr, v) { let b = arr[0]; for (const a of arr) if (Math.abs(a - v) < Math.abs(b - v)) b = a; return b; }
+function routePts(car, dest) { // по сетке: вверх по своей улице -> вбок по поперечной -> вверх к цели
+  const yT = nearest(MAP.hy, (car[1] + dest[1]) / 2);
+  return [car, [car[0], yT], [dest[0], yT], dest];
+}
+function plen(p) { let L = 0; for (let i = 1; i < p.length; i++) L += Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]); return L; }
+function ppart(p, k) { const L = plen(p) * cl(k); let acc = 0; const out = [p[0]]; for (let i = 1; i < p.length; i++) { const d = Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]); if (acc + d >= L) { const q = (L - acc) / d; out.push([mix(p[i - 1][0], p[i][0], q), mix(p[i - 1][1], p[i][1], q)]); return out; } acc += d; out.push(p[i]); } return out; }
+function drawMap(cx, W, H, view, routes, car, carAng, pins) {
+  // view: {x,y,rot,s, ax,ay}  (ax,ay — экранная точка, куда попадает центр)
+  const g = cx; g.save(); g.clearRect(0, 0, W, H); g.fillStyle = '#1c1f25'; g.fillRect(0, 0, W, H);
+  g.translate(view.ax, view.ay); g.rotate(view.rot * Math.PI / 180); g.scale(view.s, view.s); g.translate(-view.x, -view.y);
+  g.drawImage(MAP.cv, 0, 0);
+  for (const rt of routes) {
+    if (!rt.pts || rt.pts.length < 2) continue;
+    g.globalAlpha = rt.a ?? 1; g.lineJoin = 'round'; g.lineCap = 'round';
+    const path = () => { g.beginPath(); rt.pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); };
+    g.shadowColor = rt.glow || 'rgba(255,214,10,.7)'; g.shadowBlur = 30; g.strokeStyle = rt.edge || '#7a5a00'; g.lineWidth = 30 / view.s * .9; path(); g.stroke();
+    g.shadowBlur = 0; g.strokeStyle = rt.col || '#FFD60A'; g.lineWidth = 20 / view.s * .9; if (rt.dash) g.setLineDash([26, 22]); path(); g.stroke(); g.setLineDash([]);
+    g.globalAlpha = 1;
+  }
+  g.restore();
+  const T = (p) => { const a = view.rot * Math.PI / 180, dx = (p[0] - view.x) * view.s, dy = (p[1] - view.y) * view.s; return [view.ax + dx * Math.cos(a) - dy * Math.sin(a), view.ay + dx * Math.sin(a) + dy * Math.cos(a)]; };
+  for (const pn of pins) {
+    const [x, y] = T(pn.p); g.save(); g.translate(x, y - (pn.lift || 0)); g.globalAlpha = pn.a ?? 1; g.scale(pn.k ?? 1, pn.k ?? 1);
+    if (pn.ring) { g.strokeStyle = `rgba(255,214,10,${.6 * (1 - pn.ring)})`; g.lineWidth = 6; g.beginPath(); g.arc(0, 0, 30 + pn.ring * 90, 0, 7); g.stroke(); }
+    g.fillStyle = pn.col || '#FF453A'; g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 16;
+    g.beginPath(); g.arc(0, -62, 34, Math.PI * .8, Math.PI * 2.2); g.lineTo(0, 0); g.closePath(); g.fill(); g.shadowBlur = 0;
+    g.fillStyle = '#fff'; g.font = '800 38px SF'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    if (pn.q) g.fillText('?', 0, -60); else { g.beginPath(); g.arc(0, -62, 12, 0, 7); g.fill(); }
+    g.restore();
+  }
+  // машина
+  const [x, y] = T(car); g.save(); g.translate(x, y); g.rotate((view.rot + carAng) * Math.PI / 180);
+  g.fillStyle = 'rgba(10,132,255,.22)'; g.beginPath(); g.arc(0, 0, 70, 0, 7); g.fill();
+  g.fillStyle = '#fff'; g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 14; g.beginPath(); g.arc(0, 0, 36, 0, 7); g.fill(); g.shadowBlur = 0;
+  g.fillStyle = '#0A84FF'; g.beginPath(); g.moveTo(0, -22); g.lineTo(17, 18); g.lineTo(0, 9); g.lineTo(-17, 18); g.closePath(); g.fill();
+  g.restore();
+  return T;
+}
+function navChrome(scr, W, H) {
+  const cv = el('canvas', `position:absolute;left:0;top:0;width:${W}px;height:${H}px`, scr); cv.width = W; cv.height = H;
+  const top = el('div', `position:absolute;left:32px;right:32px;top:120px;height:120px;border-radius:36px;background:rgba(36,38,44,.94);box-shadow:0 14px 40px rgba(0,0,0,.45);display:flex;align-items:center;padding:0 34px;box-sizing:border-box;z-index:20`, scr);
+  top.innerHTML = `<svg width="46" height="46" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6.5" stroke="#9a9ca3" stroke-width="2.4" fill="none"/><path d="M15 15l5.5 5.5" stroke="#9a9ca3" stroke-width="2.6" stroke-linecap="round"/></svg>`;
+  const txt = el('div', `margin-left:22px;font:500 50px SF;color:#fff;white-space:nowrap;letter-spacing:-.5px`, top);
+  const caret = el('span', `display:inline-block;width:4px;height:52px;background:#0A84FF;vertical-align:-8px;margin-left:3px;border-radius:2px`, null);
+  return { cv, cx: cv.getContext('2d'), top, txt, caret };
+}
+
+// ===================== СЦЕНЫ =====================
+const SC = {};
+
+// --- навигатор: «куда-нибудь», маршрут скачет ---
+SC.nav_chaos = {
+  build() {
+    this.P = phone(R); const { scr, W, H } = this.P; this.W = W; this.H = H;
+    this.N = navChrome(scr, W, H);
+    this.chip = el('div', `position:absolute;left:50%;top:268px;transform:translateX(-50%);padding:16px 30px;border-radius:40px;background:rgba(255,159,10,.95);font:700 34px SF;color:#1a1200;white-space:nowrap;display:flex;align-items:center;gap:16px;z-index:21;box-shadow:0 10px 30px rgba(0,0,0,.4)`, scr, `<span id="spn" style="display:inline-block;width:30px;height:30px;border-radius:50%;border:5px solid rgba(26,18,0,.25);border-top-color:#1a1200;box-sizing:border-box"></span>Перестраиваю маршрут…`);
+    this.card = el('div', `position:absolute;left:0;right:0;bottom:0;height:360px;background:rgba(28,30,35,.97);border-radius:56px 56px 0 0;z-index:20;padding:44px 56px;box-sizing:border-box`, scr);
+    this.eta = el('div', `font:800 104px SF;color:#fff;letter-spacing:-2px`, this.card, '?? мин');
+    this.sub = el('div', `font:500 40px SF;color:#9a9ca3;margin-top:6px`, this.card, '?? км · маршрут не найден');
+    const r = rng(11); this.car = [MAP.vx[11], MAP.hy[14]];
+    this.jumps = [0.12, 0.36, 0.58, 0.80, 0.99, 1.17, 1.34, 1.50];
+    this.dests = this.jumps.map(() => [nearest(MAP.vx, this.car[0] + (r() - .5) * 1700), MAP.hy[14 - 2 - Math.floor(r() * 6)] + (r() - .5) * 40]);
+    this.rots = this.jumps.map(() => (r() - .5) * 40); this.pans = this.jumps.map(() => [(r() - .5) * 260, (r() - .5) * 200]);
+    this.etas = ['47 мин', '3 ч 12 мин', '9 мин', '?? мин', '1 ч 05 мин', '26 мин', '?? мин', '2 ч 40 мин'];
+  },
+  update(t) {
+    const { W, H } = this; let k = -1; this.jumps.forEach((j, i) => { if (t >= j) k = i; });
+    const tj = k >= 0 ? t - this.jumps[k] : 0, e = eo5(tj / .14);
+    const pr = k >= 1 ? this.rots[k - 1] : -14, cr = k >= 0 ? this.rots[k] : -14;
+    const pp = k >= 1 ? this.pans[k - 1] : [0, 0], cp = k >= 0 ? this.pans[k] : [0, 0];
+    const rot = mix(pr, cr, e) + Math.sin(t * 23) * (k >= 3 ? 1.2 : 0);
+    const view = { x: this.car[0] + mix(pp[0], cp[0], e), y: this.car[1] - 420 + mix(pp[1], cp[1], e), rot, s: .78, ax: W / 2, ay: H * .5 };
+    const routes = [], pins = [];
+    if (k >= 1) routes.push({ pts: routePts(this.car, this.dests[k - 1]), a: .5 * (1 - e), dash: true });
+    if (k >= 0) { routes.push({ pts: ppart(routePts(this.car, this.dests[k]), eo(tj / .16)) }); pins.push({ p: this.dests[k], q: true, k: spr(tj / .25), lift: 0 }); }
+    drawMap(this.N.cx, W, H, view, routes, this.car, 0, pins);
+    // поиск: «куда-нибудь»
+    const s = 'куда-нибудь', n = Math.floor(cl((t - .40) / .055, 0, s.length));
+    this.N.txt.textContent = n ? s.slice(0, n) : ''; if (!n) this.N.txt.innerHTML = '<span style="color:#7d8088">Куда едем?</span>';
+    this.N.txt.appendChild(this.N.caret); this.N.caret.style.opacity = (Math.floor(t * 3.4) % 2 || n < s.length) ? 1 : 0;
+    this.chip.style.opacity = k >= 0 ? 1 : 0; this.chip.style.transform = `translateX(-50%) scale(${k >= 0 ? .9 + .1 * spr(tj / .3) : .8})`;
+    document.getElementById('spn').style.transform = `rotate(${t * 900}deg)`;
+    this.eta.textContent = k >= 0 ? this.etas[k] : '?? мин'; this.eta.style.transform = `translateY(${(1 - eo(tj / .12)) * 20}px)`;
+    this.eta.style.color = k >= 0 && tj < .08 ? '#FF9F0A' : '#fff';
+    const pz = t / 1.67;
+    camSet(this.P, { s: 1.06 + .08 * pz + (k >= 0 ? .012 * Math.sin(tj * 40) * Math.exp(-tj * 10) : 0), rx: 9 - 2 * pz, ry: -13 + 4 * pz, rz: 3 + (k >= 3 ? Math.sin(t * 31) * .6 : 0), y: 40 });
+  }
+};
+
+// --- навигатор: вводим адрес -> один чистый маршрут ---
+SC.nav_addr = {
+  build() {
+    this.P = phone(R); const { scr, W, H } = this.P; this.W = W; this.H = H;
+    this.N = navChrome(scr, W, H);
+    this.sug = el('div', `position:absolute;left:32px;right:32px;top:256px;border-radius:30px;background:rgba(36,38,44,.97);z-index:19;overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.45)`, scr,
+      `<div style="display:flex;align-items:center;gap:26px;padding:30px 34px"><div style="width:64px;height:64px;border-radius:50%;background:#FF453A;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" fill="#fff"/></svg></div><div><div style="font:600 44px SF;color:#fff">Тверская, 7</div><div style="font:400 34px SF;color:#9a9ca3;margin-top:4px">Москва · 4,8 км</div></div></div>`);
+    this.rip = el('div', `position:absolute;left:150px;top:330px;width:40px;height:40px;margin:-20px;border-radius:50%;background:rgba(255,255,255,.35);z-index:30`, scr);
+    // клавиатура
+    const kb = this.kb = el('div', `position:absolute;left:0;right:0;bottom:0;height:640px;background:rgba(43,44,48,.98);z-index:25;padding:26px 10px 0;box-sizing:border-box`, scr);
+    const rows = ['йцукенгшщзх', 'фывапролджэ', 'ячсмитьбю'];
+    this.keys = {};
+    rows.forEach((row, ri) => { const rw = el('div', `display:flex;justify-content:center;gap:10px;margin-bottom:22px`, kb);
+      if (ri == 2) el('div', `width:104px;height:118px;border-radius:14px;background:#5a5b60`, rw);
+      for (const c of row) { const k = el('div', `width:62px;height:118px;border-radius:14px;background:#6b6c71;color:#fff;font:400 50px SF;display:flex;align-items:center;justify-content:center;position:relative;box-shadow:0 3px 0 rgba(0,0,0,.4)`, rw, c); this.keys[c] = k; }
+      if (ri == 2) el('div', `width:104px;height:118px;border-radius:14px;background:#5a5b60`, rw); });
+    const br = el('div', `display:flex;justify-content:center;gap:10px`, kb);
+    el('div', `width:150px;height:118px;border-radius:14px;background:#5a5b60;color:#fff;font:400 40px SF;display:flex;align-items:center;justify-content:center`, br, '123');
+    this.keys[' '] = el('div', `width:440px;height:118px;border-radius:14px;background:#6b6c71;color:#fff;font:400 38px SF;display:flex;align-items:center;justify-content:center`, br, 'пробел');
+    this.keys[','] = this.keys[' ']; this.keys['7'] = el('div', `width:150px;height:118px;border-radius:14px;background:#0A84FF;color:#fff;font:600 38px SF;display:flex;align-items:center;justify-content:center`, br, 'Найти');
+    this.pop = el('div', `position:absolute;width:110px;height:150px;border-radius:22px;background:#8a8b90;color:#fff;font:400 76px SF;display:flex;align-items:center;justify-content:center;z-index:40;box-shadow:0 8px 24px rgba(0,0,0,.4)`, scr);
+    this.card = el('div', `position:absolute;left:0;right:0;bottom:0;height:420px;background:rgba(28,30,35,.97);border-radius:56px 56px 0 0;z-index:22;padding:48px 56px;box-sizing:border-box`, scr,
+      `<div style="display:flex;align-items:baseline;gap:22px"><span style="font:800 108px SF;color:#30D158;letter-spacing:-2px">12 мин</span><span style="font:500 42px SF;color:#9a9ca3">4,8 км</span></div>
+       <div style="font:500 40px SF;color:#9a9ca3;margin-top:4px">Прибытие в 21:47 · без пробок</div>
+       <div style="margin-top:34px;height:120px;border-radius:60px;background:#FFD60A;color:#1a1200;font:700 50px SF;display:flex;align-items:center;justify-content:center">Поехали</div>`);
+    this.car = [MAP.vx[11], MAP.hy[14]]; this.dest = [MAP.vx[15], MAP.hy[7] + 30];
+    this.route = routePts(this.car, this.dest);
+    this.text = 'тверская, 7'; this.T0 = .05; this.dt = .055;
+  },
+  update(t) {
+    const { W, H } = this;
+    const zoomOut = eio(lin(t, .78, 1.25));
+    const view = { x: mix(this.car[0], (this.car[0] + this.dest[0]) / 2, zoomOut), y: mix(this.car[1] - 300, (this.car[1] + this.dest[1]) / 2 + 120, zoomOut), rot: mix(-10, -4, zoomOut), s: mix(.9, .62, zoomOut), ax: W / 2, ay: H * mix(.42, .44, zoomOut) };
+    const rk = eio(lin(t, .82, 1.12)), pins = [], routes = [];
+    if (rk > 0) routes.push({ pts: ppart(this.route, rk) });
+    if (t > 1.0) { const q = (t - 1.0) / .3; pins.push({ p: this.dest, k: spr(q), lift: (1 - eo(q)) * 60, ring: cl((t - 1.08) / .7) < 1 && t > 1.08 ? cl((t - 1.08) / .7) : 0 }); }
+    drawMap(this.N.cx, W, H, view, routes, this.car, 0, pins);
+    // набор
+    const n = Math.floor(cl((t - this.T0) / this.dt, 0, this.text.length));
+    const shown = n ? 'Т' + this.text.slice(1, n) : '';
+    if (t < .74) { this.N.txt.textContent = shown; if (!n) this.N.txt.innerHTML = '<span style="color:#7d8088">Куда едем?</span>'; this.N.txt.appendChild(this.N.caret); this.N.caret.style.opacity = 1; }
+    else { this.N.txt.innerHTML = '<span style="color:#fff;font-weight:700">Тверская, 7</span>'; }
+    // всплывающая клавиша
+    const ci = Math.floor((t - this.T0) / this.dt), inKey = t >= this.T0 && ci < this.text.length && ((t - this.T0) % this.dt) < .045;
+    for (const k in this.keys) this.keys[k].style.background = this.keys[k].textContent == 'Найти' ? '#0A84FF' : (this.keys[k].textContent == 'пробел' ? '#6b6c71' : '#6b6c71');
+    if (inKey && t < .72) { const c = this.text[ci], k = this.keys[c]; if (k) { const r = k.getBoundingClientRect(), s = this.P.scr.getBoundingClientRect(); k.style.background = '#9a9ba0';
+      if (c.trim() && c != ',') { this.pop.style.display = 'flex'; this.pop.textContent = c; const sc = s.width / this.W; this.pop.style.left = ((r.left + r.width / 2 - s.left) / sc - 55) + 'px'; this.pop.style.top = ((r.top - s.top) / sc - 120) + 'px'; } else this.pop.style.display = 'none'; } }
+    else this.pop.style.display = 'none';
+    const kd = eio(lin(t, .74, .92)); this.kb.style.transform = `translateY(${kd * 680}px)`;
+    this.sug.style.opacity = t > .5 && t < .86 ? Math.min(1, (t - .5) / .08) * (1 - lin(t, .78, .86)) : 0;
+    this.sug.style.transform = `translateY(${(1 - eo(lin(t, .5, .62))) * -20}px) scale(${t > .71 && t < .78 ? .98 : 1})`;
+    const rp = lin(t, .70, .9); this.rip.style.opacity = rp > 0 && rp < 1 ? .9 * (1 - rp) : 0; this.rip.style.transform = `scale(${1 + rp * 9})`;
+    const cu = eo5(lin(t, 1.10, 1.45)); this.card.style.transform = `translateY(${(1 - cu) * 460}px)`;
+    const pz = t / 2;
+    camSet(this.P, { s: 1.04 + .06 * pz, rx: 7 - 3 * pz, ry: 11 - 6 * pz, rz: -2 + 1.5 * pz, y: 30 });
+  }
+};
+
+// --- навигатор: «Вы прибыли» ---
+SC.nav_arrive = {
+  build() {
+    this.P = phone(R); const { scr, W, H } = this.P; this.W = W; this.H = H;
+    this.N = navChrome(scr, W, H); this.N.top.style.display = 'none';
+    this.ban = el('div', `position:absolute;left:32px;right:32px;top:116px;height:220px;border-radius:44px;background:rgba(36,38,44,.97);z-index:22;display:flex;align-items:center;gap:34px;padding:0 44px;box-sizing:border-box;box-shadow:0 18px 50px rgba(0,0,0,.5)`, scr,
+      `<div id="chk" style="width:120px;height:120px;border-radius:50%;background:#30D158;display:flex;align-items:center;justify-content:center;flex:none"><svg width="70" height="70" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#fff" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+       <div><div style="font:800 76px SF;color:#fff;letter-spacing:-1px">Вы прибыли</div><div style="font:500 42px SF;color:#9a9ca3;margin-top:2px">Тверская, 7</div></div>`);
+    this.car0 = [MAP.vx[15], MAP.hy[7] + 520]; this.dest = [MAP.vx[15], MAP.hy[7] + 30];
+  },
+  update(t) {
+    const { W, H } = this; const m = eio(lin(t, 0, .58)); const car = [this.car0[0], mix(this.car0[1], this.dest[1] + 70, m)];
+    const view = { x: car[0], y: car[1] - 260, rot: -6 + 2 * t, s: 1.05 + .1 * t, ax: W / 2, ay: H * .56 };
+    const pins = [{ p: this.dest, k: 1, ring: t > .5 ? cl((t - .5) / .6) : 0 }];
+    drawMap(this.N.cx, W, H, view, [{ pts: [car, this.dest] }], car, 0, pins);
+    const b = spr(lin(t, .5, .95)); this.ban.style.transform = `translateY(${(1 - eo(lin(t, .5, .7))) * -260}px) scale(${.9 + .1 * b})`; this.ban.style.opacity = t > .5 ? 1 : 0;
+    document.getElementById('chk').style.transform = `scale(${spr(lin(t, .58, 1.0))})`;
+    camSet(this.P, { s: 1.08 + .05 * t, rx: 6, ry: -9 + 5 * t, rz: 1.5, y: 30 });
+  }
+};
+
+// --- чат с ИИ: «Сделай сайт» / «Сделай монтаж» ---
+SC.chat = {
+  build() {
+    this.P = phone(R, 880, 1800); const { scr } = this.P; scr.style.background = '#0f1012';
+    el('div', `position:absolute;left:0;right:0;top:0;height:200px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:26px;box-sizing:border-box;font:600 40px SF;color:#e8e8ea;border-bottom:1px solid #1f2024`, scr, `<span style="color:#FFD60A;margin-right:14px">✦</span>Ассистент`);
+    this.hello = el('div', `position:absolute;left:0;right:0;top:640px;text-align:center;font:700 72px SF;color:#f2f2f4;letter-spacing:-1px`, scr, 'Чем помочь?<div style="font:400 38px SF;color:#7a7c84;margin-top:18px;letter-spacing:0">Напишите задачу</div>');
+    this.b1 = el('div', `position:absolute;right:44px;top:330px;padding:30px 40px;border-radius:44px 44px 12px 44px;background:#2b2c31;font:500 50px SF;color:#fff`, scr, 'Сделай сайт');
+    this.b2 = el('div', `position:absolute;right:44px;top:480px;padding:30px 40px;border-radius:44px 44px 12px 44px;background:#2b2c31;font:500 50px SF;color:#fff`, scr, 'Сделай монтаж');
+    this.dots = el('div', `position:absolute;left:44px;top:640px;padding:34px 40px;border-radius:44px 44px 44px 12px;background:#1d1e22;display:flex;gap:14px`, scr, '<i></i><i></i><i></i>');
+    [...this.dots.children].forEach(d => d.style.cssText = 'display:block;width:20px;height:20px;border-radius:50%;background:#9a9ca3');
+    const bar = el('div', `position:absolute;left:34px;right:34px;bottom:70px;height:150px;border-radius:75px;background:#1f2024;border:2px solid #2c2d33;display:flex;align-items:center;padding:0 22px 0 46px;box-sizing:border-box`, scr);
+    this.in = el('div', `flex:1;font:500 52px SF;color:#fff;white-space:nowrap;overflow:hidden`, bar);
+    this.caret = el('span', `display:inline-block;width:4px;height:58px;background:#FFD60A;vertical-align:-10px;margin-left:3px;border-radius:2px`, null);
+    this.send = el('div', `width:106px;height:106px;border-radius:50%;background:#3a3b40;display:flex;align-items:center;justify-content:center`, bar, `<svg width="52" height="52" viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5L12 5l6.5 6.5" stroke="#0f1012" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
+    this.msgs = [{ s: 'Сделай сайт', t0: .06, dt: .085, send: 1.10, b: this.b1 }, { s: 'Сделай монтаж', t0: 1.26, dt: .062, send: 2.14, b: this.b2 }];
+  },
+  update(t) {
+    let typing = '', active = false;
+    for (const m of this.msgs) {
+      if (t >= m.t0 && t < m.send) { const n = Math.floor(cl((t - m.t0) / m.dt + 1, 0, m.s.length)); typing = m.s.slice(0, n); active = n > 0; }
+      const k = lin(t, m.send, m.send + .22); m.b.style.opacity = k > 0 ? 1 : 0; m.b.style.transform = `translateY(${(1 - eo5(k)) * 70}px) scale(${.85 + .15 * spr(k * 1.2)})`; m.b.style.transformOrigin = '100% 100%';
+    }
+    this.in.textContent = typing; if (!typing) this.in.innerHTML = '<span style="color:#6c6e76">Сообщение…</span>'; this.in.appendChild(this.caret);
+    this.caret.style.opacity = (Math.floor(t * 3.4) % 2 == 0 || typing) ? 1 : 0;
+    this.send.style.background = active ? '#FFD60A' : '#3a3b40'; this.send.style.transform = `scale(${[1.10, 2.14].some(s => t > s - .05 && t < s + .07) ? .86 : 1})`;
+    this.hello.style.opacity = 1 - lin(t, 1.10, 1.3);
+    this.dots.style.opacity = t > 2.25 ? 1 : 0; [...this.dots.children].forEach((d, i) => d.style.transform = `translateY(${-10 * Math.max(0, Math.sin((t - i * .12) * 12))}px)`);
+    if (t < 1.25) { const p = t / 1.25; camSet(this.P, { s: 1.42 + .1 * p, y: -800 - 60 * p, x: 200 - 30 * p, rx: 12, ry: -12 + 4 * p, rz: 2 }); }
+    else { const p = (t - 1.25) / 1.1; camSet(this.P, { s: 1.22 + .07 * p, y: 430 - 30 * p, x: -110, rx: 6, ry: 10 - 3 * p, rz: -1.5 }); }
+  }
+};
+
+// --- «кривой» шаблонный сайт ---
+function uglySite(parent, w, h) {
+  const s = el('div', `position:absolute;left:0;top:0;width:${w}px;height:${h}px;background:#f2f2f2;font-family:DejaVu Serif,serif;overflow:hidden`, parent);
+  el('div', `position:absolute;left:0;right:0;top:0;height:${h * .12}px;background:#1d3fd8;color:#ffef3a;font:bold ${w * .055}px DejaVu Serif;display:flex;align-items:center;padding-left:${w * .04}px;letter-spacing:1px`, s, 'ДОБРО ПОЖАЛОВАТЬ!!!');
+  el('div', `position:absolute;left:${w * .05}px;top:${h * .14}px;font:${w * .032}px DejaVu Serif;color:#0000ee;text-decoration:underline;transform:rotate(-1.5deg)`, s, 'Главная | О нас | Услуги | Контакты');
+  el('div', `position:absolute;left:${w * .06}px;top:${h * .22}px;width:${w * .55}px;height:${h * .3}px;background:#c9c9c9;border:3px solid #999;transform:rotate(2.5deg);display:flex;align-items:center;justify-content:center;font:bold ${w * .05}px DejaVu Sans;color:#888`, s, '<svg width="60%" height="60%" viewBox="0 0 10 10" style="position:absolute"><path d="M0 0L10 10M10 0L0 10" stroke="#aaa" stroke-width=".25"/></svg>ФОТО');
+  el('div', `position:absolute;left:${w * .66}px;top:${h * .24}px;width:${w * .3}px;font:${w * .026}px DejaVu Serif;color:#333;line-height:1.25`, s, 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Наша компания лучшая компания. Звоните!!');
+  el('div', `position:absolute;left:${w * .5}px;top:${h * .54}px;padding:${w * .02}px ${w * .05}px;background:#ff2a2a;color:#fff;font:bold ${w * .04}px DejaVu Sans;border:4px outset #ff9a9a;transform:rotate(-6deg)`, s, 'КНОПКА');
+  el('div', `position:absolute;left:${w * .08}px;top:${h * .6}px;font:${w * .07}px DejaVu Sans;color:#ff00c8;transform:scaleX(1.9) rotate(4deg);transform-origin:0 0`, s, '★ СКИДКИ ★');
+  el('div', `position:absolute;left:${w * .05}px;top:${h * .74}px;width:${w * .9}px;font:${w * .028}px DejaVu Serif;color:#222`, s, 'Текст текст текст текст текст текст. Lorem ipsum. Текст. Здесь будет текст про нас и наши услуги.');
+  el('div', `position:absolute;left:${w * .72}px;top:${h * .62}px;width:${w * .2}px;height:${w * .2}px;background:#ffd400;border-radius:50%;transform:scaleY(.55) rotate(-12deg)`, s);
+  el('div', `position:absolute;left:0;right:0;bottom:0;height:${h * .09}px;background:#444;color:#ccc;font:${w * .025}px DejaVu Sans;display:flex;align-items:center;justify-content:center`, s, '© 2009 Все права защищены. Сайт создан автоматически');
+  return s;
+}
+SC.ugly = {
+  build() {
+    R.style.background = '#0b0c10';
+    el('div', `position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,rgba(120,150,255,.25),rgba(0,0,0,0) 60%)`, R);
+    this.cam = el('div', `position:absolute;left:0;top:0;width:1080px;height:1920px;transform-style:preserve-3d`, R);
+    const mon = el('div', `position:absolute;left:40px;top:430px;width:1000px;height:1000px;border-radius:26px;background:#111;padding:22px;box-sizing:border-box;box-shadow:0 40px 120px rgba(0,0,0,.7),0 0 120px rgba(120,150,255,.25)`, this.cam);
+    const scr = el('div', `position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px`, mon);
+    el('div', `position:absolute;left:0;right:0;top:0;height:56px;background:#dcdcdc;border-bottom:1px solid #aaa;font:24px DejaVu Sans;color:#555;display:flex;align-items:center;padding-left:20px;gap:14px;z-index:2`, scr, '<span style="width:18px;height:18px;border-radius:50%;background:#e66;display:inline-block"></span><span style="width:18px;height:18px;border-radius:50%;background:#eb5;display:inline-block"></span><span style="width:18px;height:18px;border-radius:50%;background:#6c6;display:inline-block"></span>&nbsp;moy-sait-1.site123.ru');
+    const body = el('div', `position:absolute;left:0;top:56px;right:0;bottom:0`, scr); uglySite(body, 956, 900);
+    this.err = el('div', `position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);padding:26px 40px;background:#fff;border:3px solid #c00;color:#c00;font:bold 34px DejaVu Sans;box-shadow:6px 6px 0 #000;z-index:5;white-space:nowrap`, scr, '⚠ Ошибка: изображение не найдено');
+  },
+  update(t) {
+    this.err.style.opacity = t > .45 ? 1 : 0; this.err.style.transform = `translate(-50%,-50%) scale(${t > .45 ? .9 + .1 * spr((t - .45) / .3) : .5}) rotate(-3deg)`;
+    const p = t / .95; this.cam.style.transform = `perspective(2400px) translateY(-300px) rotateX(${6 - 2 * p}deg) rotateY(${-14 + 5 * p}deg) rotateZ(${-4 + 1.5 * p}deg) scale(${1.05 + .08 * p})`;
+  }
+};
+// --- силуэт откидывается на спинку: «ИИ тупой» ---
+SC.lean = {
+  build() {
+    R.style.background = '#06070a';
+    this.cam = el('div', `position:absolute;left:0;top:0;width:1080px;height:1920px`, R);
+    this.glow = el('div', `position:absolute;left:-200px;top:200px;width:1480px;height:1300px;background:radial-gradient(ellipse at 50% 40%,rgba(150,175,255,.45),rgba(60,80,160,.12) 45%,rgba(0,0,0,0) 70%)`, this.cam);
+    const mon = el('div', `position:absolute;left:190px;top:420px;width:700px;height:470px;background:#111;border-radius:16px;padding:14px;box-sizing:border-box;box-shadow:0 0 160px rgba(140,165,255,.55)`, this.cam);
+    const scr = el('div', `position:relative;width:100%;height:100%;overflow:hidden;border-radius:6px`, mon); uglySite(scr, 672, 442);
+    el('div', `position:absolute;left:500px;top:890px;width:80px;height:150px;background:linear-gradient(#1a1b20,#0c0d10)`, this.cam);
+    el('div', `position:absolute;left:330px;top:1030px;width:420px;height:26px;border-radius:10px;background:#15161a`, this.cam);
+    el('div', `position:absolute;left:-100px;top:1080px;width:1280px;height:60px;background:linear-gradient(#22242b,#0b0c0f);box-shadow:0 -2px 0 rgba(160,180,255,.25)`, this.cam);
+    // мужской силуэт со спины + кресло
+    this.man = el('div', `position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:540px 1900px`, this.cam);
+    this.man.innerHTML = `<svg width="1080" height="1920" viewBox="0 0 1080 1920" style="filter:drop-shadow(0 0 3px rgba(170,190,255,.9)) drop-shadow(0 0 22px rgba(120,150,255,.35))">
+      <path d="M150 1920 L170 1500 Q180 1380 300 1360 L780 1360 Q900 1380 910 1500 L930 1920 Z" fill="#07080b"/>
+      <g id="body"><path d="M120 1920 C130 1640 170 1520 330 1470 C400 1448 450 1430 470 1395 L478 1330 L602 1330 L610 1395 C630 1430 680 1448 750 1470 C910 1520 950 1640 960 1920 Z" fill="#020203"/>
+      <g id="head"><path d="M540 1060 C625 1060 668 1120 668 1205 C668 1255 655 1290 640 1318 C628 1342 600 1366 540 1366 C480 1366 452 1342 440 1318 C425 1290 412 1255 412 1205 C412 1120 455 1060 540 1060 Z" fill="#020203"/>
+      <path d="M418 1196 C410 1176 400 1180 402 1214 C404 1240 414 1252 424 1246 Z M662 1196 C670 1176 680 1180 678 1214 C676 1240 666 1252 656 1246 Z" fill="#020203"/>
+      <path d="M430 1150 C440 1080 490 1050 540 1050 C595 1050 645 1082 652 1150 C625 1128 590 1120 540 1120 C490 1120 455 1128 430 1150 Z" fill="#020203"/></g></g></svg>`;
+    this.head = this.man.querySelector('#head'); this.body = this.man.querySelector('#body');
+  },
+  update(t) {
+    const k = spr(lin(t, .26, .9)) ; // откинулся
+    this.body.setAttribute('transform', `translate(0 ${k * 60}) rotate(${-k * 7} 540 1700)`);
+    this.head.setAttribute('transform', `rotate(${k * 9} 540 1330) translate(0 ${k * 24})`);
+    const p = t / 1.25; this.cam.style.transform = `scale(${1.12 - .07 * p}) translateY(${-30 + 20 * p}px)`;
+    this.glow.style.opacity = .85 + .15 * Math.sin(t * 17) * Math.sin(t * 5.3);
+  }
+};
+
+// --- белые блоки в стиле Apple ---
+function whiteBase() {
+  R.style.background = '#f5f5f7';
+  el('div', `position:absolute;inset:0;background:radial-gradient(ellipse at 50% 38%,#ffffff 0%,#f5f5f7 55%,#e9e9ee 100%)`, R);
+  return el('div', `position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:540px 900px`, R);
+}
+function word(parent, txt, css) { return el('div', `position:absolute;left:0;right:0;text-align:center;white-space:nowrap;${css}`, parent, txt); }
+function marker(parent, css) { return el('div', `position:absolute;background:#FFD60A;border-radius:18px;transform-origin:0 50%;${css}`, parent); }
+function appear(e, t, t0, dy = 40, blur = 16) { const k = eo5(lin(t, t0, t0 + .32)); e.style.opacity = k; e.style.transform = `translateY(${(1 - k) * dy}px) scale(${.96 + .04 * k})`; e.style.filter = `blur(${(1 - k) * blur}px)`; }
+SC.w_addr = {
+  build() {
+    this.c = whiteBase();
+    this.pin = el('div', `position:absolute;left:490px;top:420px;width:100px;height:130px`, this.c, `<svg width="100" height="130" viewBox="0 0 24 31"><path d="M12 1a10 10 0 0 0-10 10c0 7.5 10 19 10 19s10-11.5 10-19A10 10 0 0 0 12 1z" fill="#1d1d1f"/><circle cx="12" cy="11" r="4" fill="#FFD60A"/></svg>`);
+    this.m = marker(this.c, `left:265px;top:648px;width:550px;height:150px`);
+    this.w1 = word(this.c, 'Адрес', `top:600px;font:800 200px SF;color:#1d1d1f;letter-spacing:-6px`);
+    this.w2 = el('div', `position:absolute;left:0;right:0;top:830px;text-align:center;font:800 200px SF;color:#1d1d1f;letter-spacing:-6px;white-space:nowrap`, this.c, '<span id="d1">для</span>&nbsp;<span id="d2">ИИ</span>');
+    this.w3 = word(this.c, 'это', `top:1090px;font:500 76px SF;color:#86868b`);
+  },
+  update(t) {
+    const pk = spr(lin(t, 0, .45)); this.pin.style.transform = `translateY(${(1 - eo(lin(t, 0, .25))) * -120}px) scale(${pk})`;
+    appear(this.w1, t, .10); this.m.style.transform = `scaleX(${eo5(lin(t, .22, .55))})`;
+    appear(document.getElementById('d1'), t, .54); appear(document.getElementById('d2'), t, .78);
+    document.getElementById('d1').style.display = document.getElementById('d2').style.display = 'inline-block';
+    appear(this.w3, t, 1.34, 30, 10);
+    this.c.style.transform = `scale(${1 + .045 * t / 1.95}) translateY(${-10 * t}px)`;
+  }
+};
+function numScene(num, label, tl, words, opts) {
+  return {
+    build() {
+      this.c = whiteBase();
+      this.lab = word(this.c, label, `top:${opts.labY}px;font:500 64px SF;color:#86868b;letter-spacing:.5px`);
+      this.num = word(this.c, num, `top:${opts.numY}px;font:200 ${opts.numS}px SF;color:#1d1d1f;letter-spacing:-10px;line-height:1`);
+      this.lines = opts.lines.map((ln, i) => el('div', `position:absolute;left:0;right:0;top:${opts.y0 + i * opts.lh}px;text-align:center;white-space:nowrap;font:800 ${opts.fs}px SF;color:#1d1d1f;letter-spacing:-4px`, this.c, ln.map((w, j) => `<span class="w" style="display:inline-block;position:relative;z-index:2">${w}</span>`).join(' ')));
+      this.ws = [...this.c.querySelectorAll('.w')];
+      this.marks = opts.lines.map((ln, i) => marker(this.c, `left:0;top:${opts.y0 + i * opts.lh + opts.fs * .42}px;height:${opts.fs * .5}px;z-index:1`));
+    },
+    update(t) {
+      appear(this.lab, t, tl.lab, 30, 10);
+      const k = eo5(lin(t, tl.num, tl.num + .45)); this.num.style.opacity = k; this.num.style.filter = `blur(${(1 - k) * 20}px)`; this.num.style.transform = `scale(${1.25 - .25 * k})`;
+      this.ws.forEach((w, i) => appear(w, t, tl.words[i]));
+      this.marks.forEach((m, i) => { const ln = this.lines[i], r = ln.getBoundingClientRect(), wsp = [...ln.querySelectorAll('.w')];
+        const a = wsp[0].offsetLeft, b = wsp[wsp.length - 1].offsetLeft + wsp[wsp.length - 1].offsetWidth;
+        m.style.left = (a - 22) + 'px'; m.style.width = (b - a + 44) + 'px'; m.style.transform = `scaleX(${eo5(lin(t, tl.mark + i * .12, tl.mark + i * .12 + .35))})`; });
+      this.c.style.transform = `scale(${1 + .05 * t / tl.dur}) translateY(${-14 * t}px)`;
+    }
+  };
+}
+SC.w_one = numScene('1', 'Первое —', { lab: .10, num: .08, words: [.58, .80], mark: .78, dur: 1.7 }, null, { labY: 420, numY: 500, numS: 520, y0: 1080, lh: 190, fs: 180, lines: [['Для', 'кого']] });
+SC.w_two = numScene('2', 'Второе —', { lab: .07, num: .05, words: [.52, .80, 1.24], mark: 1.30, dur: 2.3 }, null, { labY: 330, numY: 400, numS: 420, y0: 900, lh: 170, fs: 150, lines: [['Что', 'должно'], ['получиться']] });
+SC.w_three = numScene('3', 'Третье —', { lab: .09, num: .07, words: [.57], mark: .62, dur: 1.35 }, null, { labY: 420, numY: 500, numS: 520, y0: 1080, lh: 190, fs: 200, lines: [['Пример']] });
+
+// --- финал: ПОДПИШИСЬ ---
+SC.w_sub = {
+  build() {
+    this.c = whiteBase();
+    this.m = marker(this.c, `left:150px;top:648px;width:780px;height:100px`);
+    this.w1 = word(this.c, 'Подпишись', `top:575px;font:800 148px SF;color:#1d1d1f;letter-spacing:-4px`);
+    this.l2 = el('div', `position:absolute;left:0;right:0;top:820px;text-align:center;font:500 66px SF;color:#1d1d1f;line-height:1.25`, this.c, '<span id="s1" style="display:inline-block">тут про</span>&nbsp;<span id="s2" style="display:inline-block">искусственный</span><br><span id="s3" style="display:inline-block">интеллект</span>');
+    this.card = el('div', `position:absolute;left:110px;right:110px;top:1130px;height:230px;border-radius:60px;background:#fff;box-shadow:0 30px 80px rgba(0,0,0,.12),0 4px 14px rgba(0,0,0,.06);display:flex;align-items:center;padding:0 40px;box-sizing:border-box;gap:30px`, this.c,
+      `<div style="width:140px;height:140px;border-radius:50%;background:conic-gradient(from 200deg,#FFD60A,#ff9f0a,#1d1d1f,#FFD60A);padding:6px;box-sizing:border-box;flex:none"><div style="width:100%;height:100%;border-radius:50%;background:#1d1d1f;border:5px solid #fff;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:800 50px SF;color:#FFD60A">ai</div></div>
+       <div style="flex:1"><div style="font:800 54px SF;color:#1d1d1f;letter-spacing:-1px">saidulaev.ai</div><div style="font:500 34px SF;color:#86868b;margin-top:4px">блог про ИИ</div></div>`);
+    this.btn = el('div', `position:absolute;left:110px;right:110px;top:1400px;height:150px;border-radius:75px;background:#1d1d1f;color:#fff;font:700 56px SF;display:flex;align-items:center;justify-content:center;gap:20px`, this.c, '<span id="bt">Подписаться</span>');
+    this.bell = el('div', `position:absolute;left:820px;top:1110px;width:110px;height:110px;border-radius:50%;background:#FFD60A;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(255,214,10,.5)`, this.c, `<svg width="60" height="60" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zm-2 15a2 2 0 0 0 4 0" fill="#1d1d1f"/></svg>`);
+    this.rip = el('div', `position:absolute;left:540px;top:1475px;width:60px;height:60px;margin:-30px;border-radius:50%;background:rgba(255,255,255,.45)`, this.c);
+  },
+  update(t) {
+    appear(this.w1, t, .08, 50, 20); this.m.style.transform = `scaleX(${eo5(lin(t, .25, .6))})`;
+    const w1k = spr(lin(t, .08, .6)); this.w1.style.transform += ` scale(${.9 + .1 * w1k})`;
+    appear(document.getElementById('s1'), t, 1.19, 24, 8); appear(document.getElementById('s2'), t, 1.44, 24, 8); appear(document.getElementById('s3'), t, 1.90, 24, 8);
+    const ck = eo5(lin(t, .55, .95)); this.card.style.opacity = ck; this.card.style.transform = `translateY(${(1 - ck) * 80}px)`;
+    const bk = eo5(lin(t, .7, 1.1)); this.btn.style.opacity = bk; this.btn.style.transform = `translateY(${(1 - bk) * 80}px) scale(${t > 2.0 && t < 2.12 ? .95 : 1})`;
+    const done = t > 2.08; this.btn.style.background = done ? '#e8e8ed' : '#1d1d1f'; this.btn.style.color = done ? '#1d1d1f' : '#fff';
+    document.getElementById('bt').textContent = done ? '✓ Вы подписаны' : 'Подписаться';
+    const rp = lin(t, 2.0, 2.4); this.rip.style.opacity = rp > 0 && rp < 1 ? (1 - rp) : 0; this.rip.style.transform = `scale(${1 + rp * 14})`;
+    const bl = lin(t, 2.12, 2.7); this.bell.style.opacity = t > 2.1 ? 1 : 0; this.bell.style.transform = `scale(${spr(lin(t, 2.1, 2.45))}) rotate(${Math.sin(bl * 30) * 22 * (1 - bl)}deg)`;
+    this.c.style.transform = `scale(${1 + .05 * t / 2.8}) translateY(${-16 * t}px)`;
+  }
+};
+
+// --- приложение заведения: «Заказать» -> «Заказ принят» ---
+SC.order = {
+  build() {
+    this.P = phone(R, 860, 1780, true); const { scr } = this.P;
+    const top = el('div', `position:absolute;left:0;right:0;top:0;height:250px;padding:120px 56px 0;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between`, scr,
+      `<div style="font:500 40px PF;color:#1d1d1f;letter-spacing:6px">SEZON</div><div style="width:80px;height:80px;border-radius:50%;background:#ece8e2;display:flex;align-items:center;justify-content:center;font:600 34px SF">2</div>`);
+    const chips = el('div', `position:absolute;left:56px;top:270px;display:flex;gap:16px`, scr, ['Бургеры', 'Пицца', 'Кофе', 'Салаты'].map((c, i) => `<div style="padding:18px 30px;border-radius:40px;background:${i ? '#ece8e2' : '#1d1d1f'};color:${i ? '#1d1d1f' : '#fff'};font:600 32px SF">${c}</div>`).join(''));
+    const card = el('div', `position:absolute;left:40px;right:40px;top:380px;height:1000px;border-radius:56px;overflow:hidden;background:#fff;box-shadow:0 20px 50px rgba(0,0,0,.08)`, scr);
+    el('div', `position:absolute;left:0;right:0;top:0;height:640px;background:url(img/burger.jpg) center 48%/cover`, card);
+    el('div', `position:absolute;left:44px;top:672px;font:800 60px SF;color:#1d1d1f;letter-spacing:-1px`, card, 'Бургер с говядиной');
+    el('div', `position:absolute;left:44px;top:752px;font:400 34px SF;color:#86868b`, card, 'Бриошь, мраморная говядина, чеддер');
+    el('div', `position:absolute;left:44px;top:842px;font:800 64px SF;color:#1d1d1f`, card, '590 ₽');
+    el('div', `position:absolute;right:44px;top:836px;display:flex;align-items:center;gap:30px;font:600 48px SF`, card, '<span style="width:76px;height:76px;border-radius:50%;background:#ece8e2;display:flex;align-items:center;justify-content:center">−</span>1<span style="width:76px;height:76px;border-radius:50%;background:#ece8e2;display:flex;align-items:center;justify-content:center">+</span>');
+    this.btn = el('div', `position:absolute;left:40px;right:40px;top:1430px;height:170px;border-radius:85px;background:#FFD60A;color:#1a1200;font:700 60px SF;display:flex;align-items:center;justify-content:center;gap:20px;box-shadow:0 18px 40px rgba(255,190,0,.35)`, scr, '<span id="ob">Заказать · 590 ₽</span>');
+    this.rip = el('div', `position:absolute;left:400px;top:1515px;width:60px;height:60px;margin:-30px;border-radius:50%;background:rgba(255,255,255,.7);z-index:5`, scr);
+    this.tip = el('div', `position:absolute;left:400px;top:1515px;width:120px;height:120px;margin:-60px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.95),rgba(255,255,255,.35) 60%,rgba(255,255,255,0) 72%);z-index:6`, scr);
+    this.note = el('div', `position:absolute;left:28px;right:28px;top:110px;height:200px;border-radius:50px;background:rgba(250,250,252,.88);backdrop-filter:blur(30px);box-shadow:0 20px 60px rgba(0,0,0,.25);z-index:40;display:flex;align-items:center;gap:30px;padding:0 36px;box-sizing:border-box`, scr,
+      `<div style="width:110px;height:110px;border-radius:28px;background:#1d1d1f;display:flex;align-items:center;justify-content:center;font:500 30px PF;color:#FFD60A;letter-spacing:2px;flex:none">SZN</div>
+       <div style="flex:1"><div style="display:flex;justify-content:space-between;font:600 32px SF;color:#86868b"><span>SEZON</span><span>сейчас</span></div><div style="font:800 48px SF;color:#1d1d1f;margin-top:4px">Заказ принят ✓</div><div style="font:400 34px SF;color:#3a3a3c">Курьер будет через 25 минут</div></div>`);
+  },
+  update(t) {
+    const tap = .80, done = t > tap + .12;
+    const tk = lin(t, tap - .25, tap); this.tip.style.opacity = t < tap + .15 ? eo(tk) * (1 - lin(t, tap + .02, tap + .15)) : 0; this.tip.style.transform = `scale(${1.4 - .4 * eo(tk)})`;
+    const rp = lin(t, tap, tap + .4); this.rip.style.opacity = rp > 0 && rp < 1 ? .8 * (1 - rp) : 0; this.rip.style.transform = `scale(${1 + rp * 16})`;
+    this.btn.style.transform = `scale(${t > tap - .02 && t < tap + .1 ? .95 : 1})`;
+    this.btn.style.background = done ? '#30D158' : '#FFD60A'; this.btn.style.color = done ? '#fff' : '#1a1200';
+    document.getElementById('ob').textContent = done ? '✓ Заказ принят' : 'Заказать · 590 ₽';
+    const nk = lin(t, 1.48, 1.78); this.note.style.transform = `translateY(${(1 - eo5(nk)) * -330}px) scale(${.94 + .06 * spr(nk)})`; this.note.style.opacity = t > 1.48 ? 1 : 0;
+    if (t < 1.30) { const p = t / 1.3; camSet(this.P, { s: 1.3 + .08 * p, y: -600 - 30 * p, rx: 12, ry: -14 + 4 * p, rz: 2.5 }); }
+    else { const p = (t - 1.3) / 1.25; camSet(this.P, { s: 1.5 + .06 * p, y: 640 + 20 * p, x: 70, rx: -4, ry: 12 - 3 * p, rz: -2 }); }
+  }
+};
+
+// --- сайт заведения: плавный скролл ---
+SC.site = {
+  build() {
+    this.P = phone(R, 860, 1780); const { scr } = this.P; scr.style.background = '#0e0c0a';
+    el('div', `position:absolute;left:0;right:0;top:0;height:170px;background:rgba(20,18,16,.92);z-index:30;display:flex;align-items:flex-end;justify-content:center;padding-bottom:22px;box-sizing:border-box`, scr,
+      `<div style="width:560px;height:72px;border-radius:24px;background:#2a2723;display:flex;align-items:center;justify-content:center;font:500 32px SF;color:#d8d2c8">🔒 sezon.ru</div>`);
+    const pg = this.pg = el('div', `position:absolute;left:0;right:0;top:170px`, scr);
+    el('div', `position:relative;height:1180px;background:url(img/dish.jpg) 46% 50%/cover`, pg,
+      `<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,12,10,.45),rgba(14,12,10,.15) 40%,rgba(14,12,10,.92))"></div>
+       <div style="position:absolute;left:56px;right:56px;top:46px;display:flex;justify-content:space-between;font:500 30px SF;color:#efe7da;letter-spacing:1px"><span style="font:500 34px PF;letter-spacing:6px">SEZON</span><span>Меню · Бронь · Доставка</span></div>
+       <div style="position:absolute;left:56px;right:56px;bottom:90px"><div style="font:400 30px SF;color:#d9b77a;letter-spacing:6px">КУХНЯ И КОФЕ</div>
+       <div style="font:400 112px PF;color:#fff;line-height:1.02;margin-top:18px">Вкус, который<br>хочется<br>повторить</div>
+       <div style="display:flex;gap:20px;margin-top:44px"><div style="padding:30px 48px;border-radius:60px;background:#FFD60A;color:#1a1200;font:700 38px SF">Заказать онлайн</div><div style="padding:30px 44px;border-radius:60px;border:2px solid rgba(255,255,255,.6);color:#fff;font:600 38px SF">Меню</div></div></div>`);
+    const items = [['burger', 'Бургер', '590 ₽'], ['pizza', 'Пепперони', '720 ₽'], ['latte', 'Айс-латте', '290 ₽'], ['salad', 'Цезарь', '480 ₽'], ['grill', 'Гриль', '890 ₽'], ['espresso', 'Эспрессо', '190 ₽']];
+    el('div', `padding:70px 56px 30px;font:400 76px PF;color:#fff`, pg, 'Популярное');
+    const grid = el('div', `display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:0 56px`, pg);
+    items.forEach(([im, n, p]) => el('div', `border-radius:40px;overflow:hidden;background:#1b1815`, grid,
+      `<div style="height:330px;background:url(img/${im}.jpg) center/cover"></div><div style="padding:24px 28px 30px"><div style="font:600 38px SF;color:#fff">${n}</div><div style="font:700 36px SF;color:#d9b77a;margin-top:6px">${p}</div></div>`));
+    el('div', `margin:50px 56px;padding:56px;border-radius:44px;background:#FFD60A;color:#1a1200`, pg, `<div style="font:800 64px SF;letter-spacing:-1px">Доставка за 30 минут</div><div style="font:500 36px SF;margin-top:10px">Закажите на сайте — привезём горячим</div>`);
+  },
+  update(t) {
+    const sc = eio(lin(t, .15, 2.35)) * 1500; this.pg.style.transform = `translateY(${-sc}px)`;
+    if (t < 1.0) { const p = t; camSet(this.P, { s: 1.0 + .05 * p, rx: 8, ry: -16 + 5 * p, rz: 3, y: 10 }); }
+    else { const p = (t - 1) / 1.4; camSet(this.P, { s: 1.42 + .06 * p, y: 160 - 40 * p, x: 20, rx: 5, ry: 13 - 4 * p, rz: -2 }); }
+  }
+};
+
+window.renderScene = async (name, t) => {
+  if (window.__cur !== name) { await Promise.all(['100','200','300','400','500','600','700','800','900'].map(w => document.fonts.load(w + ' 40px SF'))); await document.fonts.load('40px PF');
+    if (!MAP) MAP = buildMap(); R.innerHTML = ''; R.style.background = 'transparent'; SC[name].build(); window.__cur = name; await document.fonts.ready;
+    await Promise.all([...document.images].map(i => i.decode().catch(() => 0)));
+    await Promise.all(['burger', 'pizza', 'latte', 'salad', 'grill', 'espresso', 'dish'].map(n => new Promise(r => { const i = new Image(); i.onload = i.onerror = r; i.src = 'img/' + n + '.jpg'; }))); }
+  SC[name].update(t);
+};
+</script></body></html>
