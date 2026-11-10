@@ -12,7 +12,7 @@ db = lambda x: 10 ** (x / 20)
 rng = np.random.default_rng(42)
 tt = np.arange(N) / SR
 
-v, _ = sf.read(HERE + "work/voice_studio.wav"); v = np.pad(v, (0, max(0, N - len(v))))[:N]
+v, _ = sf.read(HERE + "work/voice_v30.wav"); v = np.pad(v, (0, max(0, N - len(v))))[:N]
 VR = np.sqrt(np.mean(v[np.abs(v) > 1e-3] ** 2))
 
 def bp(x, lo, hi, o=2): return sosfilt(butter(o, [lo, hi], "bp", fs=SR, output="sos"), x)
@@ -45,7 +45,7 @@ G_city = env([(0, -27), (2.3, -27), (2.45, -60), (6.5, -60), (6.6, -33), (8.22, 
 G_cabin = env([(0, -90), (2.33, -90), (2.40, -25), (6.5, -25), (6.6, -40), (8.22, -40), (8.25, -90), (DUR, -90)])
 G_rain = env([(0, -90), (1.15, -90), (1.25, -34), (2.3, -34), (2.4, -90), (16.95, -90), (17.45, -90), (17.8, -31), (18.9, -31), (19.2, -40), (21.85, -40), (21.95, -90), (DUR, -90)])
 amb = (city * G_city + cabin * G_cabin + rain * G_rain) * VR
-amb_st = np.stack([amb, np.roll(amb, 911)], 1)            # лёгкая ширина
+amb_st = np.stack([amb, amb], 1)                             # моно: на динамике телефона не «плывёт»
 
 # ---------------- вокальный фон (нашид-подобный хор «м-м», размытый) ----------------
 def voice_line(notes, base, detune=0.0, delay=0.0, vowel=(330, 760, 2400), bright=1.0):
@@ -168,7 +168,6 @@ def syn_subway(d=.85):
     return rumble + clack
 
 # --- расстановка (время = время ролика) ---
-P("sc_camwhoosh.wav", .60, -15, align="peak", pan=-.2)                        # камера опускается к дороге
 put(syn_pass(1.5), 1.25, -18, align="none", pan=.3)                             # такси проезжает
 put(syn_handle(), 2.10, -20, align="none")                                      # ручка двери
 put(syn_door(), 2.37, -9, align="none")                                         # хлопок двери (на склейке внутрь)
@@ -185,9 +184,9 @@ def typed(text, t0, dt, g, pan=0.0):
         j += 1
 typed("куда-нибудь", 6.95, .055, -27)
 # скретч: из звучащего фона перед заморозкой
-pre = (amb_st[:, 0] + nas[:, 0])[int(7.6 * SR):int(8.25 * SR)]
+_x = np.arange(int(.7 * SR)) / SR; pre = sum(np.sign(np.sin(2 * np.pi * f * _x)) * a for f, a in ((110, 1), (164.8, .7), (220, .5))) + rng.standard_normal(len(_x)) * .15; pre = lp(pre, 2500)
 put(syn_scratch(pre / (np.abs(pre).max() + 1e-9)), 8.23, -8, align="none")
-P("231188_Mechanics, Electronics, Micro, Glitch x3 09_cut(0003-0004).mp3", 14.79, -15); put(load("Резкие вуши.mp3")[int(2.45 * SR):int(2.9 * SR)], 14.79, -19, align="peak")   # кривой сайт
+P("231188_Mechanics, Electronics, Micro, Glitch x3 09_cut(0003-0004).mp3", 14.79, -17)   # кривой сайт
 P("Interface App 4.wav", 15.20, -19)                                            # «ошибка»
 put(syn_boom(), 16.00, -5, align="none"); P("impact eric.wav", 16.01, -13, lpf=320)      # глухой «бум» на «тупой»
 P("iphone-keyboard-typing-sound-effect-336778.mp3", 18.92, -22, maxlen=.95)      # руки печатают
@@ -195,38 +194,36 @@ typed("тверская, 7", 19.95, .055, -22)
 P("App Click 3.wav", 20.62, -17); P("swoosh.wav", 20.70, -27)
 P("small_whoosh_chimes_1.wav", 20.74, -24)                                      # маршрут рисуется
 P("tink.wav", 21.00, -13)                                                       # мягкий «дзинь»
-P("Whoosh long (4).wav", 35.70, -15, align="peak"); P("sc_flash.wav", 38.90, -19)
-put(syn_pass(1.2), 35.85, -19, align="none", pan=-.3); P("DA - Whoosh Big - 6.mp3", 36.85, -19, align="peak"); put(syn_pass(.8), 36.95, -18, align="none", pan=.3)
-put(load("Резкие вуши.mp3")[int(2.45 * SR):int(2.9 * SR)], 37.75, -19, align="peak")
+P("Whoosh long (4).wav", 35.70, -24, align="peak")
+put(syn_pass(1.8), 35.95, -24, align="none")
 P("sc_chimes.wav", 38.27, -14)                                                  # «Вы прибыли»
-P("sc_whoosh.wav", 41.72, -15, align="peak", stop=DUR - .02)                     # в город (петля)
+P("sc_whoosh.wav", 41.72, -24, align="peak", stop=DUR - .02)                     # в город (петля)
 
-# --- белые Apple-сцены: звуки из движка (events.json), как в engine/compose.py ---
-import json as _json, os as _os
-_ev = _json.load(open(HERE + "work/apple/ov/events.json"))
-_fr = np.sqrt(np.convolve(v ** 2, np.ones(2048) / 2048, "valid")[::512] + 1e-12); _vv = _fr[_fr > np.percentile(_fr, 40)]
-VREL = 10 ** ((float(20 * np.log10(np.percentile(_vv, 60) + 1e-9)) + 18) / 20)
-LOC = "/home/user/sushi8.github.io/.claude/skills/montazh/engine/sfx_local/"
-_ec = {}
-for e in _ev:
-    if e["s"] not in _ec:
-        x_, sr_ = sf.read(LOC + e["s"] + ".wav"); x_ = x_ if x_.ndim == 1 else x_.mean(1)
-        if sr_ != SR: x_ = np.interp(np.arange(int(len(x_) * SR / sr_)) * sr_ / SR, np.arange(len(x_)), x_)
-        _ec[e["s"]] = x_
-    sig = _ec[e["s"]] * e["g"] * (VREL if e.get("v") else 1.0); a = int(e["t"] * SR)
-    if a >= N: continue
-    seg = sig[:N - a]; sfx[a:a + len(seg), 0] += seg; sfx[a:a + len(seg), 1] += seg
+# --- свои белые Apple-сцены: тихие аккуратные звуки (минимум, как в роликах Apple) ---
+P("swoosh.wav", 9.36, -27); P("linepop.wav", 9.39, -27)
+for t_ in (10.40, 10.60, 10.80): P("blockpop.wav", t_, -30)
+P("linepop.wav", 11.20, -25)
+P("shimmer.wav", 12.30, -28)
+typed("Сделай сайт", 12.49, (13.30 - 12.49) / 11, -25); P("App Click 3.wav", 13.45, -21); P("swoosh.wav", 13.47, -29)
+typed("Сделай монтаж", 13.68, (14.40 - 13.68) / 13, -25); P("App Click 3.wav", 14.50, -21); P("swoosh.wav", 14.52, -29)
+P("swoosh.wav", 21.90, -27); P("tink.wav", 21.95, -27); P("linepop.wav", 22.02, -25); P("small_whoosh_chimes_1.wav", 22.10, -30); P("swoosh.wav", 23.72, -30)
+P("blockpop.wav", 23.88, -27); P("linepop.wav", 24.44, -25)
+for t_ in (25.70, 25.98, 26.26): P("blockpop.wav", t_, -30)
+P("swoosh.wav", 26.95, -30); P("blockpop.wav", 27.12, -27); P("linepop.wav", 27.63, -25)
+P("swoosh.wav", 29.30, -29); P("App Click 1.wav", 30.20, -19); P("notification3.mp3", 30.94, -17)
+P("swoosh.wav", 31.80, -30); P("blockpop.wav", 31.97, -27); P("linepop.wav", 32.53, -25); P("swoosh.wav", 33.30, -29); P("swoosh.wav", 34.10, -33)
+P("swoosh.wav", 38.90, -27); P("linepop.wav", 39.00, -23); P("blockpop.wav", 39.32, -28); P("App Click 5.wav", 40.96, -19); P("tink.wav", 41.02, -24)
 
 # ---------------- сведение ----------------
 vo = np.stack([v, v], 1)
 duck = np.convolve((np.abs(v) > VR * .25).astype(float), np.ones(int(.25 * SR)) / (.25 * SR), "same")
-duck = 1 - .35 * np.clip(duck * 3, 0, 1)                                   # фон уступает голосу
-mix = vo + sfx + (amb_st + nas) * duck[:, None]
+duck = 1 - .2 * np.clip(duck * 2, 0, 1)                                   # фон уступает голосу
+mix = vo + sfx + amb_st * duck[:, None]
 sf.write(HERE + "work/mix_raw.wav", mix.astype(np.float32), SR, subtype="FLOAT")
 r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", HERE + "work/mix_raw.wav", "-af", "ebur128", "-f", "null", "-"], capture_output=True, text=True).stderr
 I = float([l for l in r.splitlines() if l.strip().startswith("I:")][-1].split()[1])
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", HERE + "work/mix_raw.wav", "-af", f"volume={-14 - I:.2f}dB,alimiter=limit=0.74:attack=2:release=60:level=disabled",
                 "-ar", "48000", "-c:a", "pcm_s16le", HERE + "work/mix.wav"], check=True)
-for nm, x in [("голос", vo), ("эффекты", sfx), ("фон", amb_st), ("вокальный фон", nas)]:
+for nm, x in [("голос", vo), ("эффекты", sfx), ("фон", amb_st), ("вокальный фон", nas * 0)]:
     print(f"{nm:14s} RMS {20 * np.log10(np.sqrt(np.mean(x ** 2)) + 1e-12):6.1f} дБ  пик {20 * np.log10(np.abs(x).max() + 1e-12):6.1f}")
 print("исходно", I, "LUFS")

@@ -12,30 +12,28 @@ N = int(round(DUR * FPS))
 
 def zc(a, b, c0, c1):            # зум по времени клипа (для бесшовной петли)
     return lambda c: a + (b - a) * (c - c0) / (c1 - c0)
-ZLOOP = zc(1.08, 1.20, 2.0, 3.35)
+ZLOOP = zc(1.04, 1.10, 2.0, 3.81)
+# спокойный монтаж: планы длиннее, мягкие медленные наезды, без тряски и смазанных переходов; между частями — мягкий наплыв
 S = [
-    dict(t0=0.00, t1=0.75, src='49878', c0=2.6, zf=ZLOOP),
-    dict(t0=0.75, t1=1.21, src='42048', c0=7.0, z=(1.02, 1.6), rot=(0, 7), tr='zoom'),
-    dict(t0=1.21, t1=2.37, src='17293', c0=3.7, sp=.8, cx=.25, z=(1.12, 1.20), pan=((20, 0), (-20, 0))),
-    dict(t0=2.37, t1=3.36, src='42037', c0=5.3, cx=.58, z=(1.10, 1.16), rot=(1.5, 0)),
-    dict(t0=3.36, t1=4.34, src='27717', c0=1.6, cx=.36, z=(1.06, 1.17)),
-    dict(t0=4.34, t1=5.73, src='42039', c0=14.3, sp=.9, cx=.56, z=(1.05, 1.22), pan=((0, 40), (0, -20))),
-    dict(t0=5.73, t1=6.55, src='28096', c0=9.0, cx=.5, z=(1.10, 1.18)),
-    dict(t0=6.55, t1=8.22, ui='nav_chaos', bg=dict(src='42039', c0=3.0, cx=.5), g='ui', keep=True),
-    dict(t0=8.22, t1=9.36, freeze=True, z=(1.0, 1.13), g='ui'),
-    dict(t0=9.36, t1=14.79, eng=True, g='white'),
-    dict(t0=14.79, t1=15.70, ui='ugly', g='ui', shake=7, tr='whip'),
+    dict(t0=0.00, t1=1.21, src='49878', c0=2.6, zf=ZLOOP),
+    dict(t0=1.21, t1=2.37, src='17293', c0=3.7, sp=.7, cx=.25, z=(1.10, 1.13)),
+    dict(t0=2.37, t1=4.34, src='27717', c0=1.2, sp=.8, cx=.36, z=(1.06, 1.10)),
+    dict(t0=4.34, t1=5.73, src='42039', c0=14.3, sp=.6, cx=.56, z=(1.06, 1.10)),
+    dict(t0=5.73, t1=6.55, src='28096', c0=9.0, sp=.8, cx=.5, z=(1.10, 1.13)),
+    dict(t0=6.55, t1=8.22, ui='nav_chaos', bg=dict(src='42039', c0=3.0, cx=.5), g='ui', keep=True, tr='fade'),
+    dict(t0=8.22, t1=9.36, freeze=True, z=(1.0, 1.06), g='ui'),
+    dict(t0=9.36, t1=14.79, ui='apA', g='white', tr='fade'),
+    dict(t0=14.79, t1=15.70, ui='ugly', g='ui', shake=2, tr='fade'),
     dict(t0=15.70, t1=16.95, ui='lean', g='ui', punch=16.01),
-    dict(t0=16.95, t1=17.95, src='17291', c0=3.0, sp=.6, cx=.5, z=(1.05, 1.09)),
-    dict(t0=17.95, t1=18.90, src='4331', c0=6.45, sp=.45, cx=.25, z=(1.16, 1.2), pan=((10, 260), (-25, 250))),
-    dict(t0=18.90, t1=19.90, src='39774', c0=3.0, cx=.45, z=(1.06, 1.13)),
-    dict(t0=19.90, t1=21.90, ui='nav_addr', bg=dict(src='42039', c0=7.5, cx=.5), g='ui'),
-    dict(t0=21.90, t1=35.70, eng=True, g='white'),
-    dict(t0=35.70, t1=36.85, src='41161', c0=4.0, cx=.5, z=(1.05, 1.16), tr='zoom'),
-    dict(t0=36.85, t1=37.75, src='47615', c0=4.0, cx=.5, z=(1.10, 1.28)),
-    dict(t0=37.75, t1=38.90, ui='nav_arrive', bg=dict(src='41161', c0=8.0, cx=.5), g='ui', tr='whip'),
-    dict(t0=38.90, t1=41.70, eng=True, g='white', tr='flash'),
-    dict(t0=41.70, t1=DUR + .2, src='49878', c0=2.0, zf=ZLOOP, tr='zoom'),
+    dict(t0=16.95, t1=17.95, src='17291', c0=3.0, sp=.6, cx=.5, z=(1.05, 1.07)),
+    dict(t0=17.95, t1=18.90, src='4331', c0=6.45, sp=.45, cx=.25, z=(1.16, 1.18), pan=((0, 260), (-15, 255))),
+    dict(t0=18.90, t1=19.90, src='39774', c0=3.0, sp=.8, cx=.45, z=(1.06, 1.08)),
+    dict(t0=19.90, t1=21.90, ui='nav_addr', bg=dict(src='42039', c0=7.5, cx=.5), g='ui', tr='fade'),
+    dict(t0=21.90, t1=35.70, ui='apB', g='white', tr='fade'),
+    dict(t0=35.70, t1=37.75, src='41161', c0=4.0, sp=.7, cx=.5, z=(1.04, 1.09), tr='fade'),
+    dict(t0=37.75, t1=38.90, ui='nav_arrive', bg=dict(src='41161', c0=8.0, cx=.5), g='ui', tr='fade'),
+    dict(t0=38.90, t1=41.70, ui='apC', g='white', tr='fade'),
+    dict(t0=41.70, t1=DUR + .2, src='49878', c0=2.0, zf=ZLOOP, tr='fade'),
 ]
 WHITE_SPANS = [(s['t0'], s['t1']) for s in S if s.get('g') == 'white']
 
@@ -215,7 +213,7 @@ def shot_frame(i, t, raw=False):
             img = bg * (1 - a) + fg * a
         else: img = fg
         if s.get('shake'): a_ = s['shake']; img = cam(img, 1.03, .5 * math.sin(lt * 37), a_ * math.sin(lt * 61) + a_ * .5 * math.sin(lt * 23), a_ * math.cos(lt * 53))
-        if s.get('punch') and t >= s['punch']: q = t - s['punch']; img = cam(img, 1 + .07 * math.exp(-q * 6) * min(1, q / .04), 0, 0, 0)
+        if s.get('punch') and t >= s['punch']: q = t - s['punch']; img = cam(img, 1 + .03 * math.exp(-q * 5) * min(1, q / .06), 0, 0, 0)
     elif s.get('eng'):
         img = eng_frame(int(round(t * FPS)))
     elif s.get('freeze'):
@@ -232,12 +230,15 @@ def render_frame(n):
     x = shot_frame(i, t)
     if s.get('keep'): FROZEN = shot_frame(i, min(t, s['t1'] - 1 / FPS), raw=True) if t + 1 / FPS >= s['t1'] else FROZEN
     # переходы: вход (tr у текущего) и выход (tr у следующего)
-    if i + 1 < len(S) and S[i + 1].get('tr') and t > S[i + 1]['t0'] - .1:
+    if i + 1 < len(S) and S[i + 1].get('tr') not in (None, 'fade') and t > S[i + 1]['t0'] - .1:
         k = (t - (S[i + 1]['t0'] - .1)) / .1; tr = S[i + 1]['tr']
         if tr == 'zoom': x = cam(radial(x, .30 * k * k), 1 + .35 * k * k)
         elif tr == 'whip': x = whip(x, k, 1)
         elif tr == 'flash': x = x + (1 - x) * k ** 2
-    if s.get('tr') and t - s['t0'] < .12:
+    if s.get('tr') == 'fade' and t - s['t0'] < .3 and i > 0:
+        k = (t - s['t0']) / .3; k = k * k * (3 - 2 * k)
+        x = shot_frame(i - 1, t) * (1 - k) + x * k
+    if s.get('tr') and s.get('tr') != 'fade' and t - s['t0'] < .12:
         k = 1 - (t - s['t0']) / .12; tr = s['tr']
         if tr == 'zoom': x = cam(radial(x, .22 * k * k), 1 + .22 * k * k)
         elif tr == 'whip': x = whip(x, k, 1)
@@ -252,7 +253,8 @@ if __name__ == "__main__":
         ns = [int(v) for v in sys.argv[sys.argv.index("--frames") + 1].split(",")]
         for n in sorted(ns):
             # для заморозки нужен последний кадр навигатора
-            if S[8]['t0'] <= n / FPS < S[8]['t1'] and FROZEN is None: render_frame(math.ceil(S[7]['t1'] * FPS) - 1)
+            fi = next(k for k, q in enumerate(S) if q.get('freeze')); ki = fi - 1
+            if S[fi]['t0'] <= n / FPS and FROZEN is None: render_frame(math.ceil(S[ki]['t1'] * FPS) - 1)
             cv2.imwrite(f"{out}_{n:05d}.png", render_frame(n))
         sys.exit()
     enc = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",

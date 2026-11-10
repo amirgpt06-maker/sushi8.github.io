@@ -471,6 +471,45 @@ SC.site = {
   }
 };
 
+
+// --- плоские экраны (без корпуса телефона) — превью-карточки для белых Apple-сцен ---
+function flatScreen(bg) { return el('div', `position:absolute;left:0;top:0;width:812px;height:1732px;overflow:hidden;background:${bg};font-family:SF`, R); }
+SC.site_flat = {
+  build() {
+    const scr = flatScreen('#0e0c0a');
+    const host = { scr }; const P = this; P.P = { scr };
+    // та же страница, что в SC.site
+    el('div', `position:absolute;left:0;right:0;top:0;height:120px;background:rgba(20,18,16,.92);z-index:30;display:flex;align-items:flex-end;justify-content:center;padding-bottom:16px;box-sizing:border-box`, scr,
+      `<div style="width:520px;height:66px;border-radius:22px;background:#2a2723;display:flex;align-items:center;justify-content:center;font:500 30px SF;color:#d8d2c8">🔒 sezon.ru</div>`);
+    const pg = this.pg = el('div', `position:absolute;left:0;right:0;top:120px`, scr);
+    el('div', `position:relative;height:1180px;background:url(img/dish.jpg) 46% 50%/cover`, pg,
+      `<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,12,10,.45),rgba(14,12,10,.15) 40%,rgba(14,12,10,.92))"></div>
+       <div style="position:absolute;left:56px;right:56px;top:46px;display:flex;justify-content:space-between;font:500 30px SF;color:#efe7da;letter-spacing:1px"><span style="font:500 34px PF;letter-spacing:6px">SEZON</span><span>Меню · Бронь · Доставка</span></div>
+       <div style="position:absolute;left:56px;right:56px;bottom:90px"><div style="font:400 30px SF;color:#d9b77a;letter-spacing:6px">КУХНЯ И КОФЕ</div>
+       <div style="font:400 112px PF;color:#fff;line-height:1.02;margin-top:18px">Вкус, который<br>хочется<br>повторить</div>
+       <div style="display:flex;gap:20px;margin-top:44px"><div style="padding:30px 48px;border-radius:60px;background:#FFD60A;color:#1a1200;font:700 38px SF">Заказать онлайн</div><div style="padding:30px 44px;border-radius:60px;border:2px solid rgba(255,255,255,.6);color:#fff;font:600 38px SF">Меню</div></div></div>`);
+    const items = [['burger', 'Бургер', '590 ₽'], ['pizza', 'Пепперони', '720 ₽'], ['latte', 'Айс-латте', '290 ₽'], ['salad', 'Цезарь', '480 ₽'], ['grill', 'Гриль', '890 ₽'], ['espresso', 'Эспрессо', '190 ₽']];
+    el('div', `padding:70px 56px 30px;font:400 76px PF;color:#fff`, pg, 'Популярное');
+    const grid = el('div', `display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:0 56px`, pg);
+    items.forEach(([im, n, p]) => el('div', `border-radius:40px;overflow:hidden;background:#1b1815`, grid,
+      `<div style="height:330px;background:url(img/${im}.jpg) center/cover"></div><div style="padding:24px 28px 30px"><div style="font:600 38px SF;color:#fff">${n}</div><div style="font:700 36px SF;color:#d9b77a;margin-top:6px">${p}</div></div>`));
+    el('div', `margin:50px 56px;padding:56px;border-radius:44px;background:#FFD60A;color:#1a1200`, pg, `<div style="font:800 64px SF;letter-spacing:-1px">Доставка за 30 минут</div><div style="font:500 36px SF;margin-top:10px">Закажите на сайте — привезём горячим</div>`);
+  },
+  update(t) { this.pg.style.transform = `translateY(${-t * 1000}px)`; }
+};
+const CHATS = ['Сделай сайт', 'Сделай логотип', 'Напиши пост'];
+SC.chat_flat = {
+  build() {
+    const scr = flatScreen('#0f1012'); this.scr = scr;
+    el('div', `position:absolute;left:0;right:0;top:0;height:170px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:24px;box-sizing:border-box;font:600 40px SF;color:#e8e8ea;border-bottom:1px solid #1f2024`, scr, `<span style="color:#FFD60A;margin-right:14px">✦</span>Ассистент`);
+    this.b = el('div', `position:absolute;right:40px;top:260px;padding:30px 40px;border-radius:44px 44px 12px 44px;background:#2b2c31;font:500 54px SF;color:#fff`, scr, '');
+    const rep = el('div', `position:absolute;left:40px;right:120px;top:420px;display:flex;flex-direction:column;gap:22px`, scr);
+    [1, .92, .97, .7, 0, .95, .85, .6].forEach(w => el('div', `height:${w ? 30 : 10}px;width:${w * 100}%;border-radius:15px;background:${w ? '#26272c' : 'transparent'}`, rep));
+    el('div', `position:absolute;left:30px;right:30px;bottom:60px;height:140px;border-radius:70px;background:#1f2024;border:2px solid #2c2d33`, scr);
+  },
+  update(t) { this.b.textContent = CHATS[Math.round(t) % CHATS.length]; }
+};
+
 window.renderScene = async (name, t) => {
   if (window.__cur !== name) { await Promise.all(['100','200','300','400','500','600','700','800','900'].map(w => document.fonts.load(w + ' 40px SF'))); await document.fonts.load('40px PF');
     if (!MAP) MAP = buildMap(); R.innerHTML = ''; R.style.background = 'transparent'; SC[name].build(); window.__cur = name; await document.fonts.ready;
@@ -478,4 +517,5 @@ window.renderScene = async (name, t) => {
     await Promise.all(['burger', 'pizza', 'latte', 'salad', 'grill', 'espresso', 'dish'].map(n => new Promise(r => { const i = new Image(); i.onload = i.onerror = r; i.src = 'img/' + n + '.jpg'; }))); }
   SC[name].update(t);
 };
-</script></body></html>
+</script>
+<script src="apple_scenes.js"></script></body></html>
