@@ -18,3 +18,5 @@ subs-lab/*.wav
 .claude/skills/montazh/engine/local/
 .claude/skills/montazh/engine/three/node_modules/
 reels/
+reports/
+*cookies*.txt
