@@ -6,7 +6,7 @@ description: Разбор Instagram-аккаунта по нику — спис�
 # Разбор аккаунта
 
 ## Инструменты
-`ffmpeg`, `yt-dlp`, `faster-whisper`, `instaloader` (+ `gallery-dl` про запас) — в `/root/venv-video`, ссылки в `/usr/local/bin`.
+`ffmpeg`, `yt-dlp`, `faster-whisper`, `gallery-dl` (список рилсов; `instaloader` из облака ловит 429) — в `/root/venv-video`, ссылки в `/usr/local/bin`.
 Если нет: `/root/venv-video/bin/pip install yt-dlp faster-whisper instaloader gallery-dl`. Разбор одного рилса —
 скрипт скилла `razbor-rilsa` (используется отсюда).
 
@@ -21,6 +21,7 @@ Instagram не отдаёт ленту профиля без входа. Бер�
 ```
 /root/venv-video/bin/python .claude/skills/razbor-akkaunta/scripts/akkaunt.py <ник> --cookies reels/cookies.txt
 ```
+* хосты в сети окружения: `www.instagram.com`, `i.instagram.com`, `static.cdninstagram.com`, `scontent*.cdninstagram.com`;
 * берёт не больше 50 последних рилсов, между запросами паузы 2–9 с (instaloader ещё и сам притормаживает) — чтобы
   Instagram не заблокировал запасной аккаунт; при «Please wait a few minutes» — остановиться и сказать пользователю;
 * `reports/<ник>/reels.json` — все рилсы по убыванию просмотров: дата, просмотры, лайки, комментарии, длительность, подпись,
