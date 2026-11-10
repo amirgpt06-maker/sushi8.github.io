@@ -1382,7 +1382,12 @@ function build(data) {
   root = document.getElementById("root"); root.innerHTML = "";
   if (data.wbPill) {                       // своя гамма плашек (например бело-синяя)
     const st = document.createElement("style");
-    st.textContent = `.pill { background: linear-gradient(180deg, ${data.wbPill[0]}, ${data.wbPill[1]}); box-shadow: 0 8px 22px ${data.wbPill[1]}55, inset 0 1px 0 rgba(255,255,255,.35); }`;
+    st.textContent = `.pill { background: linear-gradient(180deg, ${data.wbPill[0]}, ${data.wbPill[1]}); box-shadow: 0 8px 22px ${data.wbPill[1]}55, inset 0 1px 0 rgba(255,255,255,.35);${data.wbPillText ? ` color: ${data.wbPillText};` : ""} }`;
+    document.head.appendChild(st);
+  }
+  if (data.wbSel) {                        // своя подсветка iOS-выделения (например жёлтый маркер): [фон, ручки]
+    const st = document.createElement("style");
+    st.textContent = `.sel { background: ${data.wbSel[0]}; } .selh, .selh::after { background: ${data.wbSel[1]}; }`;
     document.head.appendChild(st);
   }
   if (data.textShadow) {                   // светлое видео (небо, день): тень у текста плотнее — читается на любом фоне
