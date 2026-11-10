@@ -106,6 +106,7 @@ def onset(x):
     a = np.abs(x); h = SR // 400; e = np.array([a[i:i + h].max() for i in range(0, len(a) - h, h)]); return int(np.argmax(e > e.max() * .15)) * h
 def peak(x):
     a = np.abs(x); h = SR // 100; e = np.array([np.sqrt(np.mean(a[i:i + h] ** 2)) for i in range(0, len(a) - h, h)]); return int(np.argmax(e)) * h
+BOOST = 9.0                                                   # эффекты слышно отчётливо (правка: «а звуковые эффекты?»)
 def put(x, t, g, align="onset", pan=0.0, fade=.03, maxlen=None, lpf=None, hpf=None, stop=None):
     x = np.array(x, float)
     if maxlen: x = x[:int(maxlen * SR)]
@@ -114,7 +115,7 @@ def put(x, t, g, align="onset", pan=0.0, fade=.03, maxlen=None, lpf=None, hpf=No
     x = x / (np.abs(x).max() + 1e-9); f = int(fade * SR); x[-f:] *= np.linspace(1, 0, f)
     a = int(t * SR) - (onset(x) if align == "onset" else peak(x) if align == "peak" else 0)
     if a < 0: x = x[-a:]; a = 0
-    e = min(N, a + len(x)); seg = x[:e - a] * VR * 4 * db(g)
+    e = min(N, a + len(x)); seg = x[:e - a] * VR * 4 * db(g + BOOST)
     if stop: s_ = int(stop * SR) - a; seg[max(0, s_):] *= 0 if s_ < len(seg) else 1
     sfx[a:e, 0] += seg * np.sqrt(.5 - pan / 2) * 1.414; sfx[a:e, 1] += seg * np.sqrt(.5 + pan / 2) * 1.414
 def P(name, t, g, **k): put(load(name), t, g, **k)
@@ -168,13 +169,6 @@ def syn_subway(d=.85):
     return rumble + clack
 
 # --- расстановка (время = время ролика) ---
-put(syn_pass(1.5), 1.25, -18, align="none", pan=.3)                             # такси проезжает
-put(syn_handle(), 2.10, -20, align="none")                                      # ручка двери
-put(syn_door(), 2.37, -9, align="none")                                         # хлопок двери (на склейке внутрь)
-for k, tk in enumerate(np.arange(3.40, 6.50, .44)): put(syn_tick(k % 2 == 0), tk, -30, align="none", pan=-.35)   # поворотник
-P("ui-pop-up-2-197887.mp3", 6.55, -18)                                          # навигатор
-for j, d in enumerate([.12, .36, .58, .80, .99, 1.17, 1.34, 1.50]):              # маршрут перестраивается
-    P(["MA_BANT_Modern_Clicks_And_Beeps_2.wav", "MA_BANT_Modern_Clicks_And_Beeps_5.wav", "sc_bleep.wav"][j % 3], 6.55 + d, -22 + j * .6, maxlen=.3, pan=(-.3 if j % 2 else .3))
 def typed(text, t0, dt, g, pan=0.0):
     # печать — не на каждую букву: щелчок на начало слова и дальше раз в 3 буквы
     k, j = 0, 0
@@ -182,37 +176,54 @@ def typed(text, t0, dt, g, pan=0.0):
         if not ch.isalnum(): j = 0; continue
         if j % 3 == 0: P(["aplkey1.wav", "aplkey2.wav", "aplkey3.wav", "aplkey4.wav"][k % 4], t0 + i * dt, g, pan=pan); k += 1
         j += 1
-typed("куда-нибудь", 6.95, .055, -27)
-# скретч: из звучащего фона перед заморозкой
+WH = lambda t_, g=-15: P("swoosh.wav", t_, g, align="peak")                       # мягкий вжух на смене плана
+# --- город и такси ---
+WH(1.21, -16); put(syn_pass(1.5), 1.25, -14, align="none", pan=.3)              # такси проезжает
+put(syn_handle(), 2.10, -13, align="none")                                      # ручка двери
+put(syn_door(), 2.37, -14, align="none")                                         # хлопок двери
+for k, tk in enumerate(np.arange(3.40, 6.50, .44)): put(syn_tick(k % 2 == 0), tk, -22, align="none", pan=-.35)   # поворотник
+WH(4.34, -17); WH(5.73, -17)
+P("ui-pop-up-2-197887.mp3", 6.55, -11)                                          # навигатор
+for j, d in enumerate([.12, .36, .58, .80, .99, 1.17, 1.34, 1.50]):              # маршрут перестраивается
+    P(["MA_BANT_Modern_Clicks_And_Beeps_2.wav", "MA_BANT_Modern_Clicks_And_Beeps_5.wav", "sc_bleep.wav"][j % 3], 6.55 + d, -14 + j * .5, maxlen=.3, pan=(-.3 if j % 2 else .3))
+typed("куда-нибудь", 6.95, .055, -18)
 _x = np.arange(int(.7 * SR)) / SR; pre = sum(np.sign(np.sin(2 * np.pi * f * _x)) * a for f, a in ((110, 1), (164.8, .7), (220, .5))) + rng.standard_normal(len(_x)) * .15; pre = lp(pre, 2500)
-put(syn_scratch(pre / (np.abs(pre).max() + 1e-9)), 8.23, -8, align="none")
-P("231188_Mechanics, Electronics, Micro, Glitch x3 09_cut(0003-0004).mp3", 14.79, -17)   # кривой сайт
-P("Interface App 4.wav", 15.20, -19)                                            # «ошибка»
-put(syn_boom(), 16.00, -5, align="none"); P("impact eric.wav", 16.01, -13, lpf=320)      # глухой «бум» на «тупой»
-P("iphone-keyboard-typing-sound-effect-336778.mp3", 18.92, -22, maxlen=.95)      # руки печатают
-typed("тверская, 7", 19.95, .055, -22)
-P("App Click 3.wav", 20.62, -17); P("swoosh.wav", 20.70, -27)
-P("small_whoosh_chimes_1.wav", 20.74, -24)                                      # маршрут рисуется
-P("tink.wav", 21.00, -13)                                                       # мягкий «дзинь»
-P("Whoosh long (4).wav", 35.70, -24, align="peak")
-put(syn_pass(1.8), 35.95, -24, align="none")
-P("sc_chimes.wav", 38.27, -14)                                                  # «Вы прибыли»
-P("sc_whoosh.wav", 41.72, -24, align="peak", stop=DUR - .02)                     # в город (петля)
-
-# --- свои белые Apple-сцены: тихие аккуратные звуки (минимум, как в роликах Apple) ---
-P("swoosh.wav", 9.36, -27); P("linepop.wav", 9.39, -27)
-for t_ in (10.40, 10.60, 10.80): P("blockpop.wav", t_, -30)
-P("linepop.wav", 11.20, -25)
-P("shimmer.wav", 12.30, -28)
-typed("Сделай сайт", 12.49, (13.30 - 12.49) / 11, -25); P("App Click 3.wav", 13.45, -21); P("swoosh.wav", 13.47, -29)
-typed("Сделай монтаж", 13.68, (14.40 - 13.68) / 13, -25); P("App Click 3.wav", 14.50, -21); P("swoosh.wav", 14.52, -29)
-P("swoosh.wav", 21.90, -27); P("tink.wav", 21.95, -27); P("linepop.wav", 22.02, -25); P("small_whoosh_chimes_1.wav", 22.10, -30); P("swoosh.wav", 23.72, -30)
-P("blockpop.wav", 23.88, -27); P("linepop.wav", 24.44, -25)
-for t_ in (25.70, 25.98, 26.26): P("blockpop.wav", t_, -30)
-P("swoosh.wav", 26.95, -30); P("blockpop.wav", 27.12, -27); P("linepop.wav", 27.63, -25)
-P("swoosh.wav", 29.30, -29); P("App Click 1.wav", 30.20, -19); P("notification3.mp3", 30.94, -17)
-P("swoosh.wav", 31.80, -30); P("blockpop.wav", 31.97, -27); P("linepop.wav", 32.53, -25); P("swoosh.wav", 33.30, -29); P("swoosh.wav", 34.10, -33)
-P("swoosh.wav", 38.90, -27); P("linepop.wav", 39.00, -23); P("blockpop.wav", 39.32, -28); P("App Click 5.wav", 40.96, -19); P("tink.wav", 41.02, -24)
+put(syn_scratch(pre / (np.abs(pre).max() + 1e-9)), 8.23, -11, align="none")     # скретч, стоп-кадр
+# --- белая сцена: нейросети, промпты ---
+P("sc_whoosh.wav", 9.36, -13, align="peak"); P("linepop.wav", 9.39, -15); P("linepop.wav", 10.36, -17)
+for t_ in (10.40, 10.60, 10.80): P("blockpop.wav", t_, -8)
+P("tagpop.wav", 11.20, -12)
+P("shimmer.wav", 12.30, -15)
+typed("Сделай сайт", 12.49, (13.30 - 12.49) / 11, -16); P("App Click 3.wav", 13.45, -11); P("swoosh.wav", 13.47, -17)
+typed("Сделай монтаж", 13.68, (14.40 - 13.68) / 13, -16); P("App Click 3.wav", 14.50, -11); P("swoosh.wav", 14.52, -17)
+# --- «ИИ тупой» ---
+P("231188_Mechanics, Electronics, Micro, Glitch x3 09_cut(0003-0004).mp3", 14.79, -10)   # кривой сайт
+P("Interface App 4.wav", 15.20, -12)                                            # «ошибка»
+put(syn_boom(), 16.00, -13, align="none"); P("impact eric.wav", 16.01, -16, lpf=320)      # глухой «бум» на «тупой»
+# --- «Нет, ИИ не тупой»: пауза-тишина, потом адрес ---
+WH(17.95, -19)
+P("iphone-keyboard-typing-sound-effect-336778.mp3", 18.92, -15, maxlen=.95)      # руки печатают
+WH(19.90, -16); typed("тверская, 7", 19.95, .055, -16)
+P("App Click 3.wav", 20.62, -11); P("swoosh.wav", 20.70, -19)
+P("small_whoosh_chimes_1.wav", 20.74, -16)                                      # маршрут рисуется
+P("tink.wav", 21.00, -8)                                                        # мягкий «дзинь»
+# --- белая сцена: адрес, шаги 1-2-3 ---
+P("sc_whoosh.wav", 21.90, -13, align="peak"); P("tink.wav", 21.95, -16); P("tagpop.wav", 22.02, -12); P("linepop.wav", 22.46, -16)
+P("small_whoosh_chimes_1.wav", 22.10, -18); P("linepop.wav", 23.26, -18); WH(23.72, -17)
+P("blockpop.wav", 23.88, -7); P("linepop.wav", 23.96, -18); P("tagpop.wav", 24.44, -12)
+P("linepop.wav", 25.64, -16)
+for t_ in (25.70, 25.98, 26.26): P("blockpop.wav", t_, -9)
+WH(26.95, -16); P("blockpop.wav", 27.12, -7); P("linepop.wav", 27.18, -18); P("tagpop.wav", 27.63, -12)
+WH(29.30, -16); P("linepop.wav", 29.45, -17); P("App Click 1.wav", 30.20, -10); P("notification3.mp3", 30.94, -9)
+WH(31.80, -16); P("blockpop.wav", 31.97, -7); P("linepop.wav", 32.05, -18); P("tagpop.wav", 32.53, -12)
+WH(33.30, -16); P("linepop.wav", 33.36, -17); P("swoosh.wav", 34.10, -21)
+# --- дорога и «Вы прибыли» ---
+P("Whoosh long (4).wav", 35.70, -14, align="peak"); put(syn_pass(1.8), 35.95, -15, align="none")
+WH(37.75, -16); P("sc_chimes.wav", 38.27, -9)                                   # «Вы прибыли»
+# --- белая сцена: «Подпишись» ---
+P("sc_whoosh.wav", 38.90, -13, align="peak"); P("tagpop.wav", 39.00, -11); P("blockpop.wav", 39.32, -9)
+P("linepop.wav", 40.11, -18); P("App Click 5.wav", 40.96, -10); P("tink.wav", 41.02, -14)
+P("sc_whoosh.wav", 41.72, -15, align="peak", stop=DUR - .02)                     # в город (петля)
 
 # ---------------- сведение ----------------
 vo = np.stack([v, v], 1)
