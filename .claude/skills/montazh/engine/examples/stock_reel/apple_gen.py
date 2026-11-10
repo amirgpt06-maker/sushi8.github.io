@@ -117,6 +117,13 @@ add({"type": "btext", "g": "h", "t": 40.11, "end": 41.71, "y": 1330, "exit": "cu
 sfx(38.90, "wbwhoosh", 0.8); sfx(38.96, "wbselect", 0.85); typing("Подпишись", 39.06, 39.62, 0.5); sfx(39.20, "wbbounce", 0.55); sfx(39.30, "wbpop", 0.5)
 sfx(39.62, "wbbounce", 0.45); sfx(40.96, "wbclick", 0.9); sfx(41.02, "wbpop", 0.6)
 
+# пробел между словами внутри строк «по словам» и в кнопке — неразрывный (иначе схлопывается в inline-block)
+for it in items:
+    for L in it.get("lines", []):
+        if L.get("mode") == "word":
+            L["words"] = [[w if (i == len(L["words"]) - 1 or w.endswith("\u00a0")) else w + "\u00a0", t] for i, (w, t) in enumerate(L["words"])]
+    if it["type"] == "dock2" and it.get("swap"):
+        ws = it["swap"]["words"]; it["swap"]["words"] = [[w if i == len(ws) - 1 else w + "\u00a0", t] for i, (w, t) in enumerate(ws)]
 cues = {"wbColor": "#FFC21A", "wbPill": ["#FFE27A", "#FFC21A"], "wbPillText": "#1d1d1f", "wbSel": ["rgba(255, 214, 10, .55)", "#E0A400"],
         "fps": 30, "mblur": 5, "shutter": 0.5, "duration": 42.3, "anchor": None, "typeEvery": 99, "pauses": [], "items": items}
 os.makedirs(HERE + "/work/apple", exist_ok=True)
