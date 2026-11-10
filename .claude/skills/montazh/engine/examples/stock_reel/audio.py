@@ -39,10 +39,9 @@ cabin = cfilt(cnoise(), shape(30, 160, 3)) * 1.0 + cfilt(cnoise(), shape(160, 60
 rain = cfilt(cnoise(), shape(1800, 9000, 2)) + cfilt(cnoise(), shape(400, 1800, 2)) * .3
 city, cabin, rain = norm_rms(city), norm_rms(cabin), norm_rms(rain)
 # где что звучит (дБ относительно голоса)
-G_city = env([(0, -27), (2.3, -27), (2.45, -60), (6.5, -60), (6.6, -33), (8.22, -33), (8.25, -90), (9.30, -90), (9.40, -31), (12.4, -31), (12.5, -36),
-              (16.90, -36), (16.95, -90), (17.45, -90), (17.9, -33), (21.85, -33), (21.95, -42), (25.5, -42), (25.6, -33), (27.0, -33), (27.1, -42),
-              (29.35, -42), (29.45, -35), (31.9, -35), (32.0, -42), (33.25, -42), (33.35, -35), (35.6, -35), (35.75, -27), (38.85, -27), (38.95, -40),
-              (41.6, -40), (41.75, -27), (DUR, -27)])
+G_city = env([(0, -27), (2.3, -27), (2.45, -60), (6.5, -60), (6.6, -33), (8.22, -33), (8.25, -90), (9.30, -90), (9.40, -46), (14.70, -46), (14.80, -36),
+              (16.90, -36), (16.95, -90), (17.45, -90), (17.9, -33), (21.85, -33), (21.95, -46), (35.65, -46), (35.75, -27), (38.85, -27), (38.95, -46),
+              (41.6, -46), (41.75, -27), (DUR, -27)])
 G_cabin = env([(0, -90), (2.33, -90), (2.40, -25), (6.5, -25), (6.6, -40), (8.22, -40), (8.25, -90), (DUR, -90)])
 G_rain = env([(0, -90), (1.15, -90), (1.25, -34), (2.3, -34), (2.4, -90), (16.95, -90), (17.45, -90), (17.8, -31), (18.9, -31), (19.2, -40), (21.85, -40), (21.95, -90), (DUR, -90)])
 amb = (city * G_city + cabin * G_cabin + rain * G_rain) * VR
@@ -188,15 +187,7 @@ typed("куда-нибудь", 6.95, .055, -27)
 # скретч: из звучащего фона перед заморозкой
 pre = (amb_st[:, 0] + nas[:, 0])[int(7.6 * SR):int(8.25 * SR)]
 put(syn_scratch(pre / (np.abs(pre).max() + 1e-9)), 8.23, -8, align="none")
-P("Whoosh long (2).wav", 9.36, -15, align="peak")                               # зум-переход
-put(syn_subway(), 9.36, -20, align="none")                                       # метро
-P("sc_whclick.wav", 10.10, -23); P("swoosh.wav", 10.80, -25); P("sc_whclick.wav", 11.45, -24)
-put(load("Резкие вуши.mp3")[int(2.45 * SR):int(2.9 * SR)], 12.30, -17, align="peak")
-typed("Сделай сайт", 12.46, .085, -20, .1)
-P("tagpop.wav", 13.50, -18)
-typed("Сделай монтаж", 13.66, .062, -20, .1)
-P("tagpop.wav", 14.54, -18)
-P("231188_Mechanics, Electronics, Micro, Glitch x3 09_cut(0003-0004).mp3", 14.75, -15)   # кривой сайт
+P("231188_Mechanics, Electronics, Micro, Glitch x3 09_cut(0003-0004).mp3", 14.79, -15); put(load("Резкие вуши.mp3")[int(2.45 * SR):int(2.9 * SR)], 14.79, -19, align="peak")   # кривой сайт
 P("Interface App 4.wav", 15.20, -19)                                            # «ошибка»
 put(syn_boom(), 16.00, -5, align="none"); P("impact eric.wav", 16.01, -13, lpf=320)      # глухой «бум» на «тупой»
 P("iphone-keyboard-typing-sound-effect-336778.mp3", 18.92, -22, maxlen=.95)      # руки печатают
@@ -204,26 +195,27 @@ typed("тверская, 7", 19.95, .055, -22)
 P("App Click 3.wav", 20.62, -17); P("swoosh.wav", 20.70, -27)
 P("small_whoosh_chimes_1.wav", 20.74, -24)                                      # маршрут рисуется
 P("tink.wav", 21.00, -13)                                                       # мягкий «дзинь»
-P("sc_whoosh.wav", 21.90, -16, align="peak")                                     # в белый
-P("blockpop.wav", 21.93, -21); P("linepop.wav", 22.01, -23); P("swoosh.wav", 22.12, -29); P("linepop.wav", 22.45, -25); P("linepop.wav", 22.69, -25)
-put(load("Резкие вуши.mp3")[int(2.45 * SR):int(2.9 * SR)], 23.85, -19, align="peak")
-P("tagpop.wav", 23.93, -20); P("linepop.wav", 24.44, -23); P("swoosh.wav", 24.64, -29)
-put(syn_sizzle(), 25.55, -24, align="none"); P("swoosh.wav", 26.05, -28); put(syn_clink(), 26.62, -24, align="none")
-put(load("Резкие вуши.mp3")[int(2.45 * SR):int(2.9 * SR)], 27.10, -19, align="peak")
-P("tagpop.wav", 27.15, -20); P("linepop.wav", 27.63, -24); P("linepop.wav", 27.91, -24); P("linepop.wav", 28.35, -24); P("swoosh.wav", 28.42, -29)
-P("Whoosh long (3).wav", 29.40, -17, align="peak")
-P("App Click 1.wav", 30.20, -15); P("notification3.mp3", 30.88, -13)            # «Заказать» / «Заказ принят»
-put(load("Резкие вуши.mp3")[int(2.45 * SR):int(2.9 * SR)], 31.95, -19, align="peak")
-P("tagpop.wav", 32.03, -20); P("linepop.wav", 32.53, -23)
-P("sc_whoosh.wav", 33.30, -17, align="peak"); P("swoosh.wav", 33.55, -27); P("sc_whclick.wav", 34.30, -24); P("swoosh.wav", 34.6, -28)
-P("Whoosh long (4).wav", 35.70, -15, align="peak")
+P("Whoosh long (4).wav", 35.70, -15, align="peak"); P("sc_flash.wav", 38.90, -19)
 put(syn_pass(1.2), 35.85, -19, align="none", pan=-.3); P("DA - Whoosh Big - 6.mp3", 36.85, -19, align="peak"); put(syn_pass(.8), 36.95, -18, align="none", pan=.3)
 put(load("Резкие вуши.mp3")[int(2.45 * SR):int(2.9 * SR)], 37.75, -19, align="peak")
 P("sc_chimes.wav", 38.27, -14)                                                  # «Вы прибыли»
-P("sc_flash.wav", 38.90, -17); P("Импакт (колокольчик).wav", 39.00, -13)         # «Подпишись»
-P("blockpop.wav", 39.48, -23); P("blockpop.wav", 39.62, -24)
-P("App Click 5.wav", 40.90, -15); P("bells.wav", 41.00, -19, maxlen=1.0)
 P("sc_whoosh.wav", 41.72, -15, align="peak", stop=DUR - .02)                     # в город (петля)
+
+# --- белые Apple-сцены: звуки из движка (events.json), как в engine/compose.py ---
+import json as _json, os as _os
+_ev = _json.load(open(HERE + "work/apple/ov/events.json"))
+_fr = np.sqrt(np.convolve(v ** 2, np.ones(2048) / 2048, "valid")[::512] + 1e-12); _vv = _fr[_fr > np.percentile(_fr, 40)]
+VREL = 10 ** ((float(20 * np.log10(np.percentile(_vv, 60) + 1e-9)) + 18) / 20)
+LOC = "/home/user/sushi8.github.io/.claude/skills/montazh/engine/sfx_local/"
+_ec = {}
+for e in _ev:
+    if e["s"] not in _ec:
+        x_, sr_ = sf.read(LOC + e["s"] + ".wav"); x_ = x_ if x_.ndim == 1 else x_.mean(1)
+        if sr_ != SR: x_ = np.interp(np.arange(int(len(x_) * SR / sr_)) * sr_ / SR, np.arange(len(x_)), x_)
+        _ec[e["s"]] = x_
+    sig = _ec[e["s"]] * e["g"] * (VREL if e.get("v") else 1.0); a = int(e["t"] * SR)
+    if a >= N: continue
+    seg = sig[:N - a]; sfx[a:a + len(seg), 0] += seg; sfx[a:a + len(seg), 1] += seg
 
 # ---------------- сведение ----------------
 vo = np.stack([v, v], 1)

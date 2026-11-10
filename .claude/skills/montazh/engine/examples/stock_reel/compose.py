@@ -3,7 +3,8 @@ import sys, os, math, subprocess, json
 import numpy as np, cv2
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-HERE = os.path.dirname(os.path.abspath(__file__)); SRC = HERE + "/src/"; UI = HERE + "/work/ui/"
+HERE = os.path.dirname(os.path.abspath(__file__)); SRC = HERE + "/src/"; UI = HERE + "/work/ui/"; ENG = HERE + "/work/apple/ov/"
+ENGINE = "/home/user/sushi8.github.io/.claude/skills/montazh/engine/"
 FONTS = "/home/user/sushi8.github.io/.claude/skills/montazh/engine/local/fonts/"
 W, H, FPS = 1080, 1920, 30
 DUR = 42.30
@@ -22,30 +23,18 @@ S = [
     dict(t0=5.73, t1=6.55, src='28096', c0=9.0, cx=.5, z=(1.10, 1.18)),
     dict(t0=6.55, t1=8.22, ui='nav_chaos', bg=dict(src='42039', c0=3.0, cx=.5), g='ui', keep=True),
     dict(t0=8.22, t1=9.36, freeze=True, z=(1.0, 1.13), g='ui'),
-    dict(t0=9.36, t1=10.10, src='4333', c0=6.3, cx=.5, z=(1.12, 1.22), tr='zoom'),
-    dict(t0=10.10, t1=10.80, src='4827', c0=3.0, cx=.56, z=(1.16, 1.24)),
-    dict(t0=10.80, t1=11.45, src='1711', c0=3.0, cx=.50, z=(1.12, 1.2)),
-    dict(t0=11.45, t1=12.40, src='144', c0=5.0, cx=.36, z=(1.06, 1.15)),
-    dict(t0=12.40, t1=14.75, ui='chat', bg=dict(src='1728', c0=4.0, cx=.5), g='ui', tr='whip'),
-    dict(t0=14.75, t1=15.70, ui='ugly', g='ui', shake=7),
+    dict(t0=9.36, t1=14.79, eng=True, g='white'),
+    dict(t0=14.79, t1=15.70, ui='ugly', g='ui', shake=7, tr='whip'),
     dict(t0=15.70, t1=16.95, ui='lean', g='ui', punch=16.01),
     dict(t0=16.95, t1=17.95, src='17291', c0=3.0, sp=.6, cx=.5, z=(1.05, 1.09)),
     dict(t0=17.95, t1=18.90, src='4331', c0=6.45, sp=.45, cx=.25, z=(1.16, 1.2), pan=((10, 260), (-25, 250))),
     dict(t0=18.90, t1=19.90, src='39774', c0=3.0, cx=.45, z=(1.06, 1.13)),
     dict(t0=19.90, t1=21.90, ui='nav_addr', bg=dict(src='42039', c0=7.5, cx=.5), g='ui'),
-    dict(t0=21.90, t1=23.85, ui='w_addr', g='white', tr='zoom'),
-    dict(t0=23.85, t1=25.55, ui='w_one', g='white', tr='whip'),
-    dict(t0=25.55, t1=26.05, src='4678', c0=1.0, cx=.60, z=(1.12, 1.2)),
-    dict(t0=26.05, t1=26.55, src='796', c0=6.0, cx=.45, z=(1.10, 1.17)),
-    dict(t0=26.55, t1=27.10, src='4094', c0=9.0, cx=.42, z=(1.10, 1.17)),
-    dict(t0=27.10, t1=29.40, ui='w_two', g='white', tr='whip'),
-    dict(t0=29.40, t1=31.95, ui='order', bg=dict(src='3571', c0=5.0, cx=.5), g='ui', tr='zoom', suby=1600),
-    dict(t0=31.95, t1=33.30, ui='w_three', g='white', tr='whip'),
-    dict(t0=33.30, t1=35.70, ui='site', bg=dict(src='4678', c0=6.0, cx=.5), g='ui', tr='zoom'),
+    dict(t0=21.90, t1=35.70, eng=True, g='white'),
     dict(t0=35.70, t1=36.85, src='41161', c0=4.0, cx=.5, z=(1.05, 1.16), tr='zoom'),
     dict(t0=36.85, t1=37.75, src='47615', c0=4.0, cx=.5, z=(1.10, 1.28)),
     dict(t0=37.75, t1=38.90, ui='nav_arrive', bg=dict(src='41161', c0=8.0, cx=.5), g='ui', tr='whip'),
-    dict(t0=38.90, t1=41.70, ui='w_sub', g='white', tr='flash'),
+    dict(t0=38.90, t1=41.70, eng=True, g='white', tr='flash'),
     dict(t0=41.70, t1=DUR + .2, src='49878', c0=2.0, zf=ZLOOP, tr='zoom'),
 ]
 WHITE_SPANS = [(s['t0'], s['t1']) for s in S if s.get('g') == 'white']
@@ -158,6 +147,22 @@ def cam(img, z=1.0, rot=0.0, dx=0.0, dy=0.0):
     M = cv2.getRotationMatrix2D((W / 2, H / 2), rot, z); M[0, 2] += dx; M[1, 2] += dy
     return cv2.warpAffine(img, M, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
 
+# ---------------- белые Apple-сцены из движка ----------------
+_src = open(ENGINE + "compose.py", encoding="utf-8").read()
+exec(_src[_src.index("def load_ov("):_src.index("def leak(")])          # load_ov() и ball() — та же стеклянная капля, что в движке
+FXE = {}
+def eng_frame(n):
+    global FXE
+    if not FXE and os.path.exists(ENG + "fx.json"): FXE = {int(k): v for k, v in json.load(open(ENG + "fx.json")).items()}
+    from pathlib import Path
+    f = Path(ENG + f"{n:05d}.png")
+    ov = load_ov(f)
+    if ov.shape[2] == 4: x = np.float32(.984) * (1 - ov[..., 3:4]) + ov[..., :3] * ov[..., 3:4]
+    else: x = ov
+    b = FXE.get(n, {}).get("ball")
+    if b: x = ball(np.ascontiguousarray(x, dtype=np.float32), *b)
+    return np.clip(x, 0, 1).astype(np.float32)
+
 # ---------------- грейд / зерно ----------------
 yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
 VIG = np.clip(1 - (np.sqrt(((xx - W / 2) / (W * .78)) ** 2 + ((yy - H * .47) / (H * .62)) ** 2) - .45) * .85, .45, 1)[..., None]
@@ -174,7 +179,8 @@ def grade(x, kind):
     x = x + cv2.resize(cv2.GaussianBlur(small, (0, 0), 9), (W, H))[..., :3] * .55
     return np.clip(x, 0, 1)
 def finish(x, n, kind):
-    s = 2.0 / 255 if kind == 'white' else 3.4 / 255
+    if kind == 'white': return x                     # белые Apple-сцены — чистые, без зерна
+    s = 3.4 / 255
     x = x + GRAIN[n % 8][..., None] * s
     # без виньетки (правило стиля пользователя)
     return x
@@ -210,6 +216,8 @@ def shot_frame(i, t, raw=False):
         else: img = fg
         if s.get('shake'): a_ = s['shake']; img = cam(img, 1.03, .5 * math.sin(lt * 37), a_ * math.sin(lt * 61) + a_ * .5 * math.sin(lt * 23), a_ * math.cos(lt * 53))
         if s.get('punch') and t >= s['punch']: q = t - s['punch']; img = cam(img, 1 + .07 * math.exp(-q * 6) * min(1, q / .04), 0, 0, 0)
+    elif s.get('eng'):
+        img = eng_frame(int(round(t * FPS)))
     elif s.get('freeze'):
         img = cam(FROZEN, s['z'][0] + (s['z'][1] - s['z'][0]) * (1 - (1 - p) ** 2))
         l = img.mean(2, keepdims=True); img = l + (img - l) * .55; img = img * .9
