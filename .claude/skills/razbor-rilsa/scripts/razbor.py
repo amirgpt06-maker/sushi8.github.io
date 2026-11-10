@@ -17,6 +17,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("url")
 ap.add_argument("--out", default="reels")
 ap.add_argument("--model", default="large-v3-turbo")
+ap.add_argument("--lang", default="auto", help="ru | en | auto (по умолчанию определяется сам: чужие рилсы часто на английском)")
 ap.add_argument("--cookies", default=None, help="cookies.txt (Netscape) — если Instagram требует вход")
 A = ap.parse_args()
 
@@ -87,15 +88,19 @@ if has_audio:
     m = re.findall(r"I:\s+(-?[0-9.]+) LUFS", r.stderr); lufs = float(m[-1]) if m else None
 
 # ---------- 6. речь с таймкодами (faster-whisper, русский) ----------
-segs = []
+segs = []; lang_ = None
 if has_audio:
     from faster_whisper import WhisperModel
     model = WhisperModel(A.model, device="cpu", compute_type="int8", download_root=MODELS)
     import numpy as np                                   # звук декодирует ffmpeg (PyAV в окружении несовместим с faster-whisper)
     pcm = np.frombuffer(subprocess.run(["ffmpeg", "-v", "error", "-i", V, "-ac", "1", "-ar", "16000", "-f", "f32le", "-"],
                                        capture_output=True, check=True).stdout, np.float32)
-    it, info = model.transcribe(pcm, language="ru", word_timestamps=True, vad_filter=True, beam_size=5)
+    it, info = model.transcribe(pcm, language=None if A.lang == "auto" else A.lang, word_timestamps=True, vad_filter=True, beam_size=5)
+    lang_ = getattr(info, "language", None)
+    BAD = ("субтитры сделал", "субтитры создавал", "продолжение следует", "редактор субтитров", "подписывайтесь на канал")
     for s in it:
+        tx = s.text.strip(); low = tx.lower()
+        if any(b in low for b in BAD) or re.search(r"(.{1,3})\1{8,}", low) or s.no_speech_prob > 0.6: continue   # галлюцинации на музыке
         segs.append({"t0": round(s.start, 2), "t1": round(s.end, 2), "text": s.text.strip(),
                      "words": [{"w": w.word.strip(), "t0": round(w.start, 2), "t1": round(w.end, 2)} for w in (s.words or [])]})
 json.dump(segs, open(os.path.join(D, "transcript.json"), "w"), ensure_ascii=False, indent=1)
@@ -136,7 +141,7 @@ for k in range(0, len(tf), 24):
 info = json.load(open(os.path.join(D, "info.json"))) if os.path.exists(os.path.join(D, "info.json")) else {}
 data = {"url": A.url, "id": rid, "download": used, "duration": round(dur, 2), "size": [W, H], "fps": round(fps, 2),
         "cuts": cuts, "cuts_count": len(cuts), "avg_shot_s": round(sum(shots) / len(shots), 2) if shots else None,
-        "cuts_first_3s": sum(1 for c in cuts if c < 3), "lufs": lufs, "speech_s": round(speech, 1),
+        "cuts_first_3s": sum(1 for c in cuts if c < 3), "lufs": lufs, "speech_s": round(speech, 1), "lang": lang_,
         "speech_share": round(speech / dur, 2) if dur else None, "words": sum(len(s["words"]) for s in segs),
         "words_per_s": round(sum(len(s["words"]) for s in segs) / speech, 2) if speech else None,
         "author": info.get("uploader") or info.get("channel"), "caption": info.get("description"),
