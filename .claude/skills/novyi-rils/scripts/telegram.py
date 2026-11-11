@@ -18,7 +18,7 @@ TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN"); CHAT = os.environ.get("TELEGRAM_CH
 if not TOKEN: raise SystemExit("нет TELEGRAM_BOT_TOKEN в .env")
 API = f"https://api.telegram.org/bot{TOKEN}/"
 OK = {"ок", "ok", "окей", "да", "публикуй", "+", "👍"}
-START = datetime.date(2026, 11, 11)                     # день 0 пула сценариев: сегодняшний запуск шлёт первый
+START = datetime.date(2026, 11, 12)                     # с этого дня запуски шлют pool[1], pool[2]…; pool[0] уходит тестовым `daily --force`
 KW_FILE = os.path.join(ROOT, "keywords.json")
 
 def call(m, **kw):
@@ -52,7 +52,9 @@ if cmd == "whoami":
 elif cmd == "daily":
     pool = sorted(glob.glob(os.path.join(ROOT, "scenarios", "pool", "*.json")))
     if not pool: raise SystemExit("пул сценариев пуст (scenarios/pool)")
-    f = pool[max(0, (datetime.date.today() - START).days) % len(pool)]; sc = json.load(open(f, encoding="utf-8"))
+    days = (datetime.date.today() - START).days
+    if days < 0 and "--force" not in sys.argv: print("до старта пула сценариев ещё рано"); sys.exit(0)
+    f = pool[(0 if "--force" in sys.argv else days + 1) % len(pool)]; sc = json.load(open(f, encoding="utf-8"))
     txt = "\n".join(l["text"] for l in sc["lines"])
     with open(f, "rb") as fh:
         call("sendDocument", data={"chat_id": CHAT, "caption": f"🎙 Тема дня: {sc.get('topic', '')}\n\nЗапиши это голосовым (можно своими словами, 30–40 с) и ответь на это сообщение — смонтирую рилс.\nКлючевое слово: {sc.get('keyword', '')}\n\n{txt}"[:1000]},
