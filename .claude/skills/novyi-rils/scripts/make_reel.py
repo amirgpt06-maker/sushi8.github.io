@@ -24,6 +24,12 @@ WK = os.path.join(OUT, "_work"); os.makedirs(WK, exist_ok=True)
 log = lambda *a: print(*a, flush=True)
 PY = sys.executable
 
+# ---------- 0. ассеты: пак звуков пользователя с Google Drive (в свежей облачной сессии их нет) ----------
+_sl = os.path.join(ROOT, ".claude/skills/montazh/engine/sfx_local")
+if (not os.path.isdir(_sl) or len(os.listdir(_sl)) < 10) and os.path.exists(os.path.join(ROOT, "assets.json")):
+    subprocess.run([sys.executable, os.path.join(HERE, "fetch_assets.py"), "sfx"], check=False)
+    if "nashid" in json.load(open(os.path.join(ROOT, "assets.json"))): subprocess.run([sys.executable, os.path.join(HERE, "fetch_assets.py"), "nashid"], check=False)
+
 # ---------- 1. озвучка ----------
 raw = os.path.join(WK, "voice_raw.wav")
 if A.voice:                                                   # голос пользователя (бесплатно: сам записывает)
@@ -188,7 +194,7 @@ for li in range(NL):
     look, bl = look_of(li), blocks_of(li); lt0, lt1 = lines_t[li]
     if li == NL - 1:                                                     # призыв: подпишись (Instagram и Telegram)
         t_cta = next((d[2] for d in disp if d[1] == li and "подпиш" in norm(d[0])), lt0 + 1.0)
-        items.append({"type": "cta", "t": round(t_cta, 2), "end": round(DUR, 2), "text": "Подпишись", "sub": "Instagram" + (" · Telegram" if BRAND.get("tg") else ""), "pos": [540, 980]})
+        items.append({"type": "cta", "t": round(t_cta, 2), "end": round(DUR, 2), "text": "Подпишись", "sub": "Instagram @" + BRAND["ig"] + ("  ·  Telegram @" + BRAND["tg"] if BRAND.get("tg") else ""), "pos": [540, 980]})
         bl = [[d for d in b if d[2] < t_cta - 0.05] for b in bl]; bl = [b for b in bl if b]
     for bi, b in enumerate(bl):
         t0 = b[0][2]; nxt = bl[bi + 1][0][2] if bi + 1 < len(bl) else (lines_t[li + 1][0] if li + 1 < NL else DUR)
