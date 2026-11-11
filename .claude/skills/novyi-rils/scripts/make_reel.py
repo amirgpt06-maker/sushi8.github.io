@@ -259,16 +259,14 @@ wh = snd("sc_whoosh", "wbwhoosh", "whoosh", "swoosh")
 for sh_ in shots[1:]: put(wh, max(0, sh_["t0"] - 0.12), -7)                 # вжух на каждой смене плана (динамика)
 NASH = [os.path.join(ROOT, "nashid", f) for f in sorted(os.listdir(os.path.join(ROOT, "nashid"))) if f.lower().endswith((".mp3", ".wav", ".m4a", ".ogg", ".flac"))] if os.path.isdir(os.path.join(ROOT, "nashid")) else []
 if NASH:                                                                   # фон: размытые нашиды (только вокал; срез верха, реверберация, тихо)
-    from scipy.signal import butter, sosfilt, fftconvolve
+    sys.path.insert(0, HERE); from nashid_blur import nashid_blur
     f_ = NASH[datetime.date.today().toordinal() % len(NASH)]
     y = np.frombuffer(subprocess.run(["ffmpeg", "-v", "error", "-i", f_, "-ac", "1", "-ar", str(SR), "-f", "f32le", "-"], capture_output=True).stdout, np.float32).astype(np.float64)
     st_ = random.randint(0, max(0, len(y) - L)) if len(y) > L else 0; y = y[st_:]
     while len(y) < L: y = np.concatenate([y, y])
-    y = y[:L]; y = sosfilt(butter(3, 1400, "lp", fs=SR, output="sos"), y)
-    rg = np.random.default_rng(7); ir = rg.standard_normal(int(2.8 * SR)) * np.exp(-np.arange(int(2.8 * SR)) / SR * 2.0)
-    wet = fftconvolve(y, ir / np.sqrt(np.sum(ir ** 2)), "full")[:L]; y = 0.4 * y + 0.9 * wet / (np.std(wet) + 1e-9) * np.std(y)
+    y = nashid_blur(y[:L], SR)                                                    # заблюрен: слов не разобрать
     fade = np.minimum(1, np.arange(L) / (1.5 * SR)) * np.minimum(1, (L - np.arange(L)) / (1.5 * SR))
-    mix += y / (np.sqrt(np.mean(y ** 2)) + 1e-9) * VR * 10 ** (-23 / 20) * fade
+    mix += y * VR * 10 ** (-33 / 20) * fade                                        # минимально слышно: −33 дБ к голосу
     log("фон: нашид", os.path.basename(f_))
 mx = os.path.join(WK, "mix.wav"); sf.write(mx, np.stack([mix, mix], 1).astype(np.float32), SR, subtype="FLOAT")
 base = os.path.join(WK, "base.mp4")
