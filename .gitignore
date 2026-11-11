@@ -20,3 +20,8 @@ subs-lab/*.wav
 reels/
 reports/
 *cookies*.txt
+stock/*.mp4
+ready/
+.env
+sfx/*.wav
+sfx/*.mp3
