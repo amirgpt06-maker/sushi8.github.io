@@ -25,3 +25,7 @@ ready/
 .env
 sfx/*.wav
 sfx/*.mp3
+nashid/*.mp3
+nashid/*.wav
+nashid/*.m4a
+nashid/*.ogg

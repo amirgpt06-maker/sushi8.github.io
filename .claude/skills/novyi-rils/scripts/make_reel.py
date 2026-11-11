@@ -90,7 +90,8 @@ def pick(tags):
     for vid, e in CAT.items():
         if vid in used: continue
         title = e["title"].lower()
-        if PEOPLE.search(title) and "hand" not in title: continue      # без лиц: людей — только руки (правило пользователя)
+        if re.search(r"\b(woman|women|girl|girls|female|lady|her|she)\b", title): continue        # женщин нет вообще
+        if PEOPLE.search(title) and not re.search(r"hand|silhouette", title): continue      # людей — только руки и силуэты
         s = sum(3 for t in tags if t in e["tags"]) + sum(1 for t in tags for w in t.split("-") if w in title) + random.random() * 0.5
         if s > bs: best, bs = vid, s
     used.add(best); return best
@@ -128,11 +129,19 @@ def fetch(vid):
     if os.path.exists(f): os.remove(f)
     return None
 shots = []
+NL = len(SC["lines"])
+def look_of(li):                                             # стиль фразы: kino (сток) или apple (белая карточка); хук — всегда kino, призыв — apple
+    if SC["lines"][li].get("look"): return SC["lines"][li]["look"]
+    if li == NL - 1: return "apple"                          # призыв — Apple-карточка с Instagram и Telegram
+    return "kino" if (li == 0 or li == NL - 2 or li % 2 == 1) else "apple"   # дальше чередуем, перед призывом — кино
 for li, l in enumerate(SC["lines"]):
+    a_, b_ = lines_t[li]
+    if look_of(li) == "apple":
+        shots.append({"t0": a_, "t1": b_, "card": li, "vid": "card", "title": "Apple-карточка"}); log(f"  {a_:5.2f}–{b_:5.2f}  Apple-карточка  ← «{l['text'][:40]}»"); continue
     for _ in range(5):                                       # битый/недоступный ролик — берём следующий подходящий
         vid = pick([t.lower() for t in l.get("stock", [])]); f = fetch(vid)
         if f: break
-    a_, b_ = lines_t[li]; n = max(1, math.ceil((b_ - a_) / 3.0))          # длинная фраза — несколько планов по 2–3 с
+    n = max(1, round((b_ - a_) / 1.7))                       # динамичный монтаж: план 1.2–2 с
     for k in range(n):
         if k:
             for _ in range(5):
@@ -193,12 +202,106 @@ def draw_subs(img, t):
         al = A2[ya - y0:yb - y0, xa - x0:xb - x0, None]
         img[ya:yb, xa:xb] = img[ya:yb, xa:xb] * (1 - al) + C2[ya - y0:yb - y0, xa - x0:xb - x0] * al
 
+# ---------- 5б. Apple-карточки (белый фон, крупный текст по словам, жёлтый маркер на ключевых), хук и призыв ----------
+BRAND = json.load(open(os.path.join(ROOT, "brand.json"))) if os.path.exists(os.path.join(ROOT, "brand.json")) else {"ig": "saidulaev.ai", "tg": ""}
+SFH = next((q for q in [os.path.join(ROOT, ".claude/skills/montazh/engine/local/fonts/SF-Pro-Display-Heavy.otf"),
+            "/usr/share/fonts/truetype/montserrat/Montserrat-ExtraBold.ttf", FONT] if q and os.path.exists(q)), FONT)
+_yy, _xx = np.mgrid[0:H, 0:W].astype(np.float32)
+APPLE_BG = np.repeat((1.0 - 0.07 * np.clip(np.sqrt(((_xx - W / 2) / (W * .8)) ** 2 + ((_yy - H * .42) / (H * .7)) ** 2), 0, 1.2) ** 1.6)[..., None], 3, 2) * np.float32([1, 1, 0.995])
+ease = lambda k: 1 - (1 - min(1, max(0, k))) ** 3
+def mask_blit(img, m, x0, y0, col, alpha=1.0):
+    h, w = m.shape; xa, ya, xb, yb = max(0, int(x0)), max(0, int(y0)), min(W, int(x0) + w), min(H, int(y0) + h)
+    if xa >= xb or ya >= yb: return
+    mm = m[ya - int(y0):yb - int(y0), xa - int(x0):xb - int(x0), None] * alpha
+    img[ya:yb, xa:xb] = img[ya:yb, xa:xb] * (1 - mm) + np.float32(col) * mm
+def rr_mask(w, h, r, fill=255, blur=0):
+    im = Image.new("L", (w + 2 * 40, h + 2 * 40), 0); ImageDraw.Draw(im).rounded_rectangle([40, 40, 40 + w, 40 + h], r, fill=fill)
+    a = np.array(im).astype(np.float32) / 255
+    return cv2.GaussianBlur(a, (0, 0), blur) if blur else a
+_cards = {}
+def build_card(li):
+    ws = [d for d in disp if d[1] == li]
+    for size in range(124, 56, -6):
+        fo = ImageFont.truetype(SFH, size); sp = fo.getlength(" "); lines, cur, cw = [], [], 0
+        for d in ws:
+            wl = fo.getlength(d[0]); add = wl + (sp if cur else 0)
+            if cur and cw + add > 900: lines.append((cur, cw)); cur, cw, add = [], 0, wl
+            cur.append((d, wl)); cw += add
+        if cur: lines.append((cur, cw))
+        if len(lines) <= 5: break
+    lh = int(size * 1.2); y0 = int(H * 0.40 - len(lines) * lh / 2); items = []
+    for ri, (row, cw) in enumerate(lines):
+        x = (W - cw) / 2
+        for d, wl in row:
+            im = Image.new("L", (int(wl) + 60, size * 2), 0); ImageDraw.Draw(im).text((30, 10), d[0], font=fo, fill=255)
+            key = norm(d[0]) in KEYS
+            items.append({"m": np.array(im).astype(np.float32) / 255, "x": x - 30, "y": y0 + ri * lh - 10, "t0": d[2], "key": key,
+                          "mk": rr_mask(int(wl) + 24, int(size * 0.66), int(size * 0.2)) if key else None, "mx": x - 12 - 40, "my": y0 + ri * lh + size * 0.40 - 40})
+            x += wl + sp
+    return items
+def cta_sprites():
+    out = []
+    for kind, label, handle, col in [("ig", "Instagram", "@" + BRAND["ig"], (0.50, 0.30, 0.95)), ("tg", "Telegram", BRAND.get("tg", ""), (0.93, 0.62, 0.15))]:
+        if not handle: continue
+        fo1, fo2 = ImageFont.truetype(SFH, 34), ImageFont.truetype(SFH, 54); wd, ht = 860, 150
+        sh = rr_mask(wd, ht, 44, blur=18) * 0.16
+        card = rr_mask(wd, ht, 44); txt = Image.new("L", card.shape[::-1], 0); d = ImageDraw.Draw(txt)
+        d.text((40 + 140, 40 + 26), label, font=fo1, fill=110); d.text((40 + 140, 40 + 68), handle, font=fo2, fill=255)
+        ic = Image.new("L", card.shape[::-1], 0); ImageDraw.Draw(ic).ellipse([40 + 28, 40 + 25, 40 + 28 + 100, 40 + 25 + 100], fill=255)
+        out.append({"sh": sh, "card": card, "txt": np.array(txt).astype(np.float32) / 255, "ic": np.array(ic).astype(np.float32) / 255, "col": col})
+    return out
+_cta = None
+def apple_card(li, t, t_start):
+    global _cta
+    if li not in _cards: _cards[li] = build_card(li)
+    img = APPLE_BG.copy()
+    for it in _cards[li]:
+        k = ease((t - it["t0"] + 0.04) / 0.4)
+        if k <= 0: continue
+        if it["key"]:
+            mk = it["mk"]; kw = ease((t - it["t0"] - 0.02) / 0.35); mw = max(1, int(mk.shape[1] * kw))
+            mask_blit(img, cv2.resize(mk, (mw, mk.shape[0])), it["mx"], it["my"], (10 / 255, 214 / 255, 255 / 255), 1.0)
+        mask_blit(img, it["m"], it["x"], it["y"] + (1 - k) * 48, (31 / 255, 29 / 255, 29 / 255), k)
+    if li == NL - 1:                                                      # призыв: подписаться в Instagram и Telegram
+        if _cta is None: _cta = cta_sprites()
+        for i, c in enumerate(_cta):
+            k = ease((t - t_start - 1.0 - 0.3 * i) / 0.5)
+            if k <= 0: continue
+            cy = int(H * 0.69 + i * 190 + (1 - k) * 60)
+            mask_blit(img, c["sh"], W / 2 - 430 - 40, cy - 75 - 40 + 14, (0, 0, 0), k)
+            mask_blit(img, c["card"], W / 2 - 430 - 40, cy - 75 - 40, (1, 1, 1), k)
+            mask_blit(img, c["ic"], W / 2 - 430 - 40, cy - 75 - 40, c["col"], k)
+            mask_blit(img, c["txt"], W / 2 - 430 - 40, cy - 75 - 40, (31 / 255, 29 / 255, 29 / 255), k)
+    return img
+HOOK = SC.get("hook") or ""
+def draw_hook(img, t):
+    if not HOOK or t > 3.2 or look_of_at(t) == "apple": return
+    ws = HOOK.split(); rows = [ws[i:i + 3] for i in range(0, len(ws), 3)]
+    k = ease(t / 0.3) * (1 - ease((t - 2.7) / 0.4))
+    for ri, row in enumerate(rows):
+        C, A_ = sprite(tuple((w, 0, 0, 0) for w in row)); h, w = A_.shape
+        x0, y0 = int(W / 2 - w / 2), int(H * 0.17 + ri * 112 - h / 2 + (1 - k) * 40)
+        xa, ya, xb, yb = max(0, x0), max(0, y0), min(W, x0 + w), min(H, y0 + h)
+        if xa >= xb or ya >= yb: continue
+        al = A_[ya - y0:yb - y0, xa - x0:xb - x0, None] * k
+        img[ya:yb, xa:xb] = img[ya:yb, xa:xb] * (1 - al) + C[ya - y0:yb - y0, xa - x0:xb - x0] * al
+GRAINS = [cv2.resize(np.random.default_rng(i).standard_normal((H // 3, W // 3)).astype(np.float32), (W, H)) for i in range(6)]
+def grade_kino(img, n):
+    l = (img[..., 0] * .11 + img[..., 1] * .59 + img[..., 2] * .30)[..., None]
+    img = np.clip(0.5 + (img - 0.5) * 1.08, 0, 1)
+    sh_, hi_ = (1 - l) ** 2, l ** 2
+    img = img + np.concatenate([.030 * sh_ - .040 * hi_, .008 * sh_ + .004 * hi_, -.015 * sh_ + .050 * hi_], 2)   # бирюза в тенях, тёплые света
+    return np.clip(img + GRAINS[n % 6][..., None] * (3.0 / 255), 0, 1)
+
 # ---------- 6. видео ----------
 N = int(math.ceil(DUR * FPS)); frames = {}
 enc = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
                         "-c:v", "libx264", "-crf", "17", "-preset", "medium", "-pix_fmt", "yuv420p", os.path.join(WK, "video.mp4")], stdin=subprocess.PIPE)
+def look_of_at(t):
+    i = max(k for k, s_ in enumerate(shots) if s_["t0"] <= t + 1e-6); return "apple" if "card" in shots[i] else "kino"
 def shot_img(i, t):
     s = shots[i]
+    if "card" in s: return apple_card(s["card"], t, s["t0"])
     if i not in frames: frames[i] = decode(s)
     fr = frames[i]; n = min(len(fr) - 1, max(0, int((t - s["t0"]) * FPS)))
     img = fr[n].astype(np.float32) / 255
@@ -209,9 +312,9 @@ for n in range(N):
     img = shot_img(i, t)
     if i > 0 and t - shots[i]["t0"] < 0.25:                                        # мягкий наплыв между планами
         k = (t - shots[i]["t0"]) / 0.25; img = shot_img(i - 1, t) * (1 - k) + img * k
-    img = np.clip(0.5 + (img - 0.5) * 1.05, 0, 1)
-    if n == 0: pass
-    draw_subs(img, t)
+    if "card" not in shots[i]: img = grade_kino(img, n)
+    draw_hook(img, t)
+    if "card" not in shots[i]: draw_subs(img, t)                                   # на Apple-карточках текст — сама карточка
     out = (np.clip(img, 0, 1) * 255).astype(np.uint8)
     if abs(t - min(1.5, DUR / 2)) < 0.5 / FPS: cv2.imwrite(os.path.join(OUT, "cover.jpg"), out)
     enc.stdin.write(out.tobytes())
@@ -219,7 +322,8 @@ for n in range(N):
 enc.stdin.close(); enc.wait()
 
 # ---------- 7. звуки (из sfx/, иначе синтез из skill montazh) и сведение ----------
-SFXD = [os.path.join(ROOT, "sfx"), os.path.join(ROOT, ".claude/skills/montazh/engine/sfx")]
+SFXD = [os.path.join(ROOT, "sfx"), os.path.join(ROOT, ".claude/skills/montazh/engine/sfx_local"), os.path.join(ROOT, ".claude/skills/montazh/engine/sfx")]
+# sfx/ — свои файлы; sfx_local — пак пользователя (последняя папка со звуками, в git не лежит); engine/sfx — синтез на крайний случай
 def snd(*names):
     for d in SFXD:
         for nm in names:
@@ -234,11 +338,31 @@ VR = np.sqrt(np.mean(v[np.abs(v) > 1e-3] ** 2))
 def put(y, t, db_):
     if y is None: return
     a0 = int(t * SR); e = min(L, a0 + len(y)); mix[a0:e] += y[:e - a0] * VR * 4 * 10 ** (db_ / 20)
-wh, pop, ding = snd("whoosh", "swoosh"), snd("pop", "tagpop", "linepop"), snd("ding", "chime", "tink")
-for s in shots[1:]: put(wh, max(0, s["t0"] - 0.12), -10)
+wh, pop, ding = snd("sc_whoosh", "wbwhoosh", "whoosh", "swoosh"), snd("wbpop", "tagpop", "blockpop", "pop"), snd("tink", "chime5", "sc_chimes", "ding")
+tick = snd("aplkey1", "key1", "linepop")
+for sh_ in shots[1:]: put(wh, max(0, sh_["t0"] - 0.12), -7)                 # вжух на каждой смене плана (динамика)
+for sh_ in shots:
+    if "card" in sh_:
+        put(pop, sh_["t0"] + 0.02, -9)
+        for d in [d for d in disp if d[1] == sh_["card"]]:                    # текст карточки печатается по словам
+            put(tick, d[2], -14)
 for g in groups:
-    if any(norm(w) in KEYS for w, *_ in g): put(pop, g[0][2], -9)
-put(ding, max(0, len(v) / SR - 1.2), -8)
+    if any(norm(w) in KEYS for w, *_ in g): put(pop, g[0][2], -7)
+put(ding, max(0, len(v) / SR - 1.2), -6)
+# фон: размытые нашиды из папки nashid/ (только голоса, без музыки; тихо, срез верха, большая реверберация)
+NASH = [os.path.join(ROOT, "nashid", f) for f in sorted(os.listdir(os.path.join(ROOT, "nashid"))) if f.lower().endswith((".mp3", ".wav", ".m4a", ".ogg", ".flac"))] if os.path.isdir(os.path.join(ROOT, "nashid")) else []
+if NASH:
+    from scipy.signal import butter, sosfilt, fftconvolve
+    f_ = NASH[datetime.date.today().toordinal() % len(NASH)]
+    y = np.frombuffer(subprocess.run(["ffmpeg", "-v", "error", "-i", f_, "-ac", "1", "-ar", str(SR), "-f", "f32le", "-"], capture_output=True).stdout, np.float32).astype(np.float64)
+    st_ = random.randint(0, max(0, len(y) - L)) if len(y) > L else 0; y = y[st_:]
+    while len(y) < L: y = np.concatenate([y, y])                                   # короткий файл — по кругу
+    y = y[:L]; y = sosfilt(butter(3, 1400, "lp", fs=SR, output="sos"), y)          # «блюр»: срез верха
+    rg = np.random.default_rng(7); ir = rg.standard_normal(int(2.8 * SR)) * np.exp(-np.arange(int(2.8 * SR)) / SR * 2.0)
+    wet = fftconvolve(y, ir / np.sqrt(np.sum(ir ** 2)), "full")[:L]; y = 0.4 * y + 0.9 * wet / (np.std(wet) + 1e-9) * np.std(y)
+    fade = np.minimum(1, np.arange(L) / (1.5 * SR)) * np.minimum(1, (L - np.arange(L)) / (1.5 * SR))
+    mix += y / (np.sqrt(np.mean(y ** 2)) + 1e-9) * VR * 10 ** (-23 / 20) * fade
+    log("фон: нашид", os.path.basename(f_))
 mx = os.path.join(WK, "mix.wav"); sf.write(mx, np.stack([mix, mix], 1).astype(np.float32), SR, subtype="FLOAT")
 reel = os.path.join(OUT, "reel.mp4")
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", os.path.join(WK, "video.mp4"), "-i", mx, "-map", "0:v", "-map", "1:a", "-c:v", "copy",

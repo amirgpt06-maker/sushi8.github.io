@@ -25,6 +25,23 @@ def call(m, **kw):
     if not j.get("ok"): raise SystemExit(f"Telegram {m}: {j}")
     return j["result"]
 
+KW_FILE = os.path.join(ROOT, "keywords.json")
+def handle_subscriber(m):
+    """Ключевое слово из keywords.json -> текст и ссылка; незнакомый вопрос -> печатаем QUESTION для ответа (текст не сохраняем: репозиторий)."""
+    import re
+    txt = (m.get("text") or "").strip(); chat = m["chat"]["id"]
+    if not txt: return
+    kw = json.load(open(KW_FILE, encoding="utf-8")) if os.path.exists(KW_FILE) else {}
+    low = re.sub(r"[^\w\s]", " ", txt.lower().replace("ё", "е"))
+    for word, rep in kw.get("keywords", {}).items():
+        if re.search(rf"(?<!\w){re.escape(word.lower().replace('ё', 'е'))}(?!\w)", low):
+            body = rep["text"] + (f"\n\n{rep['link']}" if rep.get("link") else "")
+            call("sendMessage", data={"chat_id": chat, "text": body, "reply_to_message_id": m["message_id"], "disable_web_page_preview": "false"})
+            print("KEYWORD", word, "->", chat); return
+    if txt.startswith("/start"):
+        call("sendMessage", data={"chat_id": chat, "text": kw.get("welcome", "Привет! Напиши ключевое слово из рилса — пришлю материал. Или задай вопрос.")}); return
+    print("QUESTION", chat, m["message_id"], txt.replace("\n", " ")[:500])
+    if kw.get("ack"): call("sendMessage", data={"chat_id": chat, "text": kw["ack"], "reply_to_message_id": m["message_id"]})
 cmd = sys.argv[1] if len(sys.argv) > 1 else "check"
 if cmd == "whoami":
     for u in call("getUpdates"):
@@ -39,6 +56,8 @@ elif cmd == "send":
     state["sent"][str(msg["message_id"])] = os.path.relpath(d, ROOT); save()
     state.setdefault("status", {})[os.path.relpath(d, ROOT)] = {"status": "sent", "tg_message": msg["message_id"]}; save()
     print("отправлено:", msg["message_id"])
+elif cmd == "answer":                                  # telegram.py answer <chat_id> <message_id> "текст"
+    call("sendMessage", data={"chat_id": sys.argv[2], "text": sys.argv[4], "reply_to_message_id": sys.argv[3]}); print("ответ отправлен")
 elif cmd == "script":
     sc_path = os.path.abspath(sys.argv[2]); sc = json.load(open(sc_path, encoding="utf-8"))
     txt = "\n".join(l["text"] for l in sc["lines"])
@@ -51,7 +70,8 @@ elif cmd == "check":
     for u in ups:
         state["offset"] = max(state["offset"], u["update_id"])
         m = u.get("message") or {}
-        if str(m.get("chat", {}).get("id")) != str(CHAT): continue
+        if str(m.get("chat", {}).get("id")) != str(CHAT):          # пишет не владелец — подписчик: ключевое слово -> ссылка, иначе вопрос на ответ
+            handle_subscriber(m); continue
         media = m.get("voice") or m.get("audio") or m.get("video_note") or m.get("video") or m.get("document")
         if media:                                               # голосовое на сценарий -> скачать для монтажа
             scr = state.get("scripts", {}); ref_ = str((m.get("reply_to_message") or {}).get("message_id") or (max(scr, key=int) if scr else ""))
