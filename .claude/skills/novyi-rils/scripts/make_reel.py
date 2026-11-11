@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.abspath(os.path.join(HERE, "../../../.."))
 sys.path.insert(0, HERE); import tts
-ap = argparse.ArgumentParser(); ap.add_argument("scenario"); ap.add_argument("--engine"); ap.add_argument("--out", default=os.path.join(ROOT, "ready"))
+ap = argparse.ArgumentParser(); ap.add_argument("scenario"); ap.add_argument("--engine"); ap.add_argument("--voice", help="своя запись голоса (голосовое из Telegram, mp3/m4a/ogg/wav) — по умолчанию"); ap.add_argument("--out", default=os.path.join(ROOT, "ready"))
 A = ap.parse_args()
 SC = json.load(open(A.scenario, encoding="utf-8"))
 W, H, FPS, SR = 1080, 1920, 30, 48000
@@ -25,9 +25,13 @@ log = lambda *a: print(*a, flush=True)
 PY = sys.executable
 
 # ---------- 1. озвучка ----------
-text = " ".join(l["text"].strip() for l in SC["lines"])
 raw = os.path.join(WK, "voice_raw.wav")
-eng = tts.speak(text, raw, A.engine); log("озвучка:", eng)
+if A.voice:                                                   # голос пользователя (бесплатно: сам записывает)
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", A.voice, "-ac", "1", "-ar", "48000", raw], check=True); eng = "свой голос"
+else:                                                         # черновой синтез — только для проверки системы
+    text = " ".join(l["text"].strip() for l in SC["lines"])
+    eng = tts.speak(text, raw, A.engine)
+log("озвучка:", eng)
 
 # ---------- 2. чистка: паузы по краям долой, голос чистый и громкий ----------
 x, sr = sf.read(raw); x = x if x.ndim == 1 else x.mean(1)
@@ -55,6 +59,14 @@ for li, l in enumerate(SC["lines"]):
 sm = difflib.SequenceMatcher(None, [norm(d[0]) for d in disp], [norm(h["w"]) for h in heard], autojunk=False)
 for blk in sm.get_matching_blocks():
     for j in range(blk.size): disp[blk.a + j][2] = heard[blk.b + j]["t0"]; disp[blk.a + j][3] = heard[blk.b + j]["t1"]
+if A.voice and heard:                                          # говорил своими словами — субтитры строго по речи
+    owner = {}
+    for blk in sm.get_matching_blocks():
+        for j in range(blk.size): owner[blk.b + j] = disp[blk.a + j][1]
+    li_, new = 0, []
+    for k, h in enumerate(heard):
+        li_ = max(li_, owner.get(k, li_)); new.append([h["w"], li_, h["t0"], h["t1"]])
+    disp = new
 known = [(i, d[2]) for i, d in enumerate(disp) if d[2] is not None] or [(0, 0.0)]
 if known[0][0] != 0: known.insert(0, (0, 0.0))
 if known[-1][0] != len(disp) - 1: known.append((len(disp) - 1, len(v) / SR - 0.3))
@@ -63,7 +75,8 @@ for i, d in enumerate(disp): d[2] = float(t0s[i])
 for i, d in enumerate(disp): d[3] = d[3] if d[3] else (disp[i + 1][2] if i + 1 < len(disp) else len(v) / SR)
 lines_t = []
 for li in range(len(SC["lines"])):
-    ws = [d for d in disp if d[1] == li]; lines_t.append([ws[0][2], ws[-1][3]])
+    ws = [d for d in disp if d[1] == li]
+    lines_t.append([ws[0][2], ws[-1][3]] if ws else [lines_t[-1][1] if lines_t else 0.0] * 2)
 for i in range(len(lines_t) - 1): lines_t[i][1] = lines_t[i + 1][0]           # план держится до следующей фразы
 lines_t[0][0] = 0.0; lines_t[-1][1] = DUR
 
@@ -71,7 +84,7 @@ lines_t[0][0] = 0.0; lines_t[-1][1] = DUR
 CAT = json.load(open(os.path.join(ROOT, "stock/catalog.json")))
 used = set()
 PEOPLE = re.compile(r"\b(friends?|people|customers?|team|crowd|group|family|man|men|guy|boy|person|students?|workers?|businessman|"
-                    r"waiter|chef|tourists?|athlete|player|singer|actor|teenager|youth|adult|elderly|grandfather|face|portrait)\b")
+                    r"waiter|chef|tourists?|shoppers?|passengers?|pedestrians?|audience|fans|athlete|player|singer|actor|teenager|youth|adult|elderly|grandfather|face|portrait)\b")
 def pick(tags):
     best, bs = None, -1
     for vid, e in CAT.items():
@@ -86,12 +99,32 @@ used |= BLOCK                                          # ролики, где н
 def ok(f):
     r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width", "-of", "csv=p=0", f], capture_output=True, text=True)
     return r.returncode == 0 and r.stdout.strip() != ""
+YUNET = os.path.join(HERE, "../models/yunet.onnx")
+def has_faces(f):
+    """Лица в кадре (правило пользователя: без лиц) — детектор YuNet на 5 кадрах клипа."""
+    det = cv2.FaceDetectorYN.create(YUNET, "", (320, 320), 0.75)
+    d = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", f], capture_output=True, text=True).stdout or 5)
+    for k in range(5):
+        raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", f"{d * (k + .5) / 5:.2f}", "-i", f, "-frames:v", "1", "-vf", "scale=640:-2", "-f", "image2pipe", "-vcodec", "png", "-"], capture_output=True).stdout
+        img = cv2.imdecode(np.frombuffer(raw, np.uint8), cv2.IMREAD_COLOR)
+        if img is None: continue
+        det.setInputSize((img.shape[1], img.shape[0])); _, faces = det.detect(img)
+        if faces is not None and any(fc[3] > img.shape[0] * 0.035 for fc in faces): return True
+    return False
 def fetch(vid):
     f = os.path.join(ROOT, "stock", f"{vid}.mp4")
-    if os.path.exists(f) and ok(f): return f
+    CK = os.path.join(ROOT, "stock/checked.txt"); checked = set(open(CK).read().split()) if os.path.exists(CK) else set()
+    if os.path.exists(f) and ok(f):
+        if vid in checked: return f
+        if has_faces(f):
+            open(os.path.join(ROOT, "stock/blocked.txt"), "a").write(f" {vid}"); os.remove(f); log(f"  {vid}: в кадре лица — пропускаю"); return None
+        open(CK, "a").write(f" {vid}"); return f
     for q in ("1080", "720"):
         r = subprocess.run(["curl", "-sS", "-f", "-m", "300", "-o", f, f"https://assets.mixkit.co/videos/{vid}/{vid}-{q}.mp4"], capture_output=True)
-        if r.returncode == 0 and ok(f): return f
+        if r.returncode == 0 and ok(f):
+            if has_faces(f):                                    # лица — в чёрный список, ролик удалить
+                open(os.path.join(ROOT, "stock/blocked.txt"), "a").write(f" {vid}"); os.remove(f); log(f"  {vid}: в кадре лица — пропускаю"); return None
+            open(os.path.join(ROOT, "stock/checked.txt"), "a").write(f" {vid}"); return f
     if os.path.exists(f): os.remove(f)
     return None
 shots = []
@@ -99,9 +132,17 @@ for li, l in enumerate(SC["lines"]):
     for _ in range(5):                                       # битый/недоступный ролик — берём следующий подходящий
         vid = pick([t.lower() for t in l.get("stock", [])]); f = fetch(vid)
         if f: break
-    shots.append({"t0": lines_t[li][0], "t1": lines_t[li][1], "vid": vid, "file": f, "title": CAT[vid]["title"]})
-    log(f"  {lines_t[li][0]:5.2f}–{lines_t[li][1]:5.2f}  {vid}  {CAT[vid]['title']}  ← «{l['text'][:40]}»")
+    a_, b_ = lines_t[li]; n = max(1, math.ceil((b_ - a_) / 3.0))          # длинная фраза — несколько планов по 2–3 с
+    for k in range(n):
+        if k:
+            for _ in range(5):
+                vid = pick([t.lower() for t in l.get("stock", [])]); f = fetch(vid)
+                if f: break
+        t0_, t1_ = a_ + (b_ - a_) * k / n, a_ + (b_ - a_) * (k + 1) / n
+        shots.append({"t0": t0_, "t1": t1_, "vid": vid, "file": f, "title": CAT[vid]["title"]})
+        log(f"  {t0_:5.2f}–{t1_:5.2f}  {vid}  {CAT[vid]['title']}  ← «{l['text'][:40]}»")
 
+shots = [s for s in shots if s["t1"] - s["t0"] > 0.05]                # фразу сценария пропустил в записи — плана нет
 def decode(s):
     f = s["file"]; T = s["t1"] - s["t0"] + 0.4
     pr = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-show_entries", "format=duration", "-of", "csv=p=0", f], capture_output=True, text=True).stdout.split()
