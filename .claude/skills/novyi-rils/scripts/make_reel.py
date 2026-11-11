@@ -184,7 +184,7 @@ def sprite(words):
     pad = 60; tw = int(fo.getlength(" ".join(key))) + 2 * pad; asc, desc = fo.getmetrics(); th = asc + desc + 2 * pad
     im = Image.new("RGBA", (tw, th), (0, 0, 0, 0)); dr = ImageDraw.Draw(im); x0 = pad
     for w in key:
-        col = (255, 214, 10, 255) if norm(w) in KEYS else (255, 255, 255, 255)
+        col = (95, 160, 255, 255) if norm(w) in KEYS else (255, 255, 255, 255)
         dr.text((x0, pad), w, font=fo, fill=col, stroke_width=3, stroke_fill=(0, 0, 0, 255)); x0 += fo.getlength(w + " ")
     a = np.array(im.getchannel("A")).astype(np.float32) / 255
     sh = np.roll(cv2.GaussianBlur(a, (0, 0), 10), 6, 0) * 0.75
@@ -207,7 +207,9 @@ BRAND = json.load(open(os.path.join(ROOT, "brand.json"))) if os.path.exists(os.p
 SFH = next((q for q in [os.path.join(ROOT, ".claude/skills/montazh/engine/local/fonts/SF-Pro-Display-Heavy.otf"),
             "/usr/share/fonts/truetype/montserrat/Montserrat-ExtraBold.ttf", FONT] if q and os.path.exists(q)), FONT)
 _yy, _xx = np.mgrid[0:H, 0:W].astype(np.float32)
-APPLE_BG = np.repeat((1.0 - 0.07 * np.clip(np.sqrt(((_xx - W / 2) / (W * .8)) ** 2 + ((_yy - H * .42) / (H * .7)) ** 2), 0, 1.2) ** 1.6)[..., None], 3, 2) * np.float32([1, 1, 0.995])
+_base = np.repeat((1.0 - 0.05 * np.clip(np.sqrt(((_xx - W / 2) / (W * .8)) ** 2 + ((_yy - H * .42) / (H * .7)) ** 2), 0, 1.2) ** 1.6)[..., None], 3, 2) * np.float32([1, 0.997, 0.99])
+_glow = np.exp(-(((_xx - W / 2) / (W * .75)) ** 2 + ((_yy - H * 1.02) / (H * .28)) ** 2))[..., None] * 0.55   # мягкое синее свечение снизу, как волна в Apple
+APPLE_BG = np.clip(_base * (1 - _glow) + np.float32([1.0, 0.70, 0.36]) * _glow, 0, 1).astype(np.float32)          # BGR: синий #5CB3FF
 ease = lambda k: 1 - (1 - min(1, max(0, k))) ** 3
 def mask_blit(img, m, x0, y0, col, alpha=1.0):
     h, w = m.shape; xa, ya, xb, yb = max(0, int(x0)), max(0, int(y0)), min(W, int(x0) + w), min(H, int(y0) + h)
@@ -241,7 +243,7 @@ def build_card(li):
     return items
 def cta_sprites():
     out = []
-    for kind, label, handle, col in [("ig", "Instagram", "@" + BRAND["ig"], (0.50, 0.30, 0.95)), ("tg", "Telegram", BRAND.get("tg", ""), (0.93, 0.62, 0.15))]:
+    for kind, label, handle, col in [("ig", "Instagram", "@" + BRAND["ig"], (242 / 255, 109 / 255, 47 / 255)), ("tg", "Telegram", BRAND.get("tg", ""), (255 / 255, 170 / 255, 90 / 255))]:
         if not handle: continue
         fo1, fo2 = ImageFont.truetype(SFH, 34), ImageFont.truetype(SFH, 54); wd, ht = 860, 150
         sh = rr_mask(wd, ht, 44, blur=18) * 0.16
@@ -260,8 +262,8 @@ def apple_card(li, t, t_start):
         if k <= 0: continue
         if it["key"]:
             mk = it["mk"]; kw = ease((t - it["t0"] - 0.02) / 0.35); mw = max(1, int(mk.shape[1] * kw))
-            mask_blit(img, cv2.resize(mk, (mw, mk.shape[0])), it["mx"], it["my"], (10 / 255, 214 / 255, 255 / 255), 1.0)
-        mask_blit(img, it["m"], it["x"], it["y"] + (1 - k) * 48, (31 / 255, 29 / 255, 29 / 255), k)
+            mask_blit(img, cv2.resize(mk, (mw, mk.shape[0])), it["mx"], it["my"], (242 / 255, 109 / 255, 47 / 255), 1.0)   # синий #2F6DF2
+        mask_blit(img, it["m"], it["x"], it["y"] + (1 - k) * 48, ((1, 1, 1) if it["key"] and (t - it["t0"]) > 0.15 else (31 / 255, 29 / 255, 29 / 255)), k)
     if li == NL - 1:                                                      # призыв: подписаться в Instagram и Telegram
         if _cta is None: _cta = cta_sprites()
         for i, c in enumerate(_cta):
@@ -290,7 +292,7 @@ def grade_kino(img, n):
     l = (img[..., 0] * .11 + img[..., 1] * .59 + img[..., 2] * .30)[..., None]
     img = np.clip(0.5 + (img - 0.5) * 1.08, 0, 1)
     sh_, hi_ = (1 - l) ** 2, l ** 2
-    img = img + np.concatenate([.030 * sh_ - .040 * hi_, .008 * sh_ + .004 * hi_, -.015 * sh_ + .050 * hi_], 2)   # бирюза в тенях, тёплые света
+    img = img + np.concatenate([.050 * sh_ + .015 * hi_, .006 * sh_ + .002 * hi_, -.030 * sh_ - .012 * hi_], 2)   # синие тени, холодные света (гамма: белый + синий)
     return np.clip(img + GRAINS[n % 6][..., None] * (3.0 / 255), 0, 1)
 
 # ---------- 6. видео ----------
