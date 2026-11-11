@@ -259,14 +259,13 @@ wh = snd("sc_whoosh", "wbwhoosh", "whoosh", "swoosh")
 for sh_ in shots[1:]: put(wh, max(0, sh_["t0"] - 0.12), -7)                 # вжух на каждой смене плана (динамика)
 NASH = [os.path.join(ROOT, "nashid", f) for f in sorted(os.listdir(os.path.join(ROOT, "nashid"))) if f.lower().endswith((".mp3", ".wav", ".m4a", ".ogg", ".flac"))] if os.path.isdir(os.path.join(ROOT, "nashid")) else []
 if NASH:                                                                   # фон: размытые нашиды (только вокал; срез верха, реверберация, тихо)
-    sys.path.insert(0, HERE); from nashid_blur import nashid_blur
     f_ = NASH[datetime.date.today().toordinal() % len(NASH)]
     y = np.frombuffer(subprocess.run(["ffmpeg", "-v", "error", "-i", f_, "-ac", "1", "-ar", str(SR), "-f", "f32le", "-"], capture_output=True).stdout, np.float32).astype(np.float64)
     st_ = random.randint(0, max(0, len(y) - L)) if len(y) > L else 0; y = y[st_:]
     while len(y) < L: y = np.concatenate([y, y])
-    y = nashid_blur(y[:L], SR)                                                    # заблюрен: слов не разобрать
+    y = y[:L] / (np.sqrt(np.mean(y[:L] ** 2)) + 1e-9)                              # как есть, без обработки; выравниваем громкость треков
     fade = np.minimum(1, np.arange(L) / (1.5 * SR)) * np.minimum(1, (L - np.arange(L)) / (1.5 * SR))
-    mix += y * VR * 10 ** (-33 / 20) * fade                                        # минимально слышно: −33 дБ к голосу
+    mix += y * VR * 0.05 * fade                                                    # громкость «5 из 100» = 5 % от голоса (−26 дБ)
     log("фон: нашид", os.path.basename(f_))
 mx = os.path.join(WK, "mix.wav"); sf.write(mx, np.stack([mix, mix], 1).astype(np.float32), SR, subtype="FLOAT")
 base = os.path.join(WK, "base.mp4")
