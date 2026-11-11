@@ -66,6 +66,11 @@ elif cmd == "send":
     cap = f"🎬 Рилс на проверку: {sc.get('topic', '')}\n\n{post}"[:880] + f"\n\nОтветь «ок» — одобрю. Или напиши, что поправить.\n[reel:{os.path.relpath(d, ROOT)}]"
     with open(os.path.join(d, "reel.mp4"), "rb") as f:
         msg = call("sendVideo", data={"chat_id": CHAT, "caption": cap, "supports_streaming": "true", "width": 1080, "height": 1920}, files={"video": f})
+    cover = os.path.join(d, "cover.jpg")
+    if os.path.exists(cover):                                       # обложка и текст отдельно — удобно скопировать и выложить вручную
+        with open(cover, "rb") as f: call("sendPhoto", data={"chat_id": CHAT, "caption": "🖼 Обложка (сохрани картинку)"}, files={"photo": f})
+    say("📝 Текст поста — скопируй целиком:")
+    say(post)
     print("отправлено:", msg["message_id"])
 elif cmd == "notify": say(sys.argv[2])
 elif cmd == "answer": call("sendMessage", data={"chat_id": sys.argv[2], "text": sys.argv[4], "reply_to_message_id": sys.argv[3]}); print("ответ отправлен")
@@ -87,7 +92,7 @@ elif cmd == "check":
         if mm:
             txt = (m.get("text") or "").strip()
             if txt.lower().strip(" .!") in OK:
-                say("✅ Принято. Опубликую, как только подключим Instagram API.", reply_to_message_id=m["message_id"]); print("APPROVED", mm.group(1))
+                say("✅ Принято. Выкладывай — всё нужное выше: видео, обложка и текст поста.", reply_to_message_id=m["message_id"]); print("APPROVED", mm.group(1))
             elif txt:
                 say("✍️ Записал правки. Пришли голос заново ответом на сообщение со сценарием — пересоберу с учётом правок.", reply_to_message_id=m["message_id"]); print("EDIT", mm.group(1), txt.replace("\n", " ")[:400])
     if last: call("getUpdates", data={"offset": last + 1, "timeout": 0})     # подтверждаем обработанное: Telegram сам хранит очередь
