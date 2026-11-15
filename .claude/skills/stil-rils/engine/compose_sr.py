@@ -3,7 +3,7 @@ python compose_sr.py base.mp4 overlay_dir cues.json out.mp4 [--mix mix.wav]
 
 Что делает с основой по fx кадра: размытие и затемнение под вставками, матовое стекло под плашкой (сильное размытие
 внутри скруглённого прямоугольника), вспышка-пересвет. Всегда: тёмный градиент снизу. Звуки — cues["events"]:
-[{"t": сек, "snd": "pop", "db": -6}], файлы ищутся в sfx_local и sfx движка montazh; громкость к голосу.
+[{"t": сек, "snd": "pop", "db": -6}], файлы — только из sfx_local (нарезка из папки пользователя «isla pac»); громкость к голосу.
 """
 import json, os, subprocess, sys
 import numpy as np, cv2, soundfile as sf
@@ -26,7 +26,7 @@ cache = {}
 def snd(name):
     if name not in cache:
         cache[name] = None
-        for d in (os.path.join(ENG, "sfx_local"), os.path.join(ENG, "sfx")):
+        for d in (os.path.join(ENG, "sfx_local"),):                 # только звуки из папки пользователя; синтез движка не берём
             for ext in (".wav", ".mp3"):
                 f = os.path.join(d, name + ext)
                 if os.path.exists(f) and cache[name] is None:
@@ -50,7 +50,7 @@ for ev in C.get("events", []):
     else: g = VR * 4 * 10 ** (ev.get("db", -6) / 20)
     a0 = int(max(0, ev["t"]) * SR); e = min(L, a0 + len(s))
     if e > a0: mix[a0:e] += s[:e - a0] * g; rep.append((round(ev["t"], 2), ev["snd"], round(float(20 * np.log10(g * win_rms(s).max() / SPR + 1e-9)), 1)))
-if miss: print("нет звуков:", sorted(miss))
+if miss: raise SystemExit(f"нет звуков из пака пользователя: {sorted(miss)} — запусти engine/pack_sr.py (подставлять свои звуки нельзя)")
 print("звуков:", len(rep), "= 1 на", round(C["duration"] / max(1, len(rep)), 1), "с; уровень к речи, дБ:", rep)
 pk = np.abs(mix).max()
 if pk > 0.98: mix *= 0.98 / pk

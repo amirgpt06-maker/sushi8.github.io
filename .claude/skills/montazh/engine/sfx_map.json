@@ -1,13 +1,13 @@
 {
- "_about": "Роль -> файл из паков пользователя (Botanica v5 и пак «Apple» со звуками/шрифтами/UI). Схема и громкость сняты с его референсов сопоставлением спектров. start — откуда вырезать кусок в файле-сборнике. Роли без строки берутся из синтеза engine/sfx. fx1..fx11 — быстрые UI/тех-звуки (серия «звук, который ты слышишь»).",
+ "_about": "Роль -> файл из паков пользователя (Botanica v5 и пак «Apple» со звуками/шрифтами/UI). Схема и громкость сняты с его референсов сопоставлением спектров. start — откуда вырезать кусок в файле-сборнике. Роли без строки берутся из синтеза engine/sfx. fx1..fx11 — быстрые UI/тех-звуки (серия «звук, который ты слышишь»). ПРАВИЛО ПОЛЬЗОВАТЕЛЯ: все звуки — только из его папки Drive «isla pac» (assets.json: sfx). Роли, которые раньше брались из другого пака или из синтеза, переведены на файлы этой папки.",
  "blockpop": {
   "file": "эпл печатание.mp3",
   "start": 1.09,
   "max_s": 0.3
  },
  "pop": {
-  "file": "Pop, Button, Scale, Transform, Ui_9.wav",
-  "max_s": 1.5
+  "file": "ui-pop-up-2-197887.mp3",
+  "max_s": 0.3
  },
  "linepop": {
   "file": "эпл печатание.mp3",
@@ -20,20 +20,24 @@
   "max_s": 0.3
  },
  "key1": {
-  "file": "Type (one)_4.wav",
-  "max_s": 1.5
+  "file": "iphone-keyboard-typing-sound-effect-336778.mp3",
+  "start": 11.65,
+  "max_s": 0.12
  },
  "key2": {
-  "file": "Type (one) _3.wav",
-  "max_s": 1.5
+  "file": "iphone-keyboard-typing-sound-effect-336778.mp3",
+  "start": 6.96,
+  "max_s": 0.12
  },
  "key3": {
-  "file": "Type (one) _1.wav",
-  "max_s": 1.5
+  "file": "эпл печатание.mp3",
+  "start": 2.82,
+  "max_s": 0.12
  },
  "key4": {
-  "file": "Type (one) _2.wav",
-  "max_s": 1.5
+  "file": "iphone-keyboard-typing-sound-effect-336778.mp3",
+  "start": 0.64,
+  "max_s": 0.12
  },
  "tagpop": {
   "file": "notification3.mp3",
@@ -44,16 +48,18 @@
   "max_s": 0.7
  },
  "tink": {
-  "file": "Pop, Button, Scale, Transform, Ui_15.wav",
-  "max_s": 1.5
+  "file": "Saas Sfx.mp3",
+  "start": 9.24,
+  "max_s": 0.2
  },
  "click2": {
-  "file": "Pop, Button, Scale, Transform, Ui_8.wav",
-  "max_s": 1.5
+  "file": "clickbutton.mp3",
+  "start": 0.03,
+  "max_s": 0.25
  },
  "cash": {
-  "file": "Cash, Coin, Paid.wav",
-  "max_s": 1.5
+  "file": "5. Click.mp3",
+  "max_s": 0.3
  },
  "aplkey1": {
   "file": "эпл печатание.mp3",
@@ -235,5 +241,24 @@
  "sc_hit": {
   "file": "Wall Hit 3.wav",
   "max_s": 1.0
+ },
+ "whoosh": {
+  "file": "Whooshes_ODC-0002-506.wav",
+  "start": 2.46,
+  "max_s": 0.5
+ },
+ "air": {
+  "file": "Whooshes_ODC-0002-506.wav",
+  "start": 1.67,
+  "max_s": 0.65
+ },
+ "chime": {
+  "file": "Saas Sfx.mp3",
+  "start": 28.96,
+  "max_s": 0.2
+ },
+ "focus": {
+  "file": "5. Click.mp3",
+  "max_s": 0.3
  }
 }
