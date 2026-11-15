@@ -6,7 +6,7 @@ T = lambda i: Wd[i][2]; E = lambda i: Wd[i][3]
 BLUE = "#78AEFF"; items = []; ev = []   # акцент блога (синий), светлее базового #4C8DFF: читается на любом стоке
 def ws(pairs): return [[w, T(i)] for w, i in pairs]
 def stack(t0, t1, lines, y=1070, **k): items.append({"type": "stack", "t0": round(t0, 3), "t1": round(t1, 3), "y": y, "lines": lines, **k})
-LVL = {"whoosh": -13, "whooshup": -16, "pop": -18, "switch": -22, "key": -26, "riser": -10, "click": -14}   # цели громкости по замеру референсов
+LVL = {"whoosh": -3, "whooshup": -6, "pop": -8, "switch": -14, "key": -16, "click": -3}   # дБ к уровню речи (см. compose_sr.py)
 def sfx(t, snd, kind, **k): ev.append({"t": round(max(0, t), 3), "snd": snd, "lvl": LVL[kind], **k})
 
 items.append({"type": "mark", "t0": 0, "t1": DUR, "a": "saidulaev.ai", "b": "нейросети | боты | сайты", "y": 1650})
