@@ -32,14 +32,26 @@ def snd(name):
                     s = np.frombuffer(subprocess.run(["ffmpeg", "-v", "error", "-i", f, "-ac", "1", "-ar", str(SR), "-f", "f32le", "-"], capture_output=True).stdout, np.float32).astype(np.float64)
                     cache[name] = s / (np.abs(s).max() + 1e-9)
     return cache[name]
-miss = set()
+# Громкость по замеру референсов: пик эффекта в полосе 6–16 кГц относительно уровня речи (300–3000 Гц, 75-й перцентиль).
+# В 25 рилсах пользователя: вжух −13 дБ, нарастающий вжух −16, поп −18, щелчок −24, райзер −10 (медианы). ev["lvl"] — эта цель.
+import librosa
+def band_db(x, lo, hi):
+    S_ = np.abs(librosa.stft(x.astype(np.float32), n_fft=2048, hop_length=256)); fr = SR / 2048
+    return 20 * np.log10(S_[int(lo / fr):int(hi / fr)].mean(0) + 1e-7)
+SP = float(np.percentile(band_db(mix, 300, 3000), 75)); VPK = float(np.percentile(np.abs(mix), 99.9))
+miss = set(); rep = []
 for ev in C.get("events", []):
     s = snd(ev["snd"])
     if s is None: miss.add(ev["snd"]); continue
     if ev.get("max"): s = s[:int(ev["max"] * SR)] * np.minimum(1, (int(ev["max"] * SR) - np.arange(min(len(s), int(ev["max"] * SR)))) / (0.03 * SR))
+    if "lvl" in ev:
+        g = 10 ** ((SP + ev["lvl"] - float(band_db(np.pad(s, (2048, 2048)), 6000, 16000).max())) / 20)
+        g = min(g, VPK * 10 ** (ev.get("cap", -2) / 20))                 # глухой звук не разгоняем выше голоса
+    else: g = VR * 4 * 10 ** (ev.get("db", -6) / 20)
     a0 = int(max(0, ev["t"]) * SR); e = min(L, a0 + len(s))
-    if e > a0: mix[a0:e] += s[:e - a0] * VR * 4 * 10 ** (ev.get("db", -6) / 20)
+    if e > a0: mix[a0:e] += s[:e - a0] * g; rep.append((round(ev["t"], 2), ev["snd"], round(20 * np.log10(g / VPK + 1e-9), 1)))
 if miss: print("нет звуков:", sorted(miss))
+print("звуков:", len(rep), "= 1 на", round(C["duration"] / max(1, len(rep)), 1), "с; пик к пику голоса, дБ:", rep)
 pk = np.abs(mix).max()
 if pk > 0.98: mix *= 0.98 / pk
 wav = out + ".wav"; sf.write(wav, np.stack([mix, mix], 1).astype(np.float32), SR, subtype="FLOAT")

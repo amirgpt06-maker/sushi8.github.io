@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.abspath(os.path.join(HERE, "../../../.."))
 sys.path.insert(0, HERE); import tts
-ap = argparse.ArgumentParser(); ap.add_argument("scenario"); ap.add_argument("--engine"); ap.add_argument("--voice", help="своя запись голоса (голосовое из Telegram, mp3/m4a/ogg/wav) — по умолчанию"); ap.add_argument("--out", default=os.path.join(ROOT, "ready")); ap.add_argument("--base-only", action="store_true", help="собрать только основу без текста (_work/base.mp4, mix.wav, words.json) — для другого слоя типографики, например «стиль рилс»")
+ap = argparse.ArgumentParser(); ap.add_argument("scenario"); ap.add_argument("--engine"); ap.add_argument("--voice", help="своя запись голоса (голосовое из Telegram, mp3/m4a/ogg/wav) — по умолчанию"); ap.add_argument("--out", default=os.path.join(ROOT, "ready")); ap.add_argument("--no-cut-sfx", action="store_true", help="не ставить вжух на каждую смену плана (в «стиле рилс» звуки стоят на событиях текста, а не на склейках)"); ap.add_argument("--base-only", action="store_true", help="собрать только основу без текста (_work/base.mp4, mix.wav, words.json) — для другого слоя типографики, например «стиль рилс»")
 A = ap.parse_args()
 SC = json.load(open(A.scenario, encoding="utf-8"))
 W, H, FPS, SR = 1080, 1920, 30, 48000
@@ -262,7 +262,7 @@ def put(y, t, db_):
     if y is None: return
     a0 = int(t * SR); e = min(L, a0 + len(y)); mix[a0:e] += y[:e - a0] * VR * 4 * 10 ** (db_ / 20)
 wh = snd("sc_whoosh", "wbwhoosh", "whoosh", "swoosh")
-for sh_ in shots[1:]: put(wh, max(0, sh_["t0"] - 0.12), -7)                 # вжух на каждой смене плана (динамика)
+for sh_ in ([] if A.no_cut_sfx else shots[1:]): put(wh, max(0, sh_["t0"] - 0.12), -7)                 # вжух на каждой смене плана (динамика)
 NASH = [os.path.join(ROOT, "nashid", f) for f in sorted(os.listdir(os.path.join(ROOT, "nashid"))) if f.lower().endswith((".mp3", ".wav", ".m4a", ".ogg", ".flac"))] if os.path.isdir(os.path.join(ROOT, "nashid")) else []
 if NASH:                                                                   # фон: размытые нашиды (только вокал; срез верха, реверберация, тихо)
     f_ = NASH[datetime.date.today().toordinal() % len(NASH)]
