@@ -65,17 +65,17 @@ items.append({"type": "button", "t0": round(b0, 3), "t1": DUR + 1, "y": 1250, "c
 # --- звук: схема снята с 25 референсов. Звук стоит на появлении НОВОГО блока (вжух), вставке (поп, переключатель), ключевом слове (райзер),
 #     кнопке (клик). На слова по одному, на караоке и на склейки стока звук не ставится. Всего 1 звук на 3–4 с. ---
 sfx(0.02, "sr_whoosh1", "whoosh")                         # хук: первая стопка
-sfx(T(8) - 0.04, "sr_pop", "pop")                         # акцентное слово «учебник»
+sfx(T(8) - 0.04, "sr_pop2", "pop")                        # акцентное слово «учебник»
 sfx(T(9) - 0.05, "sr_switch", "switch")                   # чёрная карточка
 sfx(T(24) - 0.16, "sr_pop", "pop")                        # плашка 1 появилась
 sfx(T(24), "sr_key1", "key"); sfx(T(26), "sr_key3", "key")
 sfx(T(28) - 0.05, "sr_switch", "switch")                  # кремовая карточка
 sfx(T(33) - 0.2, "sr_whoosh2", "whoosh")                  # «так»
-sfx(T(34) - 0.14, "sr_pop", "pop")                        # плашка 2 появилась
+sfx(T(34) - 0.14, "sr_pop3", "pop")                       # плашка 2 появилась
 for snd_, i in (("sr_key2", 35), ("sr_key4", 39), ("sr_key1", 43), ("sr_key3", 46)): sfx(T(i), snd_, "key")
-sfx(T(51) - 1.02, "sr_riser", "riser")                    # разгон в ключевое слово «живым»
-sfx(T(57) - 0.2, "sr_whoosh3", "whoosh")                  # «сохрани»
-sfx(T(62) - 0.5, "sr_whooshup", "whooshup")               # «подпишись»
+sfx(T(51) - 0.45, "sr_whoosh3", "whoosh")                 # ключевое слово «живым»: вжух подлиннее, пик на слове
+sfx(T(57) - 0.2, "sr_whoosh1", "whoosh")                  # «сохрани»
+sfx(T(62) - 0.62, "sr_whooshup", "whooshup")              # «подпишись»
 sfx(ck, "sr_click", "click")                              # нажатие кнопки
 
 json.dump({"fps": 30, "duration": DUR, "ig": "saidulaev.ai", "tg": "saidulaev_ai", "voice_rms": D.get("voice_rms"), "items": items, "events": ev},

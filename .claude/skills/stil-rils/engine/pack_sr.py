@@ -5,11 +5,13 @@ import html, json, os, re, subprocess, sys
 import numpy as np, soundfile as sf
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
 SRC = os.path.join(ROOT, "_assets", "isla"); DST = os.path.join(ROOT, ".claude/skills/montazh/engine/sfx_local"); SR = 48000
-ROLES = {   # роль: (файл пака, начало с, длина с)
-    "sr_whoosh1": ("Whooshes_ODC-0002-506.wav", 2.47, 0.46), "sr_whoosh2": ("Whooshes_ODC-0002-506.wav", 2.98, 0.48), "sr_whoosh3": ("Whooshes_ODC-0002-506.wav", 3.55, 0.40),
-    "sr_whooshup": ("mixkit-air-woosh-1489.wav", 0.08, 0.95), "sr_switch": ("переключатель.mp3", 0.12, 0.30), "sr_click": ("clickbutton.mp3", 0.03, 0.22),
-    "sr_pop": ("ES_Pops, Wobble, Bloop, Pops - Epidemic Sound.mp3", 0.0, 0.25), "sr_riser": ("1. Riser.mp3", 0.05, 1.15),
-    "sr_key1": ("эпл печатание.mp3", 0.25, 0.09), "sr_key2": ("эпл печатание.mp3", 0.42, 0.10), "sr_key3": ("эпл печатание.mp3", 0.69, 0.09), "sr_key4": ("эпл печатание.mp3", 0.95, 0.09),
+ROLES = {   # роль: (файл пака, начало с, длина с). Выбор — по сходству со звуками референсов (см. SKILL.md, раздел 12)
+    "sr_whoosh1": ("Whooshes_ODC-0002-506.wav", 2.97, 0.50), "sr_whoosh2": ("Whooshes_ODC-0002-506.wav", 2.46, 0.46), "sr_whoosh3": ("Whooshes_ODC-0002-506.wav", 1.67, 0.64),
+    "sr_whooshup": ("Резкие вуши.mp3", 3.40, 0.88),
+    "sr_pop": ("ui-pop-up-2-197887.mp3", 0.0, 0.2), "sr_pop2": ("Saas Sfx.mp3", 28.96, 0.14), "sr_pop3": ("Saas Sfx.mp3", 9.24, 0.14),
+    "sr_switch": ("5. Click.mp3", 0.02, 0.2), "sr_click": ("clickbutton.mp3", 0.03, 0.22),
+    "sr_key1": ("iphone-keyboard-typing-sound-effect-336778.mp3", 11.65, 0.09), "sr_key2": ("iphone-keyboard-typing-sound-effect-336778.mp3", 6.96, 0.08),
+    "sr_key3": ("эпл печатание.mp3", 2.82, 0.09), "sr_key4": ("iphone-keyboard-typing-sound-effect-336778.mp3", 0.64, 0.08),
 }
 os.makedirs(SRC, exist_ok=True); os.makedirs(DST, exist_ok=True)
 need = sorted({v[0] for v in ROLES.values()})
