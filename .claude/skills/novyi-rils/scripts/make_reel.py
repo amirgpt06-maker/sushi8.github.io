@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.abspath(os.path.join(HERE, "../../../.."))
 sys.path.insert(0, HERE); import tts
-ap = argparse.ArgumentParser(); ap.add_argument("scenario"); ap.add_argument("--engine"); ap.add_argument("--voice", help="своя запись голоса (голосовое из Telegram, mp3/m4a/ogg/wav) — по умолчанию"); ap.add_argument("--out", default=os.path.join(ROOT, "ready"))
+ap = argparse.ArgumentParser(); ap.add_argument("scenario"); ap.add_argument("--engine"); ap.add_argument("--voice", help="своя запись голоса (голосовое из Telegram, mp3/m4a/ogg/wav) — по умолчанию"); ap.add_argument("--out", default=os.path.join(ROOT, "ready")); ap.add_argument("--base-only", action="store_true", help="собрать только основу без текста (_work/base.mp4, mix.wav, words.json) — для другого слоя типографики, например «стиль рилс»")
 A = ap.parse_args()
 SC = json.load(open(A.scenario, encoding="utf-8"))
 W, H, FPS, SR = 1080, 1920, 30, 48000
@@ -276,6 +276,12 @@ if NASH:                                                                   # ф�
 mx = os.path.join(WK, "mix.wav"); sf.write(mx, np.stack([mix, mix], 1).astype(np.float32), SR, subtype="FLOAT")
 base = os.path.join(WK, "base.mp4")
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", os.path.join(WK, "video.mp4"), "-i", mx, "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "aac", "-b:a", "256k", "-shortest", base], check=True)
+
+if A.base_only:                                                # основа без текста: дальше свой слой (skill stil-rils)
+    json.dump({"duration": DUR, "words": [[d[0], d[1], round(d[2], 3), round(d[3], 3)] for d in disp], "lines": lines_t,
+               "shots": [{k: s_[k] for k in ("t0", "t1", "vid", "title")} for s_ in shots], "voice_rms": float(VR)},
+              open(os.path.join(WK, "words.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    log("ОСНОВА:", WK); sys.exit(0)
 
 # ---------- 7б. оверлей движка (стопки слов, вспышки, призыв) и сборка со звуками пака ----------
 ov = os.path.join(WK, "ov")
